@@ -1,0 +1,17 @@
+{
+  "connection_order": ["direct_udp", "hole_punch", "relay"],
+  "rollback_backend": "GekkoNet",
+  "nat_traversal_reference": "delthas/autopunch",
+  "relay_authorization": "User reports permission from Shiburizu on 2026-10-25",
+  "relay_protocol": null,
+  "relay_port": null,
+  "relay_credentials_reference": null,
+  "relay_hosts": [
+    "dallas-retro.supercombo.gg",
+    "retro.supercombo.gg",
+    "jp-retro.supercombo.gg",
+    "hillsboro-retro.supercombo.gg",
+    "au-retro.supercombo.gg"
+  ],
+  "status": "Configuration draft; transport not implemented. Protocol, port and any credential requirements must be supplied before connection attempts."
+}

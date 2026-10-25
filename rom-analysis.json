@@ -1,0 +1,68 @@
+[
+  {
+    "file": "Mobile Suit Gundam Seed - Battle Assault (USA).gba",
+    "size": 4194304,
+    "title": "GUNDAMSEED-B",
+    "game_code": "BGNE",
+    "version": 0,
+    "header_checksum_valid": true,
+    "sha1": "8287d3d336d94a85c5cb22da0fd84918199197e1",
+    "sha256": "d7952790a4b82b6d230a4953e4bfe48f6693ddd550f1cf0e7ace74bce95453f8",
+    "candidate_hardware_literals": [
+      {
+        "rom_address": "0x08000454",
+        "register": "KEYINPUT"
+      },
+      {
+        "rom_address": "0x080019C0",
+        "register": "RCNT"
+      },
+      {
+        "rom_address": "0x080019C4",
+        "register": "SIOCNT"
+      },
+      {
+        "rom_address": "0x08001A44",
+        "register": "SIOCNT"
+      },
+      {
+        "rom_address": "0x08001A78",
+        "register": "SIOCNT"
+      }
+    ],
+    "qualification": "Literal locations only; these are not verified code references or patch sites."
+  },
+  {
+    "file": "Kidou Senshi Gundam - Seed Destiny (Japan).gba",
+    "size": 8388608,
+    "title": "SEEDDESTINY",
+    "game_code": "B42J",
+    "version": 0,
+    "header_checksum_valid": true,
+    "sha1": "64eea52cd909669a972c091869c5f47865863bc0",
+    "sha256": "cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb",
+    "candidate_hardware_literals": [
+      {
+        "rom_address": "0x08000440",
+        "register": "KEYINPUT"
+      },
+      {
+        "rom_address": "0x08001EA4",
+        "register": "RCNT"
+      },
+      {
+        "rom_address": "0x08001EA8",
+        "register": "SIOCNT"
+      },
+      {
+        "rom_address": "0x08001F28",
+        "register": "SIOCNT"
+      },
+      {
+        "rom_address": "0x08001F5C",
+        "register": "SIOCNT"
+      }
+    ],
+    "qualification": "Literal locations only; these are not verified code references or patch sites."
+  }
+]

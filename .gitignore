@@ -1,0 +1,34 @@
+/build/
+/generated/
+/private/
+*.gba
+*.bin
+*.sav
+*.state
+
+# Local ROM analysis databases and generated decompiler output.
+*.i64
+*.idb
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+/analysis/*-evidence.json
+
+# Generated assets, binaries, caches, and local settings.
+/assets/
+/recomp_cache/
+*.exe
+*.dll
+*.lib
+*.obj
+*.zip
+*.7z
+*.log
+__pycache__/
+*.py[cod]
+.vs/
+.env
+.env.*
+!.env.example

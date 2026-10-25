@@ -1,0 +1,13 @@
+[program]
+name = "Mobile Suit Gundam SEED: Battle Assault (USA)"
+id = "gundam-seed-battle-assault-us"
+load_address = 0x08000000
+size = 0x00400000
+entry_pc = 0x08000000
+static_resume_all = true
+codegen_shards = 16
+
+[identity]
+sha1 = "8287d3d336d94a85c5cb22da0fd84918199197e1"
+
+# Initial discovery only. No unverified input, fighter, or link patches.

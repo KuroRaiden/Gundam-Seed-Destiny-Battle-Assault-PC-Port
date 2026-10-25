@@ -1,0 +1,27 @@
+{
+  "base": {
+    "game_code": "BGNE",
+    "region": "USA",
+    "sha256": "d7952790a4b82b6d230a4953e4bfe48f6693ddd550f1cf0e7ace74bce95453f8"
+  },
+  "donor": {
+    "game_code": "B42J",
+    "region": "Japan",
+    "sha256": "cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb",
+    "requested_content": ["character_select_screen", "full_mobile_suit_roster"],
+    "scope": "all donor mobile suits, including variants after their IDs are verified"
+  },
+  "local_versus": {
+    "game_simulations": 1,
+    "players": 2,
+    "independent_character_selection": true,
+    "link_cable_required": false
+  },
+  "status": {
+    "native_input_oracle": "passed",
+    "japanese_asset_decoder_oracle": "passed",
+    "character_select_rendering": "not_integrated",
+    "fighter_transplant": "not_integrated",
+    "local_versus": "not_integrated"
+  }
+}

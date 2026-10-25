@@ -1,0 +1,38 @@
+[
+  {
+    "name": "gbarecomp",
+    "url": "https://github.com/mstan/gbarecomp.git",
+    "commit": "e353848ca8e82e7860469a235784a000102e7781",
+    "role": "baseline runtime"
+  },
+  {
+    "name": "gba-recomp",
+    "url": "https://github.com/JRickey/gba-recomp.git",
+    "commit": "de4edf59b872d887046d6a3b005e2df551b6d44c",
+    "role": "alternative evaluated"
+  },
+  {
+    "name": "GekkoNet",
+    "url": "https://github.com/HeatXD/GekkoNet.git",
+    "commit": "9da2363d7c5a68cc77f8dfe2da7cf51d3afe3bee",
+    "role": "planned, not integrated"
+  },
+  {
+    "name": "autopunch",
+    "url": "https://github.com/delthas/autopunch.git",
+    "commit": "db0b962a8bed74179997e755e851f99e885a10d1",
+    "role": "planned, not integrated"
+  },
+  {
+    "name": "imgui",
+    "url": "https://github.com/ocornut/imgui.git",
+    "commit": "4e99c0ab1a28c2b3d1f250ec0266dbf1e455ef58",
+    "role": "planned, not integrated"
+  },
+  {
+    "name": "SDL2",
+    "url": "https://github.com/libsdl-org/SDL.git",
+    "commit": "8acf7cfc0f88717e5c036f60f0314bfcafe39189",
+    "role": "host backend"
+  }
+]

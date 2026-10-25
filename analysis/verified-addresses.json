@@ -1,0 +1,177 @@
+{
+  "format": 1,
+  "base_rom_sha256": "d7952790a4b82b6d230a4953e4bfe48f6693ddd550f1cf0e7ace74bce95453f8",
+  "us": {
+    "main_loop": "0x080003A0",
+    "game_state": "0x03000F48",
+    "substate": "0x030000B0",
+    "game_mode": "0x030075D0",
+    "link_status": "0x03007610",
+    "received_value_pointers": [
+      "0x03007600",
+      "0x03007604"
+    ],
+    "battle_update": "0x0800242C",
+    "battle_context": "0x03000500",
+    "fighter_offsets": [
+      52,
+      152
+    ],
+    "fighter_stride": 100,
+    "fighter_id_mask": "0x0F",
+    "character_select_dispatch": "0x0802A660",
+    "character_select_table": "0x080AEB2C",
+    "character_select_dual_command_reader": "0x080338C0",
+    "selected_fighter_globals": [
+      "0x03007620",
+      "0x03007621"
+    ],
+    "character_select_substates": [
+      {
+        "name": "CharacterSelect_Sub04",
+        "address": "0x802a96c"
+      },
+      {
+        "name": "CharacterSelect_Sub05",
+        "address": "0x802a9ec"
+      },
+      {
+        "name": "CharacterSelect_Sub06",
+        "address": "0x802aa60"
+      },
+      {
+        "name": "CharacterSelect_Sub07",
+        "address": "0x802ac34"
+      },
+      {
+        "name": "CharacterSelect_Sub08",
+        "address": "0x802ad8c"
+      },
+      {
+        "name": "CharacterSelect_Sub09",
+        "address": "0x802b1f4"
+      },
+      {
+        "name": "CharacterSelect_Sub10",
+        "address": "0x802b384"
+      },
+      {
+        "name": "CharacterSelect_Sub11",
+        "address": "0x802b278"
+      },
+      {
+        "name": "CharacterSelect_Sub12",
+        "address": "0x802b4b4"
+      },
+      {
+        "name": "CharacterSelect_Sub13",
+        "address": "0x802bd18"
+      },
+      {
+        "name": "CharacterSelect_Sub14",
+        "address": "0x802c648"
+      },
+      {
+        "name": "CharacterSelect_Sub15",
+        "address": "0x802d704"
+      },
+      {
+        "name": "CharacterSelect_Sub16",
+        "address": "0x802e14c"
+      },
+      {
+        "name": "CharacterSelect_Sub17",
+        "address": "0x802e7b8"
+      },
+      {
+        "name": "CharacterSelect_Sub18",
+        "address": "0x802ecb0"
+      },
+      {
+        "name": "CharacterSelect_Sub19",
+        "address": "0x802fc30"
+      },
+      {
+        "name": "CharacterSelect_Sub20",
+        "address": "0x8030624"
+      },
+      {
+        "name": "CharacterSelect_Sub21",
+        "address": "0x8030ae8"
+      },
+      {
+        "name": "CharacterSelect_Sub22",
+        "address": "0x803123c"
+      },
+      {
+        "name": "CharacterSelect_Sub23",
+        "address": "0x80319cc"
+      },
+      {
+        "name": "CharacterSelect_Sub24",
+        "address": "0x80323fc"
+      },
+      {
+        "name": "CharacterSelect_Sub25",
+        "address": "0x8032da4"
+      },
+      {
+        "name": "CharacterSelect_Sub26",
+        "address": "0x80334e8"
+      },
+      {
+        "name": "CharacterSelect_Sub27",
+        "address": "0x80338c0"
+      },
+      {
+        "name": "CharacterSelect_Sub28",
+        "address": "0x80344e0"
+      },
+      {
+        "name": "CharacterSelect_Sub29",
+        "address": "0x8034b5c"
+      },
+      {
+        "name": "CharacterSelect_Sub30",
+        "address": "0x8035150"
+      },
+      {
+        "name": "CharacterSelect_Sub31",
+        "address": "0x80358d0"
+      }
+    ]
+  },
+  "jp": {
+    "rom_sha256": "cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb",
+    "battle_init": "0x08002DC0",
+    "fighter_offsets": [
+      46,
+      142
+    ],
+    "fighter_stride": 96,
+    "fighter_id_mask": "0x1F",
+    "selected_fighter_globals": [
+      "0x030075F0",
+      "0x030075F1"
+    ],
+    "requested_donor": "full_roster_and_character_select",
+    "character_select_dispatch": "0x080333B4",
+    "character_select_work_pointer": "0x030075AC",
+    "resource_archive": "0x08787970",
+    "resource_accessor": "0x08000CAC",
+    "le_decoder": "0x08084C18"
+  },
+  "qualification": "Static IDA findings; only the native input model has passed comparison with original ROM execution. Complete local VS and character transplant remain unimplemented.",
+  "input_verification": {
+    "frames_per_player": 4096,
+    "players": 2,
+    "original_routine_calls": 8192,
+    "result": "passed"
+  },
+  "jp_asset_verification": {
+    "resources": 293,
+    "compressed_blocks": 165,
+    "decoded_bytes": 340820,
+    "result": "passed"
+  }
+}

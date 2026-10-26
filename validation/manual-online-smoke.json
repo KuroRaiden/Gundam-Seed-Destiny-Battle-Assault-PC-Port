@@ -1,0 +1,24 @@
+{
+  "source": "User report and supplied two-PC screenshot in this chat",
+  "date": "2026-10-26",
+  "result": "passed smoke test",
+  "participants": "Local Windows PC and Shadow PC as shown by the user",
+  "user_confirmation": "yes everything seems good",
+  "observed_title": {
+    "players": [
+      "Kuro",
+      "Player"
+    ],
+    "input_delay_frames": 2,
+    "ping_ms_range": [
+      31,
+      32
+    ],
+    "last_rollback_frames": [
+      0,
+      3
+    ]
+  },
+  "scope": "User confirmed movement and attacks stayed synchronized. This is manual evidence, not an automated cross-network checksum capture.",
+  "nat_route": "Not instrumented; direct versus AutoPunch path was not independently recorded."
+}

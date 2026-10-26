@@ -1,0 +1,29 @@
+{
+  "offline_pause_frames": [
+    4926,
+    4926
+  ],
+  "offline_pause_observation_seconds": 1,
+  "save_resume": {
+    "before": {
+      "ok": true,
+      "frame": 5181
+    },
+    "after": {
+      "ok": true,
+      "frame": 5223
+    },
+    "resumed": true,
+    "p2_key_a": [
+      "p2.key.A 20"
+    ]
+  },
+  "jp_edit_visible_after_return_to_us_selector": true,
+  "escape_closes_overlay_without_leaving_selector": true,
+  "online_nonpause_policy_native_host_test": "passed",
+  "live_online_match_tested": false,
+  "local_vs_menu_font": "native_glyph_strokes_clean_outline",
+  "bios_fast_set_reference_cases": 30,
+  "hud_palette_upload_fix": true,
+  "all_24_grid_fighters_rechecked": true
+}

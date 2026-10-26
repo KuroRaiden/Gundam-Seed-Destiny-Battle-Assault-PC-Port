@@ -1,0 +1,21 @@
+[program]
+name = "Gundam SEED Destiny combat (Japan)"
+id = "gundam-seed-destiny-jp-combat"
+load_address = 0x08000000
+size = 0x00800000
+entry_pc = 0x08000000
+static_resume_all = true
+codegen_shards = 16
+
+[identity]
+sha1 = "64eea52cd909669a972c091869c5f47865863bc0"
+
+[[mod_function_hook]]
+addr = 0x08002654
+mode = "thumb"
+note = "JP input dispatcher: feed two local streams through the original JP input routine."
+
+[[mod_function_hook]]
+addr = 0x08003418
+mode = "thumb"
+note = "JP right-fighter control: replace CPU/serial selection with local P2 input."

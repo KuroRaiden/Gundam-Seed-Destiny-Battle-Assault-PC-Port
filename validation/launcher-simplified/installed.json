@@ -1,0 +1,16 @@
+{
+  "installed_utc": "2026-10-26T12:54:28.8254394Z",
+  "launcher_sha256": "B768964C6F50B79D5967B86CF692551B16625ACAB605700D72C13694547DC621",
+  "settings_preserved": true,
+  "settings_sha256": {
+    "launcher-settings.ini": "EDCF3CCEB16C02B5B22544378E59EDF56FD9EC075DDA5A77E4D105EC61E72972",
+    "controls.ini": "5F79E0F1DCB659ED252CA23C5941B92ABCAAC8B08DAA97A5DC6DAC9F8C46123E"
+  },
+  "native_render_smoke_check": "passed",
+  "removed": [
+    "Local VS launch card",
+    "Online VS launch card",
+    "Online page"
+  ],
+  "launch_actions": 1
+}

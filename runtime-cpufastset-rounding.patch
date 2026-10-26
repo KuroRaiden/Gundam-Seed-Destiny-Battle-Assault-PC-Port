@@ -1,0 +1,33 @@
+diff --git a/src/runtime/bios_hle.cpp b/src/runtime/bios_hle.cpp
+index 40ba197..40b4119 100644
+--- a/src/runtime/bios_hle.cpp
++++ b/src/runtime/bios_hle.cpp
+@@ -208,14 +209,17 @@ void do_cpu_set() {
+     }
+ }
+ 
+-void do_cpu_fast_set() {
++uint32_t do_cpu_fast_set() {
+     uint32_t src = R(0), dst = R(1), ctrl = R(2);
+-    uint32_t count = ctrl & 0x1FFFFFu;      // word count (games pass multiples of 8)
++    // The BIOS transfers complete eight-word blocks, including a partial
++    // final block. Several games request four words for a 32-byte palette.
++    uint32_t count = ((ctrl & 0x1FFFFFu) + 7u) & ~7u;
+     bool fixed = (ctrl >> 24) & 1u;
+     for (uint32_t i = 0; i < count; ++i) {
+         wr32(dst, rd32(src));
+         dst += 4; if (!fixed) src += 4;
+     }
++    return count;
+ }
+ 
+ // ── affine SWIs (float, matches mGBA) ───────────────────────────────────────
+@@ -487,7 +491,7 @@ int dispatch(uint32_t swi) {
+     case SWI_GET_BIOS_CHECKSUM:
+         setR(0, GBA_BIOS_CHECKSUM); setR(1, 1u); setR(3, SIZE_BIOS); break;
+     case SWI_CPU_SET:          do_cpu_set(); cost = 10 + (R(2) & 0x1FFFFF) * 2; break;
+-    case SWI_CPU_FAST_SET:     do_cpu_fast_set(); cost = 10 + (R(2) & 0x1FFFFF) * 2; break;
++    case SWI_CPU_FAST_SET:     cost = 10 + do_cpu_fast_set() * 2; break;
+     case SWI_BG_AFFINE_SET:    do_bg_affine_set(); cost = 10 + R(2) * 60; break;
+     case SWI_OBJ_AFFINE_SET:   do_obj_affine_set(); cost = 10 + R(2) * 40; break;
+     case SWI_BIT_UNPACK:       do_unBitPack(); break;

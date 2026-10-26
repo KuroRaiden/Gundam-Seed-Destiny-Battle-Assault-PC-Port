@@ -1,17 +1,20 @@
 {
-  "connection_order": ["direct_udp", "hole_punch", "relay"],
-  "rollback_backend": "GekkoNet",
-  "nat_traversal_reference": "delthas/autopunch",
-  "relay_authorization": "User reports permission from Shiburizu on 2026-10-25",
-  "relay_protocol": null,
-  "relay_port": null,
-  "relay_credentials_reference": null,
-  "relay_hosts": [
-    "dallas-retro.supercombo.gg",
-    "retro.supercombo.gg",
-    "jp-retro.supercombo.gg",
-    "hillsboro-retro.supercombo.gg",
-    "au-retro.supercombo.gg"
+  "connection_order": [
+    "direct_udp",
+    "autopunch"
   ],
-  "status": "Configuration draft; transport not implemented. Protocol, port and any credential requirements must be supplied before connection attempts."
+  "rollback_backend": "GekkoNet",
+  "direct_udp_enabled": true,
+  "automatic_port": true,
+  "nat_traversal_enabled": true,
+  "nat_traversal": "native AutoPunch-compatible rendezvous",
+  "autopunch_host": "delthas.fr",
+  "autopunch_port": 14763,
+  "stun_servers": [
+    "stun.l.google.com:19302"
+  ],
+  "join_code_format": "SEED1 versioned endpoint/token payload with CRC32",
+  "invitation_format": "seedpc://join/<code>",
+  "relay_enabled": false,
+  "status": "Automatic code/link setup using STUN, direct UDP and AutoPunch. No fallback relay is configured."
 }

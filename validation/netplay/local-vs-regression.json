@@ -1,0 +1,511 @@
+[
+  {
+    "label": "password-selection",
+    "ok": true,
+    "selector": "jp-destiny",
+    "scripted_input": false,
+    "battle_mode": "local",
+    "online_lobby": false,
+    "network_ready": false,
+    "active": true,
+    "state": 11,
+    "substate": 11,
+    "control": 3,
+    "mode": 6,
+    "link": 0,
+    "cursor": [
+      13,
+      22
+    ],
+    "fighters": [
+      1,
+      8
+    ],
+    "preview": [
+      0,
+      7
+    ],
+    "ready": [
+      false,
+      false
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      458762,
+      0
+    ],
+    "hp": [
+      0,
+      0
+    ],
+    "depth": 0,
+    "online_invitation": "",
+    "online_frames": 0,
+    "online_crc": 0,
+    "online_peer_crc": 0,
+    "online_converged": false,
+    "online_rollbacks": 0,
+    "online_desyncs": 0
+  },
+  {
+    "label": "jp-exclusive-selection",
+    "ok": true,
+    "selector": "jp-destiny",
+    "scripted_input": true,
+    "battle_mode": "local",
+    "online_lobby": false,
+    "network_ready": false,
+    "active": true,
+    "state": 11,
+    "substate": 11,
+    "control": 3,
+    "mode": 6,
+    "link": 0,
+    "cursor": [
+      10,
+      1
+    ],
+    "fighters": [
+      1,
+      8
+    ],
+    "preview": [
+      12,
+      13
+    ],
+    "ready": [
+      false,
+      false
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      458762,
+      0
+    ],
+    "hp": [
+      0,
+      0
+    ],
+    "depth": 0,
+    "online_invitation": "",
+    "online_frames": 0,
+    "online_crc": 0,
+    "online_peer_crc": 0,
+    "online_converged": false,
+    "online_rollbacks": 0,
+    "online_desyncs": 0
+  },
+  {
+    "label": "p1-ready",
+    "ok": true,
+    "selector": "jp-destiny",
+    "scripted_input": true,
+    "battle_mode": "local",
+    "online_lobby": false,
+    "network_ready": false,
+    "active": true,
+    "state": 11,
+    "substate": 11,
+    "control": 3,
+    "mode": 6,
+    "link": 0,
+    "cursor": [
+      10,
+      1
+    ],
+    "fighters": [
+      1,
+      8
+    ],
+    "preview": [
+      12,
+      13
+    ],
+    "ready": [
+      true,
+      false
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      458762,
+      0
+    ],
+    "hp": [
+      0,
+      0
+    ],
+    "depth": 0,
+    "online_invitation": "",
+    "online_frames": 0,
+    "online_crc": 0,
+    "online_peer_crc": 0,
+    "online_converged": false,
+    "online_rollbacks": 0,
+    "online_desyncs": 0
+  },
+  {
+    "label": "both-ready",
+    "ok": true,
+    "selector": "jp-destiny",
+    "scripted_input": true,
+    "battle_mode": "local",
+    "online_lobby": false,
+    "network_ready": false,
+    "active": true,
+    "state": 11,
+    "substate": 11,
+    "control": 3,
+    "mode": 6,
+    "link": 0,
+    "cursor": [
+      10,
+      1
+    ],
+    "fighters": [
+      1,
+      8
+    ],
+    "preview": [
+      12,
+      13
+    ],
+    "ready": [
+      true,
+      true
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      458762,
+      0
+    ],
+    "hp": [
+      0,
+      0
+    ],
+    "depth": 0,
+    "online_invitation": "",
+    "online_frames": 0,
+    "online_crc": 0,
+    "online_peer_crc": 0,
+    "online_converged": false,
+    "online_rollbacks": 0,
+    "online_desyncs": 0
+  },
+  {
+    "label": "jp-battle",
+    "ok": true,
+    "engine": "jp",
+    "scripted_input": true,
+    "training": false,
+    "started": true,
+    "ended": false,
+    "state": 4,
+    "substate": 2,
+    "round": 5,
+    "fighters": [
+      13,
+      14
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      0,
+      0
+    ],
+    "hp": [
+      10240,
+      10240
+    ],
+    "depth": 0
+  },
+  {
+    "label": "p2-movement",
+    "ok": true,
+    "engine": "jp",
+    "scripted_input": true,
+    "training": false,
+    "started": true,
+    "ended": false,
+    "state": 4,
+    "substate": 2,
+    "round": 5,
+    "fighters": [
+      13,
+      14
+    ],
+    "raw": [
+      0,
+      32
+    ],
+    "battle_input": [
+      0,
+      32
+    ],
+    "hp": [
+      10240,
+      10240
+    ],
+    "depth": 0
+  },
+  {
+    "label": "p2-damage",
+    "ok": true,
+    "engine": "jp",
+    "scripted_input": true,
+    "training": false,
+    "started": true,
+    "ended": false,
+    "state": 4,
+    "substate": 2,
+    "round": 5,
+    "fighters": [
+      13,
+      14
+    ],
+    "raw": [
+      0,
+      1
+    ],
+    "battle_input": [
+      0,
+      1
+    ],
+    "hp": [
+      10072,
+      10240
+    ],
+    "depth": 0
+  },
+  {
+    "label": "ko",
+    "ok": true,
+    "engine": "jp",
+    "scripted_input": true,
+    "training": false,
+    "started": true,
+    "ended": false,
+    "state": 4,
+    "substate": 2,
+    "round": 6,
+    "fighters": [
+      13,
+      14
+    ],
+    "raw": [
+      0,
+      1
+    ],
+    "battle_input": [
+      0,
+      0
+    ],
+    "hp": [
+      0,
+      10240
+    ],
+    "depth": 0
+  },
+  {
+    "label": "ko",
+    "ok": true,
+    "engine": "jp",
+    "scripted_input": true,
+    "training": false,
+    "started": true,
+    "ended": false,
+    "state": 4,
+    "substate": 2,
+    "round": 6,
+    "fighters": [
+      13,
+      14
+    ],
+    "raw": [
+      0,
+      1
+    ],
+    "battle_input": [
+      0,
+      0
+    ],
+    "hp": [
+      0,
+      10240
+    ],
+    "depth": 0
+  },
+  {
+    "label": "match-ended",
+    "ok": true,
+    "engine": "jp",
+    "scripted_input": true,
+    "training": false,
+    "started": true,
+    "ended": true,
+    "state": 21,
+    "substate": 6,
+    "round": 0,
+    "fighters": [
+      0,
+      0
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      0,
+      0
+    ],
+    "hp": [
+      0,
+      0
+    ],
+    "depth": 0
+  },
+  {
+    "label": "rematch",
+    "ok": true,
+    "selector": "jp-destiny",
+    "scripted_input": true,
+    "battle_mode": "local",
+    "online_lobby": false,
+    "network_ready": false,
+    "active": true,
+    "state": 11,
+    "substate": 11,
+    "control": 3,
+    "mode": 6,
+    "link": 0,
+    "cursor": [
+      10,
+      1
+    ],
+    "fighters": [
+      1,
+      8
+    ],
+    "preview": [
+      12,
+      13
+    ],
+    "ready": [
+      false,
+      false
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      458762,
+      0
+    ],
+    "hp": [
+      0,
+      0
+    ],
+    "depth": 0,
+    "online_invitation": "",
+    "online_frames": 0,
+    "online_crc": 0,
+    "online_peer_crc": 0,
+    "online_converged": false,
+    "online_rollbacks": 0,
+    "online_desyncs": 0
+  },
+  {
+    "label": "second-match",
+    "ok": true,
+    "engine": "jp",
+    "scripted_input": true,
+    "training": false,
+    "started": true,
+    "ended": false,
+    "state": 4,
+    "substate": 2,
+    "round": 5,
+    "fighters": [
+      13,
+      14
+    ],
+    "raw": [
+      0,
+      0
+    ],
+    "battle_input": [
+      0,
+      0
+    ],
+    "hp": [
+      10240,
+      10240
+    ],
+    "depth": 0
+  },
+  {
+    "label": "back-to-us-menu",
+    "ok": true,
+    "selector": "jp-destiny",
+    "scripted_input": true,
+    "battle_mode": "none",
+    "online_lobby": false,
+    "network_ready": false,
+    "active": false,
+    "state": 4,
+    "substate": 3,
+    "control": 0,
+    "mode": 6,
+    "link": 0,
+    "cursor": [
+      10,
+      1
+    ],
+    "fighters": [
+      1,
+      8
+    ],
+    "preview": [
+      12,
+      13
+    ],
+    "ready": [
+      false,
+      false
+    ],
+    "raw": [
+      0,
+      2
+    ],
+    "battle_input": [
+      0,
+      0
+    ],
+    "hp": [
+      0,
+      0
+    ],
+    "depth": 0,
+    "online_invitation": "",
+    "online_frames": 0,
+    "online_crc": 0,
+    "online_peer_crc": 0,
+    "online_converged": false,
+    "online_rollbacks": 0,
+    "online_desyncs": 0
+  }
+]

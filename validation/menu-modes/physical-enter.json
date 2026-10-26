@@ -1,0 +1,80 @@
+[
+  {
+    "label": "physical-enter-open",
+    "jp": {
+      "ok": true,
+      "engine": "jp",
+      "scripted_input": false,
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 4,
+      "round": 2,
+      "fighters": [
+        1,
+        8
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        8,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "run": {
+      "ok": true,
+      "run": "windowed",
+      "parked": false,
+      "pc": "0x00000348",
+      "frame": 9104,
+      "vblank_starts": 9104
+    }
+  },
+  {
+    "label": "physical-enter-resume",
+    "jp": {
+      "ok": true,
+      "engine": "jp",
+      "scripted_input": false,
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        1,
+        8
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "run": {
+      "ok": true,
+      "run": "windowed",
+      "parked": false,
+      "pc": "0x03007354",
+      "frame": 9697,
+      "vblank_starts": 9697
+    }
+  }
+]

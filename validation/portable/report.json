@@ -1,0 +1,13 @@
+{
+  "archive": "E:\\recomp projects\\GundamSeedDestinyBattleAssaultPC\\outputs\\GundamSeedDestinyBattleAssaultPC-Portable-Windows-x64.zip",
+  "archive_bytes": 40895626,
+  "archive_sha256": "400A12B84F31DB37027A8C95849C94478EAFB726DFAB5E9F9BFA3D22C194DDFA",
+  "zip_crc_verified": true,
+  "extracted_files_sha256_verified": 31,
+  "renamed_folder_test": true,
+  "unrelated_working_directory_test": true,
+  "bundled_runtime_loading_verified": true,
+  "default_bios_boot_frames": 900,
+  "jp_training_pause_resume": "passed",
+  "completed_utc": "2026-10-26T13:52:15.4646672Z"
+}

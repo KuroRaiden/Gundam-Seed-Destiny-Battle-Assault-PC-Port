@@ -1,0 +1,64 @@
+{
+  "condition_label": "baseline",
+  "ports": [
+    29090,
+    29091
+  ],
+  "case": "E:\\recomp projects\\GundamSeedDestinyBattleAssaultPC\\outputs\\GundamSeedRecomp\\validation\\release-v0.1.0\\window-title\\run-175596547627900",
+  "peers": [
+    {
+      "engine": "native-jp",
+      "transport": "udp",
+      "backend": "GekkoNet",
+      "driver": "production-dll",
+      "seat": 0,
+      "frames": 240,
+      "target": 240,
+      "initial_crc": 3892494332,
+      "final_crc": 4249328558,
+      "peer_crc": 4249328558,
+      "converged": true,
+      "rollbacks": 0,
+      "replayed_frames": 0,
+      "max_rollback": 0,
+      "stalls": 46,
+      "desyncs": 0,
+      "ping_ms": 6,
+      "jitter_ms": 8,
+      "remap_frames": 50,
+      "finish_fence": false,
+      "title": "Kira vs Athrun | Delay 2f | Rollback 0f | Ping 6ms",
+      "hp": [
+        9959,
+        9785
+      ]
+    },
+    {
+      "engine": "native-jp",
+      "transport": "udp",
+      "backend": "GekkoNet",
+      "driver": "production-dll",
+      "seat": 1,
+      "frames": 240,
+      "target": 240,
+      "initial_crc": 3892494332,
+      "final_crc": 4249328558,
+      "peer_crc": 4249328558,
+      "converged": true,
+      "rollbacks": 83,
+      "replayed_frames": 175,
+      "max_rollback": 6,
+      "stalls": 55,
+      "desyncs": 0,
+      "ping_ms": 11.5556,
+      "jitter_ms": 16.75,
+      "remap_frames": 0,
+      "finish_fence": false,
+      "title": "Kira vs Athrun | Delay 2f | Rollback 3f | Ping 11ms",
+      "hp": [
+        9959,
+        9785
+      ]
+    }
+  ]
+}

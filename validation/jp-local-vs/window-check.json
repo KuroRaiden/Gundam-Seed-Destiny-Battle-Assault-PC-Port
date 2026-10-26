@@ -1,0 +1,16 @@
+{
+  "windowed": true,
+  "processes": 1,
+  "game_windows": 1,
+  "renderer": "direct3d11",
+  "native_fighters": [
+    13,
+    14
+  ],
+  "independent_p2_input": true,
+  "escape_returns_to_selector": true,
+  "ready_flags_cleared": true,
+  "window_close_exits": true,
+  "idle_observer_shutdown_fixed": true,
+  "normal_play_debug_listeners": 0
+}

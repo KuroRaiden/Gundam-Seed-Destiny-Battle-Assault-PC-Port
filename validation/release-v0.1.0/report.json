@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-26",
+  "version": "0.1.0",
+  "named_symbols": 153,
+  "core_checks_passed": 11,
+  "source_checks": {
+    "generated_maps_current": true,
+    "raw_guest_address_literals_outside_registry": 0,
+    "cpp_format": "passed",
+    "python_format_and_syntax": "passed"
+  },
+  "gameplay": {
+    "local_vs": "passed: JP fighters, P2 movement/damage, KOs, rematch and menu return",
+    "training": "passed: shared-window native pause/resume cycles",
+    "online_cold_start": "passed: independent JP selection, 240 native rollback frames, matching checksums and menu return",
+    "window_title_and_remap": "passed: live names/stats, 50 F4 frames while online and checksum convergence"
+  },
+  "room_regressions": {
+    "guest_ready_before_host_ready_publication": "passed",
+    "successful_match_has_no_competing_room_leave": "passed",
+    "explicit_cancellation_notifies_peer": "passed"
+  },
+  "manual_cross_pc_evidence": "User-reported smoke test recorded separately in validation/manual-online-smoke.json; not an instrumented cross-network checksum run."
+}

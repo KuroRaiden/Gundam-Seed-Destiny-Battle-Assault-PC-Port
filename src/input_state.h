@@ -1,6 +1,9 @@
+#include "game_addresses.h"
 #pragma once
 #include <array>
 #include <cstdint>
+
+namespace us_address = seed::address::us;
 
 namespace seed {
 // Active-high GBA button bits. Two independent copies belong to the same match.
@@ -29,9 +32,13 @@ struct UsInputAddresses {
 };
 // Verified against the US ROM by IDA disassembly and the oracle test.
 inline constexpr std::array<UsInputAddresses, 2> kUsInputAddresses{{
-    {0x08000860, 0x03000F44, 0x030004D0, 0x0300001C, 0x03000600,
-     0x03000F6C, 0x030004C8, 0x030000A0, 0x03000070},
-    {0x08000934, 0x03000F74, 0x0300060C, 0x030004EC, 0x03000F68,
-     0x03000098, 0x030004CC, 0x030004E0, 0x03000F80},
+    {us_address::kPlayer1InputUpdate, us_address::kPlayer1Held, us_address::kPlayer1Previous,
+     us_address::kPlayer1Pressed, us_address::kPlayer1Released, us_address::kPlayer1Repeat,
+     us_address::kPlayer1RecentRepress, us_address::kPlayer1RepeatTicks,
+     us_address::kPlayer1History},
+    {us_address::kPlayer2InputUpdate, us_address::kPlayer2Held, us_address::kPlayer2Previous,
+     us_address::kPlayer2Pressed, us_address::kPlayer2Released, us_address::kPlayer2Repeat,
+     us_address::kPlayer2RecentRepress, us_address::kPlayer2RepeatTicks,
+     us_address::kPlayer2History},
 }};
 } // namespace seed

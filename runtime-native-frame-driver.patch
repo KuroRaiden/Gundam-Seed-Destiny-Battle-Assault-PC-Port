@@ -1,0 +1,172 @@
+--- a/src/runtime/runtime.h
++++ b/src/runtime/runtime.h
+@@ -13,6 +13,7 @@
+ 
+ namespace gbarecomp {
+ struct GbaNetplayLaunch;
++struct NativeFrameControl;
+ struct ViewGeometry;
+ 
+ struct TouchFrameInfo;   // touch_input.h
+@@ -46,6 +47,7 @@
+ // constants from GbaBios, empty ROM hash that forces the user to
+ // provide --config or --rom-sha1).
+ struct RunOptions {
++    int (*native_frame_driver)(NativeFrameControl& control)=nullptr;
+     // Optional adapter installed by games that link gbarecomp_netplay.
+     std::shared_ptr<GbaNetplayLaunch> netplay;
+     const char*   builtin_game_name = nullptr;
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -20,6 +20,8 @@
+ // step_once() becomes a real `runtime_dispatch` driver.
+ 
+ #include "runtime.h"
++#include "frame_control.h"
++#include "native_frame_state.h"
+ #include "suspend_guard.h"
+ #include "multiplayer_launch.h"
+ #include "view_config.h"
+@@ -2708,6 +2710,35 @@
+         reply = std::move(streamed);
+         return true;
+     };
++    if (opts.native_frame_driver) {
++        NativeFrameControl control;
++        NativeFrameState snapshots(bus,ppu,rom_sha1,debug::global_mod_state_registry());
++        control.advance=[&](std::uint16_t keys) {
++            bus.io().set_keyinput(keys&0x3FFu);
++            const bool ok=step_frame();if(ok)wram_trace_tick();return ok;
++        };
++        control.save=[&](std::vector<std::uint8_t>& out,std::string& error) {
++            return snapshots.save(out,error);
++        };
++        control.load=[&](const std::vector<std::uint8_t>& bytes,std::string& error) {
++            if(!snapshots.load(bytes,error))return false;sync_frame_counter();return true;
++        };
++        std::vector<std::uint8_t> blank(240*160*3,0);
++        control.pixels=[&] { return ppu.has_latched_framebuffer() ? ppu.latched_framebuffer() : blank.data(); };
++        control.frame=[] { return static_cast<std::uint64_t>(g_runtime_vblank_starts); };
++        control.seed_clock=[&](std::int64_t seed) { bus.rtc().set_emulated_clock(seed); };
++        control.drain_audio=[&](std::vector<NativeFrameControl::AudioBlock>& out) {
++            out.clear();std::int16_t samples[2048];std::uint32_t rate=0;
++            while(const auto count=bus.audio().drain_sample_block(samples,2048,rate))
++                out.push_back({rate,{samples,samples+count}});
++        };
++        int result=1;
++        try { result=opts.native_frame_driver(control); }
++        catch(const std::exception& error) { std::fprintf(stderr,"native frame driver: %s\n",error.what()); }
++        const bool saved=flush_save()!=SaveFlush::Failed;
++        write_session_diagnostics(opts,"exit",ppu.frame_count());emit_exit_diagnostics();
++        gbarecomp::overlay_loader_shutdown();runtime_shutdown();return saved ? result : 1;
++    }
+     if (args.tcp_port > 0) {
+         // ── Free-run threading model ───────────────────────────────────────
+         // The game CORE runs on a dedicated thread; the TCP server runs on THIS
+--- /dev/null
++++ b/src/runtime/frame_control.h
+@@ -0,0 +1,21 @@
++#pragma once
++#include <cstdint>
++#include <functional>
++#include <string>
++#include <vector>
++
++namespace gbarecomp {
++// A game-owned frame driver runs on the guest thread, at fully unwound native
++// dispatch boundaries. The engine retains the machine, devices and ROM checks.
++// Save/load includes the runtime clock; presentation and sockets stay outside.
++struct NativeFrameControl {
++    struct AudioBlock { std::uint32_t rate=0;std::vector<std::int16_t> samples; };
++    std::function<bool(std::uint16_t)> advance; // active-low P1 KEYINPUT
++    std::function<bool(std::vector<std::uint8_t>&,std::string&)> save;
++    std::function<bool(const std::vector<std::uint8_t>&,std::string&)> load;
++    std::function<void(std::vector<AudioBlock>&)> drain_audio;
++    std::function<const std::uint8_t*()> pixels; // latched RGB888, native 240x160
++    std::function<std::uint64_t()> frame;
++    std::function<void(std::int64_t)> seed_clock;
++};
++}
+--- /dev/null
++++ b/src/runtime/native_frame_state.h
+@@ -0,0 +1,80 @@
++#pragma once
++#include "gba_bus.h"
++#include "gba_ppu.h"
++#include "gba_simulation_state.h"
++#include "mod_state.h"
++#include "runtime_arm.h"
++#include "runtime_bus_bridge.h"
++#include "runtime_context.h"
++#include <algorithm>
++#include <array>
++#include <memory>
++#include <span>
++
++namespace gbarecomp {
++// Rollback state uses the complete, canonical device codec. The legacy user
++// save-state codec intentionally omits PSG channels and retains host audio;
++// neither behavior is suitable for deterministic replay.
++class NativeFrameState {
++public:
++    NativeFrameState(gba::GbaBus& bus,gba::GbaPpu& ppu,const std::string& rom,debug::ModStateRegistry& mods)
++        : bus_(bus),ppu_(ppu),mods_(mods) { std::copy_n(rom.data(),std::min(rom.size(),rom_.size()),rom_.data()); }
++    bool save(std::vector<std::uint8_t>& out,std::string& error) {
++        try {
++            const auto devices=gba::save_device_state(bus_,ppu_);
++            debug::SnapshotWriter mods;if(!mods_.serialize(mods,&error))return false;
++            RuntimeTimingContext timing;runtime_capture_timing_context(timing);
++            debug::SnapshotWriter writer;writer.u32(0x3246434Eu);writer.bytes(rom_.data(),rom_.size());
++            writer.u64(timing.cycles);writer.u64(timing.vblank_starts);writer.u64(timing.yielded_vblank);
++            writer.u64(timing.pending_cycles);writer.u64(static_cast<std::uint64_t>(timing.event_budget));
++            writer.u32(sizeof(g_cpu));writer.bytes(&g_cpu,sizeof(g_cpu));
++            const auto depth=runtime_call_stack_depth();writer.u32(depth);
++            for(unsigned i=0;i<depth;++i)writer.u32(runtime_call_stack_data()[i]);
++            std::vector<RuntimeSwiContinuation> swi;runtime_capture_swi_context(swi);
++            writer.u32(static_cast<std::uint32_t>(swi.size()));
++            for(const auto& slot:swi) { writer.u32(slot.continuation);writer.u32(slot.return_pc); }
++            writer.u32(static_cast<std::uint32_t>(devices.size()));writer.bytes(devices.data(),devices.size());
++            writer.u32(static_cast<std::uint32_t>(mods.size()));writer.bytes(mods.buffer().data(),mods.size());
++            out=writer.take_buffer();return true;
++        } catch(const std::exception& failure) { error=failure.what();return false; }
++    }
++    bool load(const std::vector<std::uint8_t>& bytes,std::string& error) {
++        auto fail=[&](const char* text) { error=text;return false; };
++        if(bytes.size()<100 || bytes.size()>16u*1024u*1024u)return fail("Invalid native frame snapshot size");
++        debug::SnapshotReader reader(bytes.data(),bytes.size());std::array<char,40> rom{};
++        if(reader.u32()!=0x3246434Eu)return fail("Invalid native frame snapshot version");
++        reader.bytes(rom.data(),rom.size());if(rom!=rom_)return fail("Native frame snapshot ROM mismatch");
++        RuntimeTimingContext timing;timing.cycles=reader.u64();timing.vblank_starts=reader.u64();timing.yielded_vblank=reader.u64();
++        timing.pending_cycles=reader.u64();timing.event_budget=static_cast<std::int64_t>(reader.u64());
++        if(reader.u32()!=sizeof(g_cpu))return fail("Native CPU layout mismatch");
++        ArmCpuState cpu;reader.bytes(&cpu,sizeof(cpu));
++        const auto depth=reader.u32();if(!reader.ok() || depth>1024 || depth>reader.remaining()/4)return fail("Invalid native return stack");
++        std::vector<std::uint32_t> stack(depth);for(auto& pc:stack)pc=reader.u32();
++        const auto swi_count=reader.u32();
++        if(!reader.ok() || swi_count>kRuntimeSwiLimit || swi_count>reader.remaining()/8)return fail("Invalid native SWI stack");
++        std::vector<RuntimeSwiContinuation> swi(swi_count);
++        for(auto& slot:swi) { slot.continuation=reader.u32();slot.return_pc=reader.u32(); }
++        const auto device_size=reader.u32();
++        if(!reader.ok() || device_size>reader.remaining())return fail("Invalid native device payload");
++        std::vector<std::uint8_t> devices(device_size);reader.bytes(devices.data(),devices.size());
++        const auto mod_size=reader.u32();
++        if(!reader.ok() || mod_size>reader.remaining())return fail("Invalid native game payload");
++        std::vector<std::uint8_t> mod_bytes(mod_size);reader.bytes(mod_bytes.data(),mod_bytes.size());
++        if(!reader.ok() || reader.remaining())return fail("Trailing native frame payload");
++        debug::SnapshotReader mod_check(mod_bytes.data(),mod_bytes.size());if(!mods_.preflight(mod_check,&error))return false;
++        // A refused load must not partially replace the live machine.
++        if(!staging_bus_) { staging_bus_=std::make_unique<gba::GbaBus>();staging_ppu_=std::make_unique<gba::GbaPpu>(); }
++        if(!gba::load_device_state(*staging_bus_,*staging_ppu_,devices))return fail("Invalid canonical native device state");
++        if(!gba::load_device_state(bus_,ppu_,devices))return fail("Native device commit failed");
++        g_cpu=cpu;runtime_call_stack_restore(stack.data(),depth);runtime_restore_swi_context(swi);
++        debug::SnapshotReader mod_restore(mod_bytes.data(),mod_bytes.size());
++        if(!mods_.restore(mod_restore,&error))return false;
++        runtime_restore_timing_context(timing);bus_.audio().discard_playback();return true;
++    }
++private:
++    gba::GbaBus& bus_;gba::GbaPpu& ppu_;debug::ModStateRegistry& mods_;
++    std::array<char,40> rom_{};
++    std::unique_ptr<gba::GbaBus> staging_bus_;
++    std::unique_ptr<gba::GbaPpu> staging_ppu_;
++};
++}

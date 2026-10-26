@@ -1,0 +1,8 @@
+{
+  "pid": 8740,
+  "filter": "outbound and loopback and udp and (udp.DstPort == 29070 or udp.DstPort == 29071)",
+  "lag_ms": 40,
+  "drop_percent": 2,
+  "timeout_seconds": 120,
+  "started_utc": "2026-10-26T08:02:03.3694337Z"
+}

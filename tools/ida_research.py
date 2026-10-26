@@ -1,4 +1,6 @@
 """Batch IDAPython operations and evidence export for the copied GBA databases."""
+
+from game_addresses import Common, Jp
 import idapro
 import argparse
 import json
@@ -39,7 +41,9 @@ def main():
                     existing = ida_funcs.get_func(ea)
                     if existing:
                         ida_funcs.del_func(existing.start_ea)
-                ida_segregs.split_sreg_range(ea, ida_idp.str2reg("T"), int(job.get("thumb", True)), ida_segregs.SR_user)
+                ida_segregs.split_sreg_range(
+                    ea, ida_idp.str2reg("T"), int(job.get("thumb", True)), ida_segregs.SR_user
+                )
                 end = int(job["end"], 0) if job.get("end") else ida_idaapi.BADADDR
                 ida_ua.create_insn(ea)
                 ok = ida_funcs.add_func(ea, end)
@@ -48,9 +52,16 @@ def main():
                 report.append({"job": job, "created": ok})
             elif kind == "name":
                 ea = int(job["address"], 0)
-                report.append({"job": job, "ok": ida_name.set_name(ea, job["name"], ida_name.SN_CHECK)})
+                report.append(
+                    {"job": job, "ok": ida_name.set_name(ea, job["name"], ida_name.SN_CHECK)}
+                )
             elif kind == "comment":
-                report.append({"job": job, "ok": ida_bytes.set_cmt(int(job["address"], 0), job["text"], False)})
+                report.append(
+                    {
+                        "job": job,
+                        "ok": ida_bytes.set_cmt(int(job["address"], 0), job["text"], False),
+                    }
+                )
             elif kind == "table":
                 ea = int(job["address"], 0)
                 rows = []
@@ -59,9 +70,15 @@ def main():
                     value = ida_bytes.get_dword(slot)
                     ida_bytes.create_dword(slot, 4)
                     rows.append({"slot": hex(slot), "value": hex(value)})
-                    if job.get("discover_functions") and value & 1 and 0x08000000 <= value < 0x08800000:
+                    if (
+                        job.get("discover_functions")
+                        and value & 1
+                        and Common.ROM_BEGIN <= value < Jp.ROM_END
+                    ):
                         target = value & ~1
-                        ida_segregs.split_sreg_range(target, ida_idp.str2reg("T"), 1, ida_segregs.SR_user)
+                        ida_segregs.split_sreg_range(
+                            target, ida_idp.str2reg("T"), 1, ida_segregs.SR_user
+                        )
                         ida_ua.create_insn(target)
                         ida_funcs.add_func(target)
                 report.append({"job": job, "rows": rows})
@@ -91,12 +108,23 @@ def main():
                     except Exception as exc:
                         item["error"] = str(exc)
                 else:
-                    item["xrefs"] = [{"from": hex(x.frm), "type": x.type,
-                        "function": ida_funcs.get_func_name(x.frm)} for x in idautils.XrefsTo(ea)]
+                    item["xrefs"] = [
+                        {
+                            "from": hex(x.frm),
+                            "type": x.type,
+                            "function": ida_funcs.get_func_name(x.frm),
+                        }
+                        for x in idautils.XrefsTo(ea)
+                    ]
                 report.append(item)
         ida_auto.auto_wait()
-        report.append({"processor": ida_ida.inf_get_procname(), "is_32bit": ida_ida.inf_is_32bit_exactly(),
-                       "function_count": len(list(idautils.Functions()))})
+        report.append(
+            {
+                "processor": ida_ida.inf_get_procname(),
+                "is_32bit": ida_ida.inf_is_32bit_exactly(),
+                "function_count": len(list(idautils.Functions())),
+            }
+        )
     finally:
         idapro.close_database(True)
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -105,4 +133,5 @@ def main():
 
 if __name__ == "__main__":
     import ida_idaapi
+
     main()

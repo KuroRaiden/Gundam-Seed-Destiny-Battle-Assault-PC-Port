@@ -1,0 +1,1442 @@
+[
+  {
+    "native_ids": [
+      1,
+      25
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        1,
+        25
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        1,
+        25
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9901
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      2,
+      23
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        2,
+        23
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        2,
+        23
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9961
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      3,
+      22
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        3,
+        22
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        3,
+        22
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10013
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      4,
+      21
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        4,
+        21
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        4,
+        21
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9934
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      5,
+      20
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        5,
+        20
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        5,
+        20
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9103
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      6,
+      19
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        6,
+        19
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        6,
+        19
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10127
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      7,
+      18
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        7,
+        18
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        7,
+        18
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      8,
+      17
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        8,
+        17
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        8,
+        17
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9856
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      9,
+      16
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        9,
+        16
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        9,
+        16
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9785
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      10,
+      15
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        10,
+        15
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        10,
+        15
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      11,
+      14
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        11,
+        14
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        11,
+        14
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      12,
+      13
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        12,
+        13
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        12,
+        13
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      13,
+      12
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        13,
+        12
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        13,
+        12
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      14,
+      11
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        14,
+        11
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        14,
+        11
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      15,
+      10
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        15,
+        10
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        15,
+        10
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9901
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      16,
+      9
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        16,
+        9
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        16,
+        9
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9832
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      17,
+      8
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        17,
+        8
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        17,
+        8
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      18,
+      7
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        18,
+        7
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        18,
+        7
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10057
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      19,
+      6
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        19,
+        6
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        19,
+        6
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      20,
+      5
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        20,
+        5
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        20,
+        5
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9967
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      21,
+      4
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        21,
+        4
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        21,
+        4
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9216
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      22,
+      3
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        22,
+        3
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        22,
+        3
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10054
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      23,
+      2
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        23,
+        2
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        23,
+        2
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        10013
+      ],
+      "depth": 0
+    }
+  },
+  {
+    "native_ids": [
+      25,
+      1
+    ],
+    "start": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        25,
+        1
+      ],
+      "raw": [
+        0,
+        0
+      ],
+      "battle_input": [
+        0,
+        0
+      ],
+      "hp": [
+        10240,
+        10240
+      ],
+      "depth": 0
+    },
+    "after_inputs": {
+      "ok": true,
+      "engine": "jp",
+      "training": true,
+      "started": true,
+      "ended": false,
+      "state": 8,
+      "substate": 2,
+      "round": 2,
+      "fighters": [
+        25,
+        1
+      ],
+      "raw": [
+        512,
+        256
+      ],
+      "battle_input": [
+        512,
+        0
+      ],
+      "hp": [
+        10240,
+        9330
+      ],
+      "depth": 0
+    }
+  }
+]

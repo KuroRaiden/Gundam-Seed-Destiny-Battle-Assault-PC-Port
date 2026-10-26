@@ -161,7 +161,7 @@
     "resource_accessor": "0x08000CAC",
     "le_decoder": "0x08084C18"
   },
-  "qualification": "Static IDA findings; only the native input model has passed comparison with original ROM execution. Complete local VS and character transplant remain unimplemented.",
+  "qualification": "Input oracle, JP asset decoder/compositor, local VS, native Training pause/resume, native rollback, controlled UDP/NAT fixtures and portable checks passed. User reported a successful two-PC online smoke test on 2026-10-26. The current named source registry is analysis/address-map.json.",
   "input_verification": {
     "frames_per_player": 4096,
     "players": 2,
@@ -169,8 +169,8 @@
     "result": "passed"
   },
   "jp_asset_verification": {
-    "resources": 293,
-    "compressed_blocks": 165,
+    "resources": 389,
+    "compressed_blocks": 223,
     "decoded_bytes": 340820,
     "result": "passed"
   }

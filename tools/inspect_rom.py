@@ -1,4 +1,6 @@
 """Record ROM identity and candidate hardware-register literals, without patching."""
+
+from game_addresses import Common
 import argparse
 import hashlib
 import json
@@ -6,11 +8,11 @@ import struct
 from pathlib import Path
 
 REGISTERS = {
-    0x04000120: "SIODATA32/SIOMULTI0",
-    0x04000128: "SIOCNT",
-    0x0400012A: "SIOMLT_SEND",
-    0x04000130: "KEYINPUT",
-    0x04000134: "RCNT",
+    Common.SERIAL_MULTI0: "SIODATA32/SIOMULTI0",
+    Common.SERIAL_CONTROL: "SIOCNT",
+    Common.SERIAL_SEND: "SIOMLT_SEND",
+    Common.KEY_INPUT: "KEYINPUT",
+    Common.SERIAL_MODE_CONTROL: "RCNT",
 }
 
 
@@ -23,8 +25,9 @@ def inspect(path):
     for offset in range(0, len(data) - 3, 4):
         value = struct.unpack_from("<I", data, offset)[0]
         if value in REGISTERS:
-            literals.append({"rom_address": f"0x{0x08000000 + offset:08X}",
-                             "register": REGISTERS[value]})
+            literals.append(
+                {"rom_address": f"0x{Common.ROM_BEGIN + offset:08X}", "register": REGISTERS[value]}
+            )
     return {
         "file": Path(path).name,
         "size": len(data),
@@ -45,4 +48,6 @@ if __name__ == "__main__":
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps([inspect(p) for p in args.rom], indent=2) + "\n", encoding="utf-8")
+    args.out.write_text(
+        json.dumps([inspect(p) for p in args.rom], indent=2) + "\n", encoding="utf-8"
+    )

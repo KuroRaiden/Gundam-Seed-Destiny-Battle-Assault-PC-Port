@@ -1,0 +1,24 @@
+{
+  "launcher_exit": 0,
+  "unrelated_working_directory": "E:/",
+  "relative_paths_preserved": true,
+  "local_runtime_modules": [
+    {
+      "ModuleName": "VCRUNTIME140.dll",
+      "FileName": "E:\\recomp projects\\GundamSeedDestinyBattleAssaultPC\\work\\portable-relocation-check\\165904997721000\\Relocated game folder\\VCRUNTIME140.dll"
+    },
+    {
+      "ModuleName": "VCRUNTIME140_1.dll",
+      "FileName": "E:\\recomp projects\\GundamSeedDestinyBattleAssaultPC\\work\\portable-relocation-check\\165904997721000\\Relocated game folder\\VCRUNTIME140_1.dll"
+    },
+    {
+      "ModuleName": "MSVCP140.dll",
+      "FileName": "E:\\recomp projects\\GundamSeedDestinyBattleAssaultPC\\work\\portable-relocation-check\\165904997721000\\Relocated game folder\\MSVCP140.dll"
+    },
+    {
+      "ModuleName": "SDL3.dll",
+      "FileName": "E:\\recomp projects\\GundamSeedDestinyBattleAssaultPC\\work\\portable-relocation-check\\165904997721000\\Relocated game folder\\SDL3.dll"
+    }
+  ],
+  "capture": "E:\\recomp projects\\GundamSeedDestinyBattleAssaultPC\\work\\portable-relocation-check\\165904997721000\\portable-launcher.png"
+}

@@ -8,20 +8,69 @@
     "game_code": "B42J",
     "region": "Japan",
     "sha256": "cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb",
-    "requested_content": ["character_select_screen", "full_mobile_suit_roster"],
+    "requested_content": [
+      "character_select_screen",
+      "full_mobile_suit_roster"
+    ],
     "scope": "all donor mobile suits, including variants after their IDs are verified"
   },
   "local_versus": {
+    "menu_entry": "Local VS",
+    "menu_column_row": [
+      2,
+      2
+    ],
     "game_simulations": 1,
     "players": 2,
     "independent_character_selection": true,
-    "link_cable_required": false
+    "link_cable_required": false,
+    "combat_engine": "B42J_native_jp",
+    "visible_game_windows": 1,
+    "original_menu_entry": "Password Mode"
+  },
+  "online_versus": {
+    "menu_entry": "VS Mode",
+    "menu_column_row": [
+      1,
+      0
+    ],
+    "menu_routing_status": "planned",
+    "transport_status": "not_implemented"
   },
   "status": {
     "native_input_oracle": "passed",
     "japanese_asset_decoder_oracle": "passed",
-    "character_select_rendering": "not_integrated",
-    "fighter_transplant": "not_integrated",
-    "local_versus": "not_integrated"
+    "character_select_rendering": "jp_native_frontend",
+    "fighter_transplant": "jp_combat_module_with_us_menus",
+    "local_versus": "password_mode_native_two_seat",
+    "playable_fighter_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      24
+    ],
+    "unported_donor_selection": "all_24_grid_choices_playable",
+    "launcher_remapping": "keyboard_buttons_axes_per_player_saved",
+    "in_game_remapping": "F4_live_profiles_offline_pause_online_running"
   }
 }

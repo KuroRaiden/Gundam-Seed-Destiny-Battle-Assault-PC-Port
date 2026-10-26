@@ -1,0 +1,34 @@
+{
+  "sdl_version": "3.4.18",
+  "sdl_commit": "829a65d769d935c4852f8159e964312c0957260a",
+  "controller_db_commit": "ff333823a85ae896e73f4c53670932cf0f728adb",
+  "windows_mappings_loaded": 573,
+  "checks": {
+    "software_bridge_audio": "passed",
+    "software_direct_audio": "passed",
+    "direct3d11_wasapi": "passed",
+    "game_texture_samples_per_renderer": 4320,
+    "jp_selector_samples_per_renderer": 4320,
+    "virtual_gamepads_and_unplug": "passed",
+    "controller_db_loaded_by_host": "passed",
+    "launcher_pages": "all 5 rendered",
+    "original_input_calls": 8192,
+    "local_vs_match_and_rematch": "passed",
+    "sdl2_runtime_dependency": false,
+    "password_menu_cursor": [
+      2,
+      2
+    ],
+    "preset_vs_isolation": "passed"
+  },
+  "files": {
+    "app/GundamSeedRecomp.exe": "90f9b2a2cb4f1814f4ab5840bbcf1ec8fe02dddac1ff4ed2b0d6cd61a20909ba",
+    "app/GundamSeedLauncher.exe": "9fd3f5a4d8637ed7d37a73fc92f850341939d3e825261c402aebfcd283b56db9",
+    "app/controllerdb.txt": "44bcf85cc1071782154445064c53ad92c96c00fe22878dd7e9dfc16ab3e66875"
+  },
+  "limitations": [
+    "Physical controller buttons were not manually tested.",
+    "Audio stream operation was tested; subjective audio quality was not assessed.",
+    "Online transport and JP-only fighter battle behavior remain unfinished."
+  ]
+}

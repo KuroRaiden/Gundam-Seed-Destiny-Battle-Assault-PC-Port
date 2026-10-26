@@ -1,0 +1,1234 @@
+{
+  "schema": 1,
+  "scope": "Hand-written port, comparison tests, capture/import/IDA tools; generated cartridge instructions are outside this map.",
+  "roms": {
+    "us": "d7952790a4b82b6d230a4953e4bfe48f6693ddd550f1cf0e7ace74bce95453f8",
+    "jp": "cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb"
+  },
+  "entries": [
+    {
+      "group": "common",
+      "name": "ewram_begin",
+      "value": "0x02000000",
+      "kind": "address",
+      "meaning": "External work RAM start.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "ewram_end",
+      "value": "0x02040000",
+      "kind": "address",
+      "meaning": "Exclusive external work RAM end.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "iwram_begin",
+      "value": "0x03000000",
+      "kind": "address",
+      "meaning": "Internal work RAM start.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "iwram_end",
+      "value": "0x03008000",
+      "kind": "address",
+      "meaning": "Exclusive internal work RAM end.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "io_begin",
+      "value": "0x04000000",
+      "kind": "address",
+      "meaning": "Memory-mapped hardware registers.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "io_end",
+      "value": "0x04000400",
+      "kind": "address",
+      "meaning": "Exclusive register window end.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "palette_begin",
+      "value": "0x05000000",
+      "kind": "address",
+      "meaning": "Palette RAM.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "palette_end",
+      "value": "0x05000400",
+      "kind": "address",
+      "meaning": "Exclusive palette RAM end.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "vram_begin",
+      "value": "0x06000000",
+      "kind": "address",
+      "meaning": "Video RAM.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "vram_end",
+      "value": "0x06018000",
+      "kind": "address",
+      "meaning": "Exclusive video RAM end.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "object_tiles_begin",
+      "value": "0x06010000",
+      "kind": "address",
+      "meaning": "Object tile storage used by the US menu compositor.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "oam_begin",
+      "value": "0x07000000",
+      "kind": "address",
+      "meaning": "Object attribute memory.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "oam_end",
+      "value": "0x07000400",
+      "kind": "address",
+      "meaning": "Exclusive object attribute memory end.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "rom_begin",
+      "value": "0x08000000",
+      "kind": "address",
+      "meaning": "Cartridge ROM mapping and header entry.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "rom_code_entry",
+      "value": "0x080000C0",
+      "kind": "address",
+      "meaning": "Executable cartridge entry after the GBA header.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "serial_multi0",
+      "value": "0x04000120",
+      "kind": "address",
+      "meaning": "First multiplayer serial word; aliases SIODATA32.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "serial_control",
+      "value": "0x04000128",
+      "kind": "address",
+      "meaning": "SIOCNT serial control register.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "serial_send",
+      "value": "0x0400012A",
+      "kind": "address",
+      "meaning": "Multiplayer serial transmit register.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "key_input",
+      "value": "0x04000130",
+      "kind": "address",
+      "meaning": "Active-low keypad input register.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "key_interrupt_control",
+      "value": "0x04000132",
+      "kind": "address",
+      "meaning": "Keypad interrupt control register.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "serial_mode_control",
+      "value": "0x04000134",
+      "kind": "address",
+      "meaning": "RCNT serial/GPIO mode register.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "oracle_stack_top",
+      "value": "0x03007E00",
+      "kind": "address",
+      "meaning": "Scratch stack used by interpreter comparison tests.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "hook_return_marker",
+      "value": "0x03007F00",
+      "kind": "address",
+      "meaning": "Private return sentinel for short guest calls; not an original game function.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "oracle_return_marker",
+      "value": "0x03007FF0",
+      "kind": "address",
+      "meaning": "Return sentinel used by isolated interpreter oracles.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "oracle_thumb_return_marker",
+      "value": "0x03007FF1",
+      "kind": "address",
+      "meaning": "Thumb return sentinel; bit 0 requests Thumb mode.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "oracle_copy_destination",
+      "value": "0x02001000",
+      "kind": "address",
+      "meaning": "Scratch destination used only by BIOS copy tests.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "common",
+      "name": "bios_cpu_fast_set",
+      "value": "0x00000BC4",
+      "kind": "address",
+      "meaning": "Entry of the verified BIOS CpuFastSet implementation exercised by its oracle.",
+      "evidence": "GBA memory map or explicitly allocated test sentinel"
+    },
+    {
+      "group": "us",
+      "name": "main_loop",
+      "value": "0x080003A0",
+      "kind": "address",
+      "meaning": "Main loop.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "game_state",
+      "value": "0x03000F48",
+      "kind": "address",
+      "meaning": "Game state.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "substate",
+      "value": "0x030000B0",
+      "kind": "address",
+      "meaning": "Substate.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "game_mode",
+      "value": "0x030075D0",
+      "kind": "address",
+      "meaning": "Game mode.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "link_status",
+      "value": "0x03007610",
+      "kind": "address",
+      "meaning": "Link status.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "battle_update",
+      "value": "0x0800242C",
+      "kind": "address",
+      "meaning": "Battle update.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "battle_context",
+      "value": "0x03000500",
+      "kind": "address",
+      "meaning": "Battle context.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "character_select_dispatch",
+      "value": "0x0802A660",
+      "kind": "address",
+      "meaning": "Character select dispatch.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "character_select_table",
+      "value": "0x080AEB2C",
+      "kind": "address",
+      "meaning": "Character select table.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "character_select_dual_command_reader",
+      "value": "0x080338C0",
+      "kind": "address",
+      "meaning": "Character select dual command reader.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "us",
+      "name": "selected_fighter_1",
+      "value": "0x03007620",
+      "kind": "address",
+      "meaning": "Native fighter ID for player 1; US IDs and JP IDs have different layouts.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "selected_fighter_2",
+      "value": "0x03007621",
+      "kind": "address",
+      "meaning": "Native fighter ID for player 2; US IDs and JP IDs have different layouts.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "battle_init",
+      "value": "0x08002DC0",
+      "kind": "address",
+      "meaning": "Battle init.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "jp",
+      "name": "character_select_dispatch",
+      "value": "0x080333B4",
+      "kind": "address",
+      "meaning": "Character select dispatch.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "jp",
+      "name": "character_select_work_pointer",
+      "value": "0x030075AC",
+      "kind": "address",
+      "meaning": "Character select work pointer.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "jp",
+      "name": "resource_archive",
+      "value": "0x08787970",
+      "kind": "address",
+      "meaning": "Resource archive.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "jp",
+      "name": "resource_accessor",
+      "value": "0x08000CAC",
+      "kind": "address",
+      "meaning": "Resource accessor.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "jp",
+      "name": "le_decoder",
+      "value": "0x08084C18",
+      "kind": "address",
+      "meaning": "Le decoder.",
+      "evidence": "Existing analysis/verified-addresses.json and docs/IDA-findings.md"
+    },
+    {
+      "group": "jp",
+      "name": "selected_fighter_1",
+      "value": "0x030075F0",
+      "kind": "address",
+      "meaning": "Native fighter ID for player 1; US IDs and JP IDs have different layouts.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "selected_fighter_2",
+      "value": "0x030075F1",
+      "kind": "address",
+      "meaning": "Native fighter ID for player 2; US IDs and JP IDs have different layouts.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "received_value_pointer_1",
+      "value": "0x03007600",
+      "kind": "address",
+      "meaning": "Pointer to link value for seat 1; command/input meaning depends on game state.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "received_value_pointer_2",
+      "value": "0x03007604",
+      "kind": "address",
+      "meaning": "Pointer to link value for seat 2; command/input meaning depends on game state.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub04",
+      "value": "0x802a96c",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub05",
+      "value": "0x802a9ec",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub06",
+      "value": "0x802aa60",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub07",
+      "value": "0x802ac34",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub08",
+      "value": "0x802ad8c",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub09",
+      "value": "0x802b1f4",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub10",
+      "value": "0x802b384",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub11",
+      "value": "0x802b278",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub12",
+      "value": "0x802b4b4",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub13",
+      "value": "0x802bd18",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub14",
+      "value": "0x802c648",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub15",
+      "value": "0x802d704",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub16",
+      "value": "0x802e14c",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub17",
+      "value": "0x802e7b8",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub18",
+      "value": "0x802ecb0",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub19",
+      "value": "0x802fc30",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub20",
+      "value": "0x8030624",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub21",
+      "value": "0x8030ae8",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub22",
+      "value": "0x803123c",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub23",
+      "value": "0x80319cc",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub24",
+      "value": "0x80323fc",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub25",
+      "value": "0x8032da4",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub26",
+      "value": "0x80334e8",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub27",
+      "value": "0x80338c0",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub28",
+      "value": "0x80344e0",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub29",
+      "value": "0x8034b5c",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub30",
+      "value": "0x8035150",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "character_select_sub31",
+      "value": "0x80358d0",
+      "kind": "address",
+      "meaning": "Original character-select substate dispatcher entry; behavior beyond the numbered state is not assigned a speculative name.",
+      "evidence": "Existing IDA address export"
+    },
+    {
+      "group": "us",
+      "name": "player_1_input_update",
+      "value": "0x08000860",
+      "kind": "address",
+      "meaning": "Player 1 input update.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_held",
+      "value": "0x03000F44",
+      "kind": "address",
+      "meaning": "Player 1 held.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_previous",
+      "value": "0x030004D0",
+      "kind": "address",
+      "meaning": "Player 1 previous.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_pressed",
+      "value": "0x0300001C",
+      "kind": "address",
+      "meaning": "Player 1 pressed.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_released",
+      "value": "0x03000600",
+      "kind": "address",
+      "meaning": "Player 1 released.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_repeat",
+      "value": "0x03000F6C",
+      "kind": "address",
+      "meaning": "Player 1 repeat.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_recent_repress",
+      "value": "0x030004C8",
+      "kind": "address",
+      "meaning": "Player 1 recent repress.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_repeat_ticks",
+      "value": "0x030000A0",
+      "kind": "address",
+      "meaning": "Player 1 repeat ticks.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_1_history",
+      "value": "0x03000070",
+      "kind": "address",
+      "meaning": "Player 1 history.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_input_update",
+      "value": "0x08000934",
+      "kind": "address",
+      "meaning": "Player 2 input update.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_held",
+      "value": "0x03000F74",
+      "kind": "address",
+      "meaning": "Player 2 held.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_previous",
+      "value": "0x0300060C",
+      "kind": "address",
+      "meaning": "Player 2 previous.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_pressed",
+      "value": "0x030004EC",
+      "kind": "address",
+      "meaning": "Player 2 pressed.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_released",
+      "value": "0x03000F68",
+      "kind": "address",
+      "meaning": "Player 2 released.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_repeat",
+      "value": "0x03000098",
+      "kind": "address",
+      "meaning": "Player 2 repeat.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_recent_repress",
+      "value": "0x030004CC",
+      "kind": "address",
+      "meaning": "Player 2 recent repress.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_repeat_ticks",
+      "value": "0x030004E0",
+      "kind": "address",
+      "meaning": "Player 2 repeat ticks.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "player_2_history",
+      "value": "0x03000F80",
+      "kind": "address",
+      "meaning": "Player 2 history.",
+      "evidence": "IDA disassembly plus 8,192 original input-routine oracle calls"
+    },
+    {
+      "group": "us",
+      "name": "next_scene",
+      "value": "0x03000090",
+      "kind": "address",
+      "meaning": "Requested next scene used during the original fade/cleanup transition.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "character_select_tick",
+      "value": "0x0802D704",
+      "kind": "address",
+      "meaning": "Hook replacing the original character-select control update.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "character_select_begin",
+      "value": "0x0802A684",
+      "kind": "address",
+      "meaning": "Original selection entry wrapper used to rebuild independent seat state.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "map_fighter_buttons",
+      "value": "0x08004574",
+      "kind": "address",
+      "meaning": "Original raw-button-to-fighter action mapper.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "play_selection_sound",
+      "value": "0x08001F44",
+      "kind": "address",
+      "meaning": "Guest sound helper called with SFX 14 when a cursor changes.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "selection_sound_gate",
+      "value": "0x03007644",
+      "kind": "address",
+      "meaning": "Cursor SFX is played only when zero; full setting semantics remain unidentified.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "menu_cursor_x",
+      "value": "0x03000533",
+      "kind": "address",
+      "meaning": "Main-menu column; alias of context + 51 in the menu state.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "menu_cursor_y",
+      "value": "0x03000534",
+      "kind": "address",
+      "meaning": "Main-menu row; alias of context + 52 in the menu state.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "menu_ready_phase",
+      "value": "0x03000536",
+      "kind": "address",
+      "meaning": "Main-menu initialization phase; value 3 permits routing/input.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "selection_control_phase",
+      "value": "0x03000556",
+      "kind": "address",
+      "meaning": "Selection control phase; context + 86.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_1_battle_held",
+      "value": "0x0300054C",
+      "kind": "address",
+      "meaning": "Fighter 1 raw held mask at context + 76.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_1_battle_repress",
+      "value": "0x03000550",
+      "kind": "address",
+      "meaning": "Fighter 1 repeated-press mask at context + 80.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_1_battle_pressed",
+      "value": "0x03000554",
+      "kind": "address",
+      "meaning": "Fighter 1 pressed mask at context + 84.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_2_battle_held",
+      "value": "0x030005B0",
+      "kind": "address",
+      "meaning": "Fighter 2 raw held mask at context + 176.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_2_battle_repress",
+      "value": "0x030005B4",
+      "kind": "address",
+      "meaning": "Fighter 2 repeated-press mask at context + 180.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_2_battle_pressed",
+      "value": "0x030005B8",
+      "kind": "address",
+      "meaning": "Fighter 2 pressed mask at context + 184.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_1_health",
+      "value": "0x0300053E",
+      "kind": "address",
+      "meaning": "Fighter 1 health; context + 62 in the battle state.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "player_2_health",
+      "value": "0x030005A2",
+      "kind": "address",
+      "meaning": "Fighter 2 health; context + 162 in the battle state.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "game_state",
+      "value": "0x03000CBC",
+      "kind": "address",
+      "meaning": "JP scene dispatcher index; 4 = versus, 8 = training, 21 = character selection.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "substate",
+      "value": "0x03000DDC",
+      "kind": "address",
+      "meaning": "JP scene substate; used by native training pause/resume.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "battle_context",
+      "value": "0x03000CD0",
+      "kind": "address",
+      "meaning": "JP battle context; its fighter records have a different stride from the US layout.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "startup_reset_field",
+      "value": "0x03000C34",
+      "kind": "address",
+      "meaning": "Reset to zero before direct scene entry; full original field semantics remain unidentified.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_1_input_state",
+      "value": "0x03000C40",
+      "kind": "address",
+      "meaning": "First native JP input-state record.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_2_input_state",
+      "value": "0x03000C78",
+      "kind": "address",
+      "meaning": "Second native JP input-state record.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "update_input_state",
+      "value": "0x080025C0",
+      "kind": "address",
+      "meaning": "Native JP input-state update called with record pointer and active-high keys.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "input_dispatch",
+      "value": "0x08002654",
+      "kind": "address",
+      "meaning": "JP input hook responsible for the two local streams and direct match startup.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "right_control_dispatch",
+      "value": "0x08003418",
+      "kind": "address",
+      "meaning": "Original right-fighter control branch intercepted for local P2; Training keeps the native dummy.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "apply_fighter_input",
+      "value": "0x08003C78",
+      "kind": "address",
+      "meaning": "Native helper copying a JP input-state record into a fighter input block.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_startup_parameter_a",
+      "value": "0x030075F2",
+      "kind": "address",
+      "meaning": "Two per-seat bytes initialized to 4; original option meaning is not yet identified.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "shared_startup_parameter_a",
+      "value": "0x030075F4",
+      "kind": "address",
+      "meaning": "Shared startup byte initialized to zero; original option meaning is not yet identified.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "shared_startup_parameter_b",
+      "value": "0x030075F5",
+      "kind": "address",
+      "meaning": "Second shared startup byte initialized to zero; original option meaning is not yet identified.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_startup_parameter_b",
+      "value": "0x030075F6",
+      "kind": "address",
+      "meaning": "Two per-seat startup bytes initialized to zero; original option meaning is not yet identified.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_stat_parameters",
+      "value": "0x03007604",
+      "kind": "address",
+      "meaning": "Three stat parameter bytes per seat, 4-byte stride; initialized to 100 for standard combat.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_button_mapping",
+      "value": "0x03007620",
+      "kind": "address",
+      "meaning": "Per-seat raw A/B/L/R mapping; 0xE1 supplies the identity mapping.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "scene_setup_byte",
+      "value": "0x03007630",
+      "kind": "address",
+      "meaning": "Native scene setup byte initialized to 1 by both combat and selector capture.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "match_rule_mode",
+      "value": "0x03007631",
+      "kind": "address",
+      "meaning": "Native rule selector: direct training uses 2; versus uses 6.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "selector_transient_state",
+      "value": "0x0300766C",
+      "kind": "address",
+      "meaning": "13-byte state range reset during the build-time native selector capture.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "selector_actor_records",
+      "value": "0x03000FA0",
+      "kind": "address",
+      "meaning": "32-byte selector actor records; capture hides selected actors to obtain static art.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "sprite_bank_table",
+      "value": "0x08086054",
+      "kind": "address",
+      "meaning": "ROM table used to resolve multipart selector sprite banks and frames.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_1_health",
+      "value": "0x03000D04",
+      "kind": "address",
+      "meaning": "JP P1 health at battle context + 52.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_2_health",
+      "value": "0x03000D64",
+      "kind": "address",
+      "meaning": "JP P2 health at battle context + 148.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_1_mapped_input",
+      "value": "0x03000D14",
+      "kind": "address",
+      "meaning": "JP P1 mapped action mask at battle context + 68.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_2_mapped_input",
+      "value": "0x03000D74",
+      "kind": "address",
+      "meaning": "JP P2 mapped action mask at battle context + 164.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "round_phase",
+      "value": "0x03000CEE",
+      "kind": "address",
+      "meaning": "Native round phase at battle context + 30.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_1_fighter_id",
+      "value": "0x03000CFE",
+      "kind": "address",
+      "meaning": "Native P1 fighter ID packed at context + 46; use JP mask 0x1F.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_2_fighter_id",
+      "value": "0x03000D5E",
+      "kind": "address",
+      "meaning": "Native P2 fighter ID packed at context + 142; use JP mask 0x1F.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "state_main_menu",
+      "value": "4",
+      "kind": "constant",
+      "meaning": "US main-menu scene.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "state_character_select",
+      "value": "11",
+      "kind": "constant",
+      "meaning": "US selector dispatcher, replaced by the JP compositor.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "mode_preset_versus",
+      "value": "6",
+      "kind": "constant",
+      "meaning": "US non-link preset battle rules used by the hook.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "state_versus",
+      "value": "4",
+      "kind": "constant",
+      "meaning": "Native JP versus battle.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "state_training",
+      "value": "8",
+      "kind": "constant",
+      "meaning": "Native JP training battle.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "state_character_select",
+      "value": "21",
+      "kind": "constant",
+      "meaning": "Native JP character-selection scene.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "right_fighter_input_offset",
+      "value": "140",
+      "kind": "constant",
+      "meaning": "Offset added to the context pointer passed by the right-control dispatcher.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_stride",
+      "value": "96",
+      "kind": "constant",
+      "meaning": "Stride between native JP fighter records.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "us",
+      "name": "fighter_stride",
+      "value": "100",
+      "kind": "constant",
+      "meaning": "Stride between native US fighter records.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "player_parameter_stride",
+      "value": "4",
+      "kind": "constant",
+      "meaning": "Stride between JP per-player stat parameter arrays.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "selector_actor_stride",
+      "value": "32",
+      "kind": "constant",
+      "meaning": "Size of a native selector actor record.",
+      "evidence": "Port hook/capture usage; see source and validation reports"
+    },
+    {
+      "group": "jp",
+      "name": "rom_end",
+      "value": "0x08800000",
+      "kind": "address",
+      "meaning": "Exclusive end of the supplied 8 MiB JP cartridge; also bounds address discovery in the shared analysis tool.",
+      "evidence": "Verified cartridge size and ROM base"
+    }
+  ]
+}

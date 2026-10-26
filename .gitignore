@@ -18,6 +18,11 @@
 
 # Generated assets, binaries, caches, and local settings.
 /assets/
+/app/
+/launcher-settings.ini
+/launcher-settings.pending
+/controls.ini
+/controls.ini.pending
 /recomp_cache/
 *.exe
 *.dll
@@ -32,3 +37,11 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Ephemeral cartridge saves and per-run diagnostic scratch files.
+*.sav.*
+/validation/**/run-*/
+/validation/**/recomp_cache/
+/validation/**/*.cfg
+/validation/**/*.frag
+/validation/**/*.tmp

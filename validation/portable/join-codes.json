@@ -1,0 +1,11 @@
+{
+  "zip_crc_verified": true,
+  "extracted_files_sha256_verified": 32,
+  "renamed_unicode_folder": true,
+  "unrelated_working_directory": true,
+  "fresh_invitation_launcher_autojoins": true,
+  "app_local_runtime_dlls_verified": true,
+  "existing_game_link_delivery_no_duplicate": true,
+  "passed": true,
+  "archive_sha256": "b5c8fd70948fd218f9d2b2d2773267cc9d1eb9f7e7c2d323ed3dd146885527b9"
+}

@@ -1,0 +1,75 @@
+diff --git a/src/runtime/host_window.h b/src/runtime/host_window.h
+index 073ef16..384c57e 100644
+--- a/src/runtime/host_window.h
++++ b/src/runtime/host_window.h
+@@ -60,6 +60,8 @@ public:
+               bool resize_driven_view = false,
+               bool freely_resizable_window = false);
+     void close();
++    // A controls overlay pauses offline sessions only.
++    void set_network_session(bool online);
+     void set_title(const char* title);
+     bool is_open() const { return open_; }
+ 
+@@ -187,6 +189,7 @@ public:
+ 
+     struct Events {
+         bool     quit = false;
++        bool     remap_pause = false;
+         // GBA KEYINPUT layout. Active-low: 1 = released, 0 = pressed.
+         // Bits: 0=A 1=B 2=Sel 3=Sta 4=Right 5=Left 6=Up 7=Down 8=R 9=L.
+         uint16_t keyinput = 0x03FF;
+diff --git a/src/runtime/multiplayer_runner.cpp b/src/runtime/multiplayer_runner.cpp
+index 14256b5..8c6efe3 100644
+--- a/src/runtime/multiplayer_runner.cpp
++++ b/src/runtime/multiplayer_runner.cpp
+@@ -123,6 +123,9 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+     if (!window.open(boot.scale,initial_width,160,boot.title.c_str(),boot.screen.c_str(),
+             boot.linear_filter,boot.sharp_filter,adaptive,true))
+         throw std::runtime_error("cannot open netplay window");
++#if defined(GBARECOMP_HAVE_SDL3)
++    window.set_network_session(true);
++#endif
+     window.load_input_config(boot.config_directory.string().c_str(),false);
+     window.set_fullscreen(boot.fullscreen); window.set_volume(boot.volume);
+     window.set_fps_readout(boot.show_fps);
+diff --git a/src/runtime/runtime.cpp b/src/runtime/runtime.cpp
+index 1eb5011..33bea1e 100644
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -2249,6 +2249,7 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+     // the run loop stops stepping the guest but keeps pumping input and
+     // re-presenting the last frame.
+     bool host_paused = false;
++    bool remap_paused = false;
+ 
+     auto pump_idle = [&](uint32_t max_cycles) -> uint32_t {
+         uint32_t chunk = ppu.cycles_until_next_event();
+@@ -3167,6 +3168,9 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+             runtime_shutdown();
+             return 1;
+         }
++#if defined(GBARECOMP_HAVE_SDL3)
++        win.set_network_session(netplay);
++#endif
+         // Rebindable input: keybinds.ini (player buttons, recomp-ui generic
+         // format) + config.ini [KeyMap] (system hotkeys), both next to the
+         // exe. Missing files leave the built-in defaults.
+@@ -3753,6 +3757,8 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+         if (!args.window) return;
+         capture_rewind_point();
+         auto ev = win.pump();
++        if(remap_paused && !ev.remap_pause && pacer)pacer->reset();
++        remap_paused=ev.remap_pause;
+         if (observer) {
+             // Observe-mode TCP savestate requests run here, at a present
+             // boundary on the guest thread.
+@@ -4166,7 +4172,7 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+     };
+     auto service_host_pause = [&]() {
+         bool waited = false;
+-        while (!host_quit && args.window && (host_paused
++        while (!host_quit && args.window && (host_paused || remap_paused
+ #if defined(GBARECOMP_WEB_HOST)
+                 || win.auto_paused()
+ #endif

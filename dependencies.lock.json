@@ -15,24 +15,31 @@
     "name": "GekkoNet",
     "url": "https://github.com/HeatXD/GekkoNet.git",
     "commit": "9da2363d7c5a68cc77f8dfe2da7cf51d3afe3bee",
-    "role": "planned, not integrated"
+    "role": "native JP online rollback, direct UDP and deterministic replay qualification"
   },
   {
     "name": "autopunch",
     "url": "https://github.com/delthas/autopunch.git",
     "commit": "db0b962a8bed74179997e755e851f99e885a10d1",
-    "role": "planned, not integrated"
+    "role": "native wire-compatible UDP rendezvous and hole punching; no injected DLL"
   },
   {
     "name": "imgui",
     "url": "https://github.com/ocornut/imgui.git",
     "commit": "4e99c0ab1a28c2b3d1f250ec0266dbf1e455ef58",
-    "role": "planned, not integrated"
+    "role": "native desktop launcher"
   },
   {
-    "name": "SDL2",
+    "name": "SDL3",
     "url": "https://github.com/libsdl-org/SDL.git",
-    "commit": "8acf7cfc0f88717e5c036f60f0314bfcafe39189",
-    "role": "host backend"
+    "commit": "829a65d769d935c4852f8159e964312c0957260a",
+    "role": "native launcher, game window, audio and gamepads",
+    "tag": "release-3.4.18"
+  },
+  {
+    "name": "SDL_GameControllerDB",
+    "url": "https://github.com/mdqinc/SDL_GameControllerDB.git",
+    "commit": "ff333823a85ae896e73f4c53670932cf0f728adb",
+    "role": "bundled controllerdb.txt, shared launcher/game mappings"
   }
 ]

@@ -15,6 +15,16 @@ The original ROM bytes were not patched. Names below are research annotations.
 
 ## True local versus
 
+Runtime menu probes distinguish the actual main-menu entries: Password is
+column 2, row 2 and enters state 7 without assigning a new game mode. Preset VS
+is column 0, row 2 and sets mode 6. The earlier identification of mode 6 as the
+Password entry was incorrect. The native input hook now qualifies the observed
+main-menu transition by its Password cursor position before redirecting it.
+Mode 6 is retained only as the local battle rules. VS is column 1, row 0; the
+unmodified entry sets mode 1 and reaches state 12's cable Connecting screen.
+The native host now redirects that qualified transition into an ImGui online
+lobby over the JP selector. Connection transport remains unfinished.
+
 The US engine already has distinct player input state and a human-controlled
 second fighter. Its link path is a source of controller values and session
 commands, rather than a requirement for a second fighting simulation.
@@ -47,7 +57,9 @@ at 77/78, and control substates at 86/87. `0x0802A890` initializes both selectio
 The two-sided command reader is character-select substate 27 at `0x080338C0`:
 it reads both received-value pointers and chooses their order from context
 offset 87. Substate 22 at `0x0803123C` also builds selection command words.
-These are verified routines to adapt; no replacement is installed yet.
+The original link command routines remain useful references. The local mode
+instead replaces control substate 3 with a native two-player coordinator;
+see [the implementation notes](Local-VS.md).
 
 The important integration constraint is semantic: character selection sends
 commands such as `0x2600 | selected_index` and has handshake phases. Simply
@@ -68,8 +80,9 @@ the native implementation. It passed 4,096 frames for both players (8,192 origin
 routine calls), including long holds, independent inputs, randomized masks,
 repeat timing, all history entries, and masking of non-GBA input bits.
 
-This component is compiled into a library; the running game does not yet route
-controllers through it. It is not a completed local VS mode.
+The running local VS mode now routes both controller streams through this
+component, writes the verified guest input records, and supplies P2 masks to
+the original battle remapping routine.
 
 ## Japanese fighter transplant
 
@@ -94,8 +107,12 @@ The fighter behavior transplant remains unimplemented.
 
 ## Remaining validation
 
-The native host builds and reaches the US intro. Longer runs still expose missing
-static coverage and a generated call-return-stack overflow near return PC
-`0x0804506A`. A complete playable baseline, two controllers in one selection
-screen, match transitions/rematches, rollback, and the donor character are not
-yet qualified. Relay integration remains paused pending protocol/port details.
+The reproduced call-return overflow near `0x0804506A` came from return records
+retained after IRQ completion. The saved runtime patch restores the entry depth
+after a successful IRET; a normal-BIOS 2,400-frame run and the local VS integration
+flow now pass. Missing static coverage still invokes the interpreter bridge.
+The native JP selection compositor now uses the original grid and multipart
+mech/pilot/name assets with independent local cursors. Physical controller
+coverage and JP-only battles are now implemented and smoke-tested; see
+`JP-combat.md`. Native rollback and code/link connections are implemented;
+see `Online-VS.md` for validation and current limits. No fallback relay is configured.

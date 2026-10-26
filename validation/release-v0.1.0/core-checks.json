@@ -1,0 +1,68 @@
+[
+  {
+    "test": "codes",
+    "exit_code": 0,
+    "seconds": 0.11,
+    "output": "PASS: compact code/link identity, whitespace handling, per-character corruption and malformed input rejection.\n"
+  },
+  {
+    "test": "invitations",
+    "exit_code": 0,
+    "seconds": 0.2,
+    "output": "PASS: invitation link delivery, canonical code, queued combat invitation and malformed-message rejection; no registry changes.\n"
+  },
+  {
+    "test": "names",
+    "exit_code": 0,
+    "seconds": 0.12,
+    "output": "PASS: Unicode player names, invalid input rejection, bounded UTF8, portable persistence and title statistics.\n"
+  },
+  {
+    "test": "room",
+    "exit_code": 0,
+    "seconds": 0.71,
+    "output": "PASS: invitation parsing, UDP room connection, independent selection, battle agreement and borrowed socket lifetime.\n"
+  },
+  {
+    "test": "nat",
+    "exit_code": 0,
+    "seconds": 0.39,
+    "output": "PASS: correlated STUN, malformed response rejection, gameplay-socket registration, AutoPunch mappings, remapped ports, two-way filtered UDP handshake and room-key protection.\n"
+  },
+  {
+    "test": "controls",
+    "exit_code": 0,
+    "seconds": 0.32,
+    "output": "PASS: per-player remapping, old-binding removal, axes, disabled sources, Unicode/atomic persistence, invalid configs and two real SDL virtual gamepads.\n"
+  },
+  {
+    "test": "local_selection",
+    "exit_code": 0,
+    "seconds": 0.04,
+    "output": "PASS: Local/Online/Training menu routes, Preset isolation, two-seat selection and single-player JP training selection.\n"
+  },
+  {
+    "test": "bios_copy",
+    "exit_code": 0,
+    "seconds": 0.05,
+    "output": "PASS: 30 CpuFastSet copy/fill cases matched original BIOS instructions, including partial eight-word blocks.\n"
+  },
+  {
+    "test": "input_oracle",
+    "exit_code": 0,
+    "seconds": 0.11,
+    "output": "PASS: 4096 frames x 2 players match original US Thumb routines (8192 calls).\n"
+  },
+  {
+    "test": "asset_oracle",
+    "exit_code": 0,
+    "seconds": 1.26,
+    "output": "PASS: 223 resources (489512 bytes) match the original JP ARM decoder.\n"
+  },
+  {
+    "test": "launcher",
+    "exit_code": 0,
+    "seconds": 0.14,
+    "output": "PASS: file hashing, invalid-file rejection, settings persistence, portable relocation, Unicode paths, Windows quoting, child launch and exit reporting.\n"
+  }
+]

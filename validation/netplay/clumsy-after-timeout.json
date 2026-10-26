@@ -1,0 +1,18 @@
+{
+  "profile": {
+    "pid": 8740,
+    "filter": "outbound and loopback and udp and (udp.DstPort == 29070 or udp.DstPort == 29071)",
+    "lag_ms": 40,
+    "drop_percent": 2,
+    "timeout_seconds": 120,
+    "started_utc": "2026-10-26T08:02:03.3694337Z"
+  },
+  "clumsy_running": false,
+  "driver": {
+    "Name": "WinDivert",
+    "State": "Running",
+    "Started": true
+  },
+  "observed_utc": "2026-10-26T08:04:10.3152839Z",
+  "binary_sha256": "088D012A3D2788F797FAF54D4F3DB945C84DDAB03A656C24D3BADB06AE74324E"
+}

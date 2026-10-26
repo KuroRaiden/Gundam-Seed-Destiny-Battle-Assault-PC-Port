@@ -17,7 +17,8 @@ void InputState::advance(std::uint16_t buttons) {
     }
     std::uint16_t recent = 0;
     for (unsigned index = 0; index < 15; ++index) {
-        if (index > 8) recent |= history[index];
+        if (index > 8)
+            recent |= history[index];
         history[index] = history[index + 1];
     }
     history[15] = held;

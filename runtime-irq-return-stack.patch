@@ -1,0 +1,34 @@
+diff --git a/src/armv4t/runtime_arm.cpp b/src/armv4t/runtime_arm.cpp
+index 1e373f1..5aec097 100644
+--- a/src/armv4t/runtime_arm.cpp
++++ b/src/armv4t/runtime_arm.cpp
+@@ -1761,6 +1761,7 @@ extern "C" void runtime_irq(uint32_t return_address) {
+     // Raise the call-return floor so the handler's guest returns/cancels can
+     // unwind back to here but never match/pop the interrupted mainline (or an
+     // enclosing IRQ's) frames — see g_call_return_floor. Restored below.
++    const uint32_t irq_entry_return_depth = g_call_return_depth;
+     uint32_t saved_floor   = g_call_return_floor;
+     g_call_return_floor    = g_call_return_depth;
+     if (g_resumable_context) {
+@@ -1805,12 +1806,21 @@ extern "C" void runtime_irq(uint32_t return_address) {
+         }
+         drive_irq_instruction();
+     }
++    const bool irq_completed = g_irq_iret_depth == my_depth;
+     g_cpu.R[0]  = saved_r0;
+     g_cpu.R[1]  = saved_r1;
+     g_cpu.R[2]  = saved_r2;
+     g_cpu.R[3]  = saved_r3;
+     g_cpu.R[12] = saved_r12;
+     g_irq_iret_depth = saved_iret;  // restore an enclosing IRQ's expectation
++    // IRET ends this exception even when an SWI/redispatch path has already
++    // unwound its native call frames. Those return records cannot belong to
++    // the interrupted mainline, which lives strictly below the IRQ floor.
++    // Retaining them leaks one record per interrupt until the stack overflows.
++    if (irq_completed) {
++        g_call_return_depth = irq_entry_return_depth;
++        clamp_call_return_hostless();
++    }
+     g_call_return_floor = saved_floor;
+     --g_irq_nest_depth;
+ }

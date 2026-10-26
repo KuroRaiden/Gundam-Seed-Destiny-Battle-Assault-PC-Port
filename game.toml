@@ -10,4 +10,22 @@ codegen_shards = 16
 [identity]
 sha1 = "8287d3d336d94a85c5cb22da0fd84918199197e1"
 
-# Initial discovery only. No unverified input, fighter, or link patches.
+[[mod_function_hook]]
+addr = 0x08000860
+mode = "thumb"
+note = "Qualify Local VS (state 7), Online VS (state 12) and Training (state 11) by their US menu choices, then route to the JP selector."
+
+[[mod_function_hook]]
+addr = 0x0802D704
+mode = "thumb"
+note = "US select control substate 3: independent local cursors and ready states."
+
+[[mod_function_hook]]
+addr = 0x08004574
+mode = "thumb"
+note = "Feed local P2 masks into the original battle button-remapping routine."
+
+[[mod_function_hook]]
+addr = 0x0802A684
+mode = "thumb"
+note = "Reset independent local ready states on selection entry, including rematches and returns from OS settings."

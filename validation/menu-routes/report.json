@@ -1,0 +1,27 @@
+{
+  "password": {
+    "menu_cursor": [
+      2,
+      2
+    ],
+    "local_match_and_rematch": "passed"
+  },
+  "preset_vs": {
+    "menu_cursor": [
+      0,
+      2
+    ],
+    "local_mode_activated": false,
+    "original_state": 17
+  },
+  "vs": {
+    "menu_cursor": [
+      1,
+      0
+    ],
+    "observed_state": 12,
+    "observed_screen": "original cable Connecting screen",
+    "online_implemented": false,
+    "B_returns_to_main_menu": true
+  }
+}

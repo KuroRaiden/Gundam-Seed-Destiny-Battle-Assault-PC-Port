@@ -1,0 +1,62 @@
+{
+  "condition_label": "production-f4",
+  "ports": [
+    29070,
+    29071
+  ],
+  "case": "C:\\Users\\Stephan\\Documents\\Codex\\2026-10-25\\nat\\work\\udp-production-f4\\run-138616596984000",
+  "peers": [
+    {
+      "engine": "native-jp",
+      "transport": "udp",
+      "backend": "GekkoNet",
+      "driver": "production-dll",
+      "seat": 0,
+      "frames": 240,
+      "target": 240,
+      "initial_crc": 3892494332,
+      "final_crc": 4249328558,
+      "peer_crc": 4249328558,
+      "converged": true,
+      "rollbacks": 126,
+      "replayed_frames": 254,
+      "max_rollback": 6,
+      "stalls": 53,
+      "desyncs": 0,
+      "ping_ms": 15.3333,
+      "jitter_ms": 8.375,
+      "remap_frames": 50,
+      "finish_fence": false,
+      "hp": [
+        9959,
+        9785
+      ]
+    },
+    {
+      "engine": "native-jp",
+      "transport": "udp",
+      "backend": "GekkoNet",
+      "driver": "production-dll",
+      "seat": 1,
+      "frames": 240,
+      "target": 240,
+      "initial_crc": 3892494332,
+      "final_crc": 4249328558,
+      "peer_crc": 4249328558,
+      "converged": true,
+      "rollbacks": 0,
+      "replayed_frames": 0,
+      "max_rollback": 0,
+      "stalls": 45,
+      "desyncs": 0,
+      "ping_ms": 7.9,
+      "jitter_ms": 7.77778,
+      "remap_frames": 0,
+      "finish_fence": false,
+      "hp": [
+        9959,
+        9785
+      ]
+    }
+  ]
+}

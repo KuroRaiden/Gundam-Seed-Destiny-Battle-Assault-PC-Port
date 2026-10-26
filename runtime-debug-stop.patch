@@ -1,0 +1,42 @@
+diff --git a/src/debug/tcp_debug_server.cpp b/src/debug/tcp_debug_server.cpp
+index 38d61e1..82579d3 100644
+--- a/src/debug/tcp_debug_server.cpp
++++ b/src/debug/tcp_debug_server.cpp
+@@ -1301,7 +1301,7 @@ bool TcpDebugServer::run(int port, const Context& ctx) {
+         char rbuf[4096];
+         bool client_done = false;
+         bool step_failed = false;
+-        while (!client_done) {
++        while (!client_done && !stop_.load()) {
+             int n = ::recv(c, rbuf, sizeof(rbuf), 0);
+             if (n <= 0) break;
+             inbuf.append(rbuf, rbuf + n);
+@@ -1336,8 +1336,7 @@ bool TcpDebugServer::run(int port, const Context& ctx) {
+                 break;
+             }
+         }
+-        client_sock_.store(-1);
+-        CLOSESOCK(c);
++        if (client_sock_.exchange(-1) != -1) CLOSESOCK(c);
+     }
+ 
+     if (listen_sock_.exchange(-1) != -1) CLOSESOCK(srv);
+@@ -1349,14 +1348,16 @@ bool TcpDebugServer::run(int port, const Context& ctx) {
+ 
+ void TcpDebugServer::stop() {
+     stop_.store(true);
+-    const std::intptr_t client = client_sock_.load();
++    const std::intptr_t client = client_sock_.exchange(-1);
+     if (client != -1) {
+-        // Unblocks recv(); run() closes the socket itself.
++        // Closing also cancels a blocking Windows recv. Transfer ownership
++        // atomically so run() cannot close a reused socket handle.
+ #ifdef _WIN32
+         ::shutdown(static_cast<socket_t>(client), SD_BOTH);
+ #else
+         ::shutdown(static_cast<socket_t>(client), SHUT_RDWR);
+ #endif
++        CLOSESOCK(static_cast<socket_t>(client));
+     }
+     const std::intptr_t listener = listen_sock_.exchange(-1);
+     if (listener != -1) {

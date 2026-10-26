@@ -1,0 +1,30 @@
+{
+  "completed_utc": "2026-10-26T15:32:32.884710+00:00",
+  "player_name_persistence_and_utf8": "passed",
+  "peer_name_exchange": "passed",
+  "named_packaged_match_frames": 240,
+  "packaged_final_machine_crc": 2447536081,
+  "production_window_titles": [
+    "Kira vs Athrun | Delay 2f | Rollback 1f | Ping 13ms",
+    "Kira vs Athrun | Delay 2f | Rollback 0f | Ping 11ms"
+  ],
+  "nat_filtered_remapped_port_fixture": "passed",
+  "public_discovery": {
+    "public_endpoint_discovered": true,
+    "autopunch_server_reachable": true,
+    "lan_available": true
+  },
+  "portable": {
+    "zip_crc_verified": true,
+    "extracted_files_sha256_verified": 32,
+    "renamed_unicode_folder": true,
+    "unrelated_working_directory": true,
+    "fresh_invitation_launcher_autojoins": true,
+    "app_local_runtime_dlls_verified": true,
+    "existing_game_link_delivery_no_duplicate": true,
+    "passed": true,
+    "archive_sha256": "6b0cfc395b769d1595f64ce58f6280025a0a1a09c6ffdbb53f2be4ae344a7088"
+  },
+  "cross_network_two_pc_test": "not performed",
+  "fallback_relay_configured": false
+}

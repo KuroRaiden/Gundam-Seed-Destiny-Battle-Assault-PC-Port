@@ -1,0 +1,46 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2ef9047..c12ad34 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -122,7 +122,14 @@ option(GBA_COSIM
+     "Build the first-divergence co-simulation oracle (state hash + TCP park/step)"
+     OFF)
+ 
+-if(NOT EMSCRIPTEN)
++if(TARGET SDL3::SDL3)
++    # Parent-provided native SDL3 host. Preserve the internal availability gate
++    # used by the runtime without discovering or linking any SDL2 library.
++    set(GBARECOMP_SDL2_OK TRUE)
++    set(SDL2_LIBRARIES SDL3::SDL3)
++    set(SDL2_INCLUDE_DIRS "")
++    message(STATUS "gbarecomp: using parent-provided SDL3 backend")
++elseif(NOT EMSCRIPTEN)
+ if(ANDROID AND TARGET SDL2::SDL2)
+     # Android applications provide SDL from the parent Gradle/CMake project.
+     # Reusing that target keeps SDLActivity's libSDL2.so as the single backend.
+@@ -492,7 +499,11 @@ if(GBARECOMP_WEB_HOST)
+     target_compile_definitions(gbarecomp_runtime PUBLIC GBARECOMP_WEB_HOST=1)
+     message(STATUS "gbarecomp: host_backend=web")
+ else()
+-    target_sources(gbarecomp_runtime PRIVATE src/runtime/host_window.cpp)
++    if(GBARECOMP_HOST_WINDOW_SOURCE)
++        target_sources(gbarecomp_runtime PRIVATE ${GBARECOMP_HOST_WINDOW_SOURCE})
++    else()
++        target_sources(gbarecomp_runtime PRIVATE src/runtime/host_window.cpp)
++    endif()
+ endif()
+ 
+ if(GBARECOMP_RUNTIME_UI_ROOT AND
+@@ -531,7 +542,11 @@ target_link_libraries(gbarecomp_runtime PUBLIC
+     gbarecomp_heal_gate)
+ set_property(TARGET gbarecomp_runtime PROPERTY POSITION_INDEPENDENT_CODE ON)
+ if(GBARECOMP_SDL2_OK)
+-    target_compile_definitions(gbarecomp_runtime PUBLIC GBARECOMP_HAVE_SDL2)
++    if(TARGET SDL3::SDL3)
++        target_compile_definitions(gbarecomp_runtime PUBLIC GBARECOMP_HAVE_SDL3)
++    else()
++        target_compile_definitions(gbarecomp_runtime PUBLIC GBARECOMP_HAVE_SDL2)
++    endif()
+     # Use plain -I (not -isystem) for SDL2 headers. -isystem on a path
+     # that overlaps libstdc++'s search ordering breaks
+     # `#include_next <stdlib.h>`.

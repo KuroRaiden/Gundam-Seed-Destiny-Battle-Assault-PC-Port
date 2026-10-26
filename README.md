@@ -137,7 +137,7 @@ decompilation of the private generated cartridge instructions.
 
 `v0.1.0` packages the current Windows x64 build, Local VS, JP Training and
 online code/link play with rollback, saved player names and live title stats.
-The repository and its release remain private. Release downloads contain runtime files and licenses only. Players supply
+Release downloads contain runtime files and licenses only. Players supply
 their own US/JP cartridges and GBA BIOS; selector art is generated locally.
 The user's two-PC online smoke test and automated checks are recorded separately
 under `validation/`.

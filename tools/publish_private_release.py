@@ -1,4 +1,4 @@
-"""Publish an explicitly requested private GitHub release after a clean commit/tag push.
+"""Publish a requested, audited runtime-only GitHub release after its source/tag push.
 
 Credentials are obtained from the existing Git helper, kept only in memory, and
 sent only to GitHub API/upload hosts. Assets upload to a draft before publishing.
@@ -82,9 +82,10 @@ def main():
     expected = "https://github.com/" + args.repo + ".git"
     if git("remote", "get-url", "origin") != expected:
         raise RuntimeError("Release repository does not match origin.")
-    commit = git("rev-parse", "HEAD")
-    if git("rev-parse", args.tag + "^{commit}") != commit:
-        raise RuntimeError("Release tag does not identify the reviewed HEAD.")
+    head = git("rev-parse", "HEAD")
+    commit = git("rev-parse", args.tag + "^{commit}")
+    if git("merge-base", commit, head) != commit:
+        raise RuntimeError("Release source must be the checked-out commit or its ancestor.")
     remote = git(
         "ls-remote",
         "origin",
@@ -92,7 +93,7 @@ def main():
         "refs/tags/" + args.tag,
         "refs/tags/" + args.tag + "^{}",
     )
-    if f"{commit}\trefs/heads/main" not in remote or not any(
+    if f"{head}\trefs/heads/main" not in remote or not any(
         line.startswith(commit + "\trefs/tags/") for line in remote.splitlines()
     ):
         raise RuntimeError("Push the reviewed main commit and tag before publishing.")
@@ -100,11 +101,29 @@ def main():
     if len({path.name for path in assets}) != len(assets):
         raise RuntimeError("Asset names must be distinct.")
     audit_release_assets(assets)
+    # Bind artifacts to the immutable source tag, even when only release tooling
+    # has advanced on main since the native build was produced.
+    import zipfile
+
+    for path in assets:
+        if path.suffix.lower() == ".zip":
+            with zipfile.ZipFile(path) as archive:
+                manifest_name = next(
+                    name for name in archive.namelist() if name.endswith("/portable-manifest.json")
+                )
+                manifest = json.loads(archive.read(manifest_name))
+            if manifest.get("source_commit") != commit or manifest.get(
+                "version"
+            ) != args.tag.removeprefix("v"):
+                raise RuntimeError("Release artifact does not match its source tag/version.")
+
     api = GitHub()
     base = "https://api.github.com/repos/" + args.repo
     repository = api.request("GET", base)
-    if not repository.get("private") or not repository.get("permissions", {}).get("push"):
-        raise RuntimeError("Expected the authorized private repository with push permission.")
+    if repository.get("full_name", "").casefold() != args.repo.casefold() or not repository.get(
+        "permissions", {}
+    ).get("push"):
+        raise RuntimeError("Expected the authorized repository with push permission.")
     existing = api.request("GET", base + "/releases?per_page=100")
     if any(item["tag_name"] == args.tag for item in existing):
         raise RuntimeError("Release already exists; refusing to replace it automatically.")

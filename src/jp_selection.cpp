@@ -19,7 +19,7 @@ void JpSelectionArt::load(const std::filesystem::path& path) {
     std::ifstream file(path, std::ios::binary);
     if (!file)
         throw std::runtime_error("JP selection art is missing: " + path.string() +
-                                 ". Run build.ps1 to import it from the JP ROM.");
+                                 ". Launch again to generate it locally from your JP ROM.");
     auto read = [&](void* p, std::size_t n) {
         if (!file.read(static_cast<char*>(p), n))
             throw std::runtime_error("Truncated JP selection art pack");

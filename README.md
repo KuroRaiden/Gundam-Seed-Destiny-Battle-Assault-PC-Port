@@ -137,7 +137,15 @@ decompilation of the private generated cartridge instructions.
 
 `v0.1.0` packages the current Windows x64 build, Local VS, JP Training and
 online code/link play with rollback, saved player names and live title stats.
-The repository and its release remain private. The personal portable bundle
-includes the user's verified game/BIOS inputs and runtime licenses.
+The repository and its release remain private. Release downloads contain runtime files and licenses only. Players supply
+their own US/JP cartridges and GBA BIOS; selector art is generated locally.
 The user's two-PC online smoke test and automated checks are recorded separately
 under `validation/`.
+
+## Distribution correction (v0.1.1)
+
+The original v0.1.0 personal bundle was uploaded incorrectly and withdrawn.
+Release packages must never include ROMs, BIOS, generated art, saves or user
+profiles. The runtime-only packager and pre-upload audit enforce this rule.
+See [portable setup](docs/Portable.md). Original local game/BIOS files are
+retained on the developer's PC; they are not release inputs.

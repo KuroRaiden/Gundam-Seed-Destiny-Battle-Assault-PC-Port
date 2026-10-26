@@ -35,3 +35,7 @@ again after moving the portable folder. Both peers should use this release.
 
 Source references: [Source guide](https://github.com/KuroRaiden/Gundam-Seed-Destiny-Battle-Assault-PC-Port/blob/v0.1.0/docs/Source-Guide.md),
 [named US/JP addresses](https://github.com/KuroRaiden/Gundam-Seed-Destiny-Battle-Assault-PC-Port/blob/v0.1.0/docs/Address-Map.md).
+
+**Withdrawn download:** the original portable ZIP and checksum were removed
+because they included user game/BIOS inputs. Use v0.1.1, which contains runtime
+files only and creates its selector art locally from user-supplied files.

@@ -5,8 +5,8 @@
 #include <vector>
 
 namespace seed {
-// Native compositor. The pack is built locally from the verified donor ROM;
-// no JP simulation runs in the shipped game process.
+// Native compositor. First launch generates the pack from the local donor.
+// Character selection displays these cached images in the US menu host.
 class JpSelectionArt {
   public:
     void load(const std::filesystem::path& path);

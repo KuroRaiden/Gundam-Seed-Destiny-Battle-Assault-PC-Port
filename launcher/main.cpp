@@ -96,6 +96,8 @@ struct App {
                                        sl::wide(settings.files[2].path),
                                        L"--jp-rom",
                                        sl::wide(settings.files[1].path),
+                                       L"--save",
+                                       (folder / L"game-us.sav").wstring(),
                                        L"--window",
                                        L"--scale",
                                        std::to_wstring(settings.scale)};
@@ -185,7 +187,7 @@ void play_page(App& app) {
     const bool art =
         std::filesystem::is_regular_file(app.folder / L"assets" / L"destiny-selection.bin");
     const bool combat = std::filesystem::is_regular_file(app.folder / L"SeedJpCombat.dll");
-    const bool ready = host && art && combat && app.settings.files[0].verified &&
+    const bool ready = host && combat && app.settings.files[0].verified &&
                        app.settings.files[1].verified && app.settings.files[2].verified;
     ImGui::BeginDisabled(!ready || app.game.running());
     primary_begin();
@@ -198,12 +200,12 @@ void play_page(App& app) {
         app.page = Page::Files;
     if (!host)
         ImGui::TextColored(kGold, "The game executable is missing from this folder.");
-    else if (!art)
-        ImGui::TextColored(kGold, "JP selection art is missing. Run build.ps1 to import it.");
     else if (!combat)
         ImGui::TextColored(kGold, "The JP combat module is missing. Rebuild the game host.");
     else if (!ready)
         ImGui::TextColored(kMuted, "Select and verify both cartridges and the BIOS to launch.");
+    else if (!art)
+        ImGui::TextColored(kMuted, "JP selection art will be generated locally on first launch.");
     else
         ImGui::TextColored(kGreen, "Both cartridges and BIOS verified");
     card_end();
@@ -581,6 +583,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             app.page = Page::Controllers;
         else if (page == "status")
             app.page = Page::About;
+        if (page.empty() && std::all_of(app.settings.files.begin(), app.settings.files.end(),
+                                        [](const auto& file) { return file.path.empty(); }))
+            app.page = Page::Files;
         app.verify_all();
         if (!invite_error.empty()) {
             app.error = true;

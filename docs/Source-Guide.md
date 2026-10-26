@@ -71,3 +71,17 @@ Generated address files are written by the generator and checked without a
 formatter pass. Private generated cartridge/BIOS instruction output remains
 outside Git and is not a full semantic decompilation. Dependency patches stay
 as upstream-applicable diffs; their purposes are described in the README.
+
+## Runtime-only releases and local assets
+
+`src/jp_asset_import.cpp` runs the original JP selector briefly during first
+setup, decodes resources from the user-supplied ROM and atomically creates a
+local cache. `src/main.cpp` loads this importer only when that cache is absent.
+It verifies both inputs and rejects a cache path that aliases the ROM or BIOS.
+The importer contains no embedded art, cartridge image or BIOS image.
+
+`tools/build_portable.py` copies only approved executables, runtime DLLs, the
+controller database, default settings and licenses. It cannot accept ROM/BIOS
+arguments. `tools/audit_release.py` validates this allowlist, blank game paths
+and a runtime-only manifest, and can scan contents against supplied raw inputs.
+`tools/publish_private_release.py` audits ZIPs before making any upload request.

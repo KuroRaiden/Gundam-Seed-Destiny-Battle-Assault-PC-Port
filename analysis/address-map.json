@@ -1229,6 +1229,14 @@
       "kind": "address",
       "meaning": "Exclusive end of the supplied 8 MiB JP cartridge; also bounds address discovery in the shared analysis tool.",
       "evidence": "Verified cartridge size and ROM base"
+    },
+    {
+      "group": "jp",
+      "name": "portrait_grid",
+      "value": "0x080D7558",
+      "kind": "address",
+      "meaning": "32-byte native selector portrait order copied into a locally generated art pack.",
+      "evidence": "Verified build_jp_selection.py donor grid read and JpSelectionArt grid validation"
     }
   ]
 }

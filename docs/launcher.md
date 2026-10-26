@@ -83,3 +83,10 @@ window title displays both names, the configured input delay in frames, the
 most recent rollback length in frames and measured round-trip ping in ms.
 The title refreshes four times per second. This is display metadata and does
 not enter the deterministic game state. Both players must use this build.
+
+## First-launch local asset generation
+
+Release downloads do not include cartridges, BIOS or the generated selector
+pack. Select and verify your own three inputs under Game files. Launch game is
+available without a pre-existing art cache and generates that cache locally
+before starting the US menu. A source build script is not required for setup.

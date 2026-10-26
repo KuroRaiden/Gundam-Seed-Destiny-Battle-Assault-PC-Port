@@ -4,6 +4,7 @@ Credentials are obtained from the existing Git helper, kept only in memory, and
 sent only to GitHub API/upload hosts. Assets upload to a draft before publishing.
 """
 
+from audit_release import audit_release_assets
 import argparse
 import hashlib
 import json
@@ -98,6 +99,7 @@ def main():
     assets = [path.resolve(strict=True) for path in args.asset]
     if len({path.name for path in assets}) != len(assets):
         raise RuntimeError("Asset names must be distinct.")
+    audit_release_assets(assets)
     api = GitHub()
     base = "https://api.github.com/repos/" + args.repo
     repository = api.request("GET", base)
@@ -155,7 +157,15 @@ def main():
         "commit": commit,
         "private": repository["private"],
         "published": not checked["draft"],
-        "assets": uploaded,
+        "assets": [
+            {
+                "name": asset["name"],
+                "size": asset["size"],
+                "sha256": asset.get("digest"),
+                "url": asset["browser_download_url"],
+            }
+            for asset in checked["assets"]
+        ],
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")

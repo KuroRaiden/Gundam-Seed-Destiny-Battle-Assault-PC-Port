@@ -1,42 +1,32 @@
-# Portable Windows build
+# Portable Windows release
 
-The personal portable package is in the workspace's outputs folder as
-`GundamSeedDestinyBattleAssaultPC-Portable-Windows-x64-v0.1.0.zip`.
-Extract the whole ZIP and run `GundamSeedLauncher.exe`; choose **Launch game**.
-The package includes the user's verified US/JP cartridges and BIOS, native game
-and JP combat module, selector assets, controller mappings, saves and release
-x64 C++ runtime DLLs. Runtime licenses are included beside the game.
+The v0.1.0 game-data download was withdrawn and removed. Use the corrected
+runtime-only v0.1.1 release. It contains the launcher/game executables, JP combat
+module, SDL3, C++ runtime DLLs, controller database and licenses. It contains no
+ROMs, BIOS, extracted art pack, saves, player profiles or personal settings.
 
-Online VS uses shareable SEED1 codes and seedpc invitation links, automatic
-address discovery and native AutoPunch-compatible hole punching. The optional
-Windows invitation handler can be enabled in the online window; enable it again
-if this portable folder moves. There is no configured fallback relay.
+Extract the whole ZIP to a writable folder, run GundamSeedLauncher.exe and open
+Game files. Select your own supported US Battle Assault cartridge, Japanese
+SEED Destiny cartridge and extracted GBA BIOS. The launcher checks their sizes
+and hashes. The original files are read in place and never modified.
 
-The launcher resolves bundled paths relative to its own directory and saves
-those paths relatively, so moving the folder or changing the working directory
-does not require selecting the files again. External file selections continue
-to use absolute paths. All game settings and saves remain in the portable folder.
+On first launch the game uses the Japanese ROM to generate its selector art
+locally under assets/. No Python, compiler or additional download is needed.
+The native importer captures the original selector and decodes its donor
+resources; its output is checked against the previously validated 91-image pack.
+A generated .bin cache on the player's PC is normal; it must never be uploaded.
 
-Validation under `validation/portable/` covers extraction checksums, a renamed
-folder with spaces, launch from an unrelated working directory, actual loading
-of local SDL3/C++ DLLs, default-BIOS startup, US menu routing and JP Training
-selection, pause/resume and reset. These checks ran on the current Windows PC.
+The launcher stores paths inside its folder relatively. External selections
+remain absolute. Players may copy their own inputs into their local portable
+folder if they want to move everything together. Release packaging always
+starts with blank file paths and default settings.
 
-`tools/build_portable.py` builds a package from explicit verified inputs and
-refuses to replace an existing output folder or ZIP. ZIP integrity and a SHA-256
-sidecar are generated. The C++ runtime DLLs are copied unmodified from the
-Visual Studio release x64 redistributable directory, following Microsoft's
-[application-local deployment documentation](https://learn.microsoft.com/en-us/cpp/windows/deployment-in-visual-cpp?view=msvc-170).
+`tools/build_portable.py` accepts runtime, launcher and CRT directories only.
+It deliberately accepts no ROM or BIOS inputs and never copies app/assets,
+user controls, saves or profiles. `tools/audit_release.py` checks the archive
+allowlist, manifest, blank settings, known game/BIOS hashes and integrity. It
+can additionally scan all member contents for explicitly supplied input images.
+The release publisher audits ZIPs before creating a draft or uploading bytes.
 
-The current Online package adds saved player names and a live match title:
-`Kira vs Athrun | Delay 2f | Rollback 1f | Ping 13ms`. Names, input delay,
-last rollback length and round-trip ping are displayed during online combat.
-The packaged game passed a named two-peer match with 240 frames and identical
-machine checksums. Production SDL windows also verified the actual title while
-rollback and F4 remapping continued. `validation/portable/online-names.json`
-records the renamed Unicode folder, fresh/existing invitation and bundled DLL
-checks for this ZIP.
-
-Release packages record their version and source commit in the portable manifest
-and START HERE.txt. The v0.1.0 release also includes the named source/address
-cleanup and quiet successful-match teardown fix described in its release notes.
+Native Training, Local VS and online code/link play are unchanged. F4 remapping,
+saved names and live title statistics remain available after local setup.

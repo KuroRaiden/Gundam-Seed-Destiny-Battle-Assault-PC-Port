@@ -172,3 +172,4 @@ The C++ API is in `src/game_addresses.h`; Python tools import `tools/game_addres
 | `jp::kPlayerParameterStride` | `4` | Stride between JP per-player stat parameter arrays. | Port hook/capture usage; see source and validation reports |
 | `jp::kSelectorActorStride` | `32` | Size of a native selector actor record. | Port hook/capture usage; see source and validation reports |
 | `jp::kRomEnd` | `0x08800000` | Exclusive end of the supplied 8 MiB JP cartridge; also bounds address discovery in the shared analysis tool. | Verified cartridge size and ROM base |
+| `jp::kPortraitGrid` | `0x080D7558` | 32-byte native selector portrait order copied into a locally generated art pack. | Verified build_jp_selection.py donor grid read and JpSelectionArt grid validation |

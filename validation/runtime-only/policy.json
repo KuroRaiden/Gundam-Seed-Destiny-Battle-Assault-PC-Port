@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-26",
+  "withdrawn_release": "v0.1.0",
+  "uploaded_zip_and_checksum_deleted": true,
+  "replacement": "v0.1.1",
+  "roms_bios_art_profiles_saves_excluded": true,
+  "strict_archive_allowlist": true,
+  "publisher_runs_audit_before_upload": true,
+  "old_personal_bundle_rejected": true,
+  "local_asset_pack_sha256": "8de4bbf099ce8a010f4e5d06db26106a6a09f29266dd815c2f01040859ba686c",
+  "local_generation_byte_identical_to_validated_pack": true,
+  "importer_input_overwrite_rejected": [
+    "rom",
+    "bios"
+  ]
+}

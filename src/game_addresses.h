@@ -316,6 +316,8 @@ inline constexpr std::uint32_t kPlayerParameterStride = 4;
 inline constexpr std::uint32_t kSelectorActorStride = 32;
 // Exclusive end of the supplied 8 MiB JP cartridge; also bounds address discovery in the shared analysis tool.
 inline constexpr std::uint32_t kRomEnd = 0x08800000;
+// 32-byte native selector portrait order copied into a locally generated art pack.
+inline constexpr std::uint32_t kPortraitGrid = 0x080D7558;
 } // namespace jp
 
 } // namespace seed::address

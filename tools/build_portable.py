@@ -23,7 +23,7 @@ def main():
     for field in ("app", "launcher", "rom", "jp_rom", "bios", "crt"):
         setattr(args, field, getattr(args, field).resolve(strict=True))
     args.out = args.out.resolve()
-    archive = args.out.with_suffix(".zip")
+    archive = args.out.parent / (args.out.name + ".zip")
     if args.out.exists() or archive.exists():
         raise RuntimeError("Portable output already exists; refusing to replace it")
     expected = [

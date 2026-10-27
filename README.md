@@ -12,7 +12,7 @@ character select and battle-system injection** supplies the expanded combat.
 ## Features
 
 - **Local VS:** two players, two controllers/keyboards, one screen and one game instance.
-- **Black sprite outline:** a simple one-pixel black border around battle fighters. Toggle **Black sprite outlines** on the launcher's **Play** page; the saved preference affects only your display online.
+- **Black sprite outline:** a simple one-pixel black border around battle fighters. Toggle **Black sprite outlines** and adjust **Outline opacity** (0-100%) on the launcher's **Play** page; saved preferences affect only your display online.
 - **Stage select:** 25 native JP stages plus Random, with previews in Local VS, Online VS and Training.
 - **Japanese roster and combat:** JP mobile suits, alternate colors and hidden variants behind the US menus.
 - **Launcher palette editor:** edit MS colors with a live preview; custom palettes also sync online.

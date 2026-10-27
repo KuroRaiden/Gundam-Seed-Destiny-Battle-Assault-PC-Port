@@ -82,7 +82,9 @@ void Settings::load(const std::filesystem::path& path) {
             }
         }
     }
-    fighter_outlines = seed::load_fighter_outline_setting(path);
+    const auto outlines = seed::load_fighter_outline_settings(path);
+    fighter_outlines = outlines.enabled;
+    fighter_outline_opacity = outlines.opacity;
     for (unsigned index = 0; index < files.size(); ++index) {
         if (files[index].path.empty())
             files[index].path = kPortableGamePaths[index];
@@ -101,7 +103,9 @@ bool Settings::save(const std::filesystem::path& path, std::string& error) const
            << "bios " << std::quoted(stored_path(files[2].path, path.parent_path())) << '\n'
            << "scale " << std::quoted(std::to_string(scale)) << '\n'
            << seed::kFighterOutlineSetting << ' ' << std::quoted(fighter_outlines ? "1" : "0")
-           << '\n';
+           << '\n'
+           << seed::kFighterOutlineOpacitySetting << ' '
+           << std::quoted(std::to_string(std::clamp(fighter_outline_opacity, 0, 100))) << '\n';
     output.close();
     if (!output) {
         error = "Settings could not be written completely.";

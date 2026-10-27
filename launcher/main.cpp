@@ -227,7 +227,7 @@ void play_page(App& app) {
     else
         ImGui::TextColored(kGreen, "Both cartridges and BIOS verified");
     card_end();
-    card_begin("battle-display", 120);
+    card_begin("battle-display", 210);
     ImGui::TextUnformatted("Battle display");
     ImGui::BeginDisabled(app.game.running());
     if (ImGui::Checkbox("Black sprite outlines", &app.settings.fighter_outlines)) {
@@ -239,7 +239,22 @@ void play_page(App& app) {
             app.error = false;
         }
     }
+    ImGui::BeginDisabled(!app.settings.fighter_outlines);
+    ImGui::SetNextItemWidth(350);
+    const int previous_opacity = app.settings.fighter_outline_opacity;
+    if (ImGui::SliderInt("Outline opacity", &app.settings.fighter_outline_opacity, 0, 100,
+                         "%d%%")) {
+        if (!app.settings.save(app.folder / L"launcher-settings.ini", app.message)) {
+            app.settings.fighter_outline_opacity = previous_opacity;
+            app.error = true;
+        } else {
+            app.message.clear();
+            app.error = false;
+        }
+    }
     ImGui::EndDisabled();
+    ImGui::EndDisabled();
+    ImGui::TextColored(kMuted, "0%% invisible / 100%% solid black. Applies when launching.");
     ImGui::TextColored(kMuted, "Saved automatically. Only changes your display online.");
     card_end();
     if (!app.message.empty()) {

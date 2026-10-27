@@ -27,6 +27,12 @@ void set_fighter_outlines_enabled(bool enabled) {
 bool fighter_outlines_enabled() {
     return show_outlines;
 }
+void set_fighter_outline_opacity(unsigned percent) {
+    outline.set_opacity(percent);
+}
+unsigned fighter_outline_opacity() {
+    return outline.opacity();
+}
 void reset_fighter_outline() {
     outline.reset();
 }

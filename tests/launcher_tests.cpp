@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
+#include <utility>
 #include <sstream>
 #include <stdexcept>
 
@@ -49,6 +51,7 @@ int wmain(int argc, wchar_t** argv) {
         require(!file.verified, "Editing did not invalidate identity");
         sl::Settings defaults;
         require(defaults.fighter_outlines, "Outlines should default on");
+        require(defaults.fighter_outline_opacity == 100, "Outline opacity should default to solid");
         for (unsigned index = 0; index < defaults.files.size(); ++index)
             require(defaults.files[index].path == sl::kPortableGamePaths[index],
                     "Default gamefiles path is missing");
@@ -68,10 +71,28 @@ int wmain(int argc, wchar_t** argv) {
         sl::Settings legacy;
         legacy.load(legacy_path);
         require(legacy.fighter_outlines, "Legacy/invalid settings disabled outlines");
+        require(legacy.fighter_outline_opacity == 100, "Legacy settings lost solid outlines");
+        for (const auto& [text, expected] : {std::pair{"-10", 0},
+                                             {"180", 100},
+                                             {"0", 0},
+                                             {"35", 35},
+                                             {"garbage", 100},
+                                             {"50x", 100},
+                                             {"999999999999999999999", 100}}) {
+            {
+                std::ofstream sample(legacy_path);
+                sample << "fighter_outline_opacity " << std::quoted(text) << '\n';
+            }
+            sl::Settings parsed;
+            parsed.load(legacy_path);
+            require(parsed.fighter_outline_opacity == expected,
+                    "Opacity settings validation failed");
+        }
         const auto settings_path = scratch / L"launcher-settings.ini";
         sl::Settings original;
         original.scale = 5;
         original.fighter_outlines = false;
+        original.fighter_outline_opacity = 55;
         original.files[0].path = "D:\\ROM folder\\US's \\\"path.gba";
         original.files[1].path = sl::utf8(L"D:\\日本語\\Japanese.gba");
         original.files[2].path = "D:\\BIOS folder\\gba.bin";
@@ -83,6 +104,7 @@ int wmain(int argc, wchar_t** argv) {
         loaded.load(settings_path);
         require(loaded.scale == 4, "Scale did not persist");
         require(!loaded.fighter_outlines, "Disabled outline setting did not persist");
+        require(loaded.fighter_outline_opacity == 55, "Outline opacity did not persist");
         loaded.fighter_outlines = true;
         require(loaded.save(settings_path, error), "Enabled outline settings save failed");
         sl::Settings enabled;

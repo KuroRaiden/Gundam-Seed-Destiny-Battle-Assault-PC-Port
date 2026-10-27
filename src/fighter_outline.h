@@ -9,8 +9,15 @@ class FighterOutline {
   public:
     static constexpr unsigned width = 240, height = 160, pixels = width * height;
     struct Stats {
+        // black_pixels counts contour pixels darkened, including partial opacity.
         unsigned fighter_pixels[2]{}, black_pixels = 0;
     };
+    void set_opacity(unsigned percent) {
+        opacity_ = std::min(percent, 100u);
+    }
+    unsigned opacity() const {
+        return opacity_;
+    }
     void reset() {
         ready_ = false;
         next_row_ = 0;
@@ -60,7 +67,7 @@ class FighterOutline {
     }
     const std::uint8_t* apply(const std::uint8_t* rgb, unsigned w, unsigned h) {
         stats_ = {};
-        if (!rgb || !ready_ || w != width || h != height)
+        if (!rgb || !ready_ || !opacity_ || w != width || h != height)
             return rgb;
         std::copy_n(rgb, rgb_.size(), rgb_.begin());
         for (unsigned at = 0; at < pixels; ++at)
@@ -86,9 +93,16 @@ class FighterOutline {
                         }
                     }
                 if (edge) {
-                    if (rgb_[at * 3] || rgb_[at * 3 + 1] || rgb_[at * 3 + 2])
+                    bool changed = false;
+                    for (unsigned channel = 0; channel < 3; ++channel) {
+                        auto& value = rgb_[at * 3 + channel];
+                        const auto blended =
+                            std::uint8_t((unsigned(value) * (100 - opacity_) + 50) / 100);
+                        changed |= blended != value;
+                        value = blended;
+                    }
+                    if (changed)
                         ++stats_.black_pixels;
-                    rgb_[at * 3] = rgb_[at * 3 + 1] = rgb_[at * 3 + 2] = 0;
                 }
             }
         return rgb_.data();
@@ -102,12 +116,15 @@ class FighterOutline {
     std::array<std::uint8_t, pixels> pending_owners_{}, pending_layers_{};
     std::array<std::uint8_t, pixels * 3> rgb_{};
     unsigned next_row_ = 0;
+    unsigned opacity_ = 100;
     bool ready_ = false;
     Stats stats_;
 };
 void configure_fighter_outline(bool (*active)());
 void set_fighter_outlines_enabled(bool enabled);
 bool fighter_outlines_enabled();
+void set_fighter_outline_opacity(unsigned percent);
+unsigned fighter_outline_opacity();
 void reset_fighter_outline();
 const std::uint8_t* outlined_combat_pixels(const std::uint8_t*, unsigned = 240, unsigned = 160);
 FighterOutline::Stats fighter_outline_stats();

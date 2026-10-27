@@ -360,8 +360,11 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
         throw std::runtime_error("Invalid JP stage");
     match_request = request;
     const auto* base = SDL_GetBasePath();
-    set_fighter_outlines_enabled(!base || load_fighter_outline_setting(std::filesystem::path(base) /
-                                                                       "launcher-settings.ini"));
+    const auto outlines =
+        base ? load_fighter_outline_settings(std::filesystem::path(base) / "launcher-settings.ini")
+             : FighterOutlineSettings{};
+    set_fighter_outlines_enabled(outlines.enabled);
+    set_fighter_outline_opacity(unsigned(outlines.opacity));
     // The predicate must not read through the guest bus: even a RAM read
     // updates hardware open-bus bookkeeping. These existing lifecycle flags
     // are side-effect-free host reads and already track leaving combat.

@@ -47,7 +47,7 @@ npm ci
 node --test core.test.mjs
 npx wrangler dev --local --ip 127.0.0.1 --port 8788 --persist-to <E-work-directory>
 node integration.mjs http://127.0.0.1:8788
-npx wrangler login --scopes account:read user:read workers:write
+npx wrangler login --scopes account:read user:read workers_scripts:write
 npx wrangler deploy
 node integration.mjs https://<worker>.<account-subdomain>.workers.dev
 ```
@@ -66,3 +66,12 @@ and WebSocket/hibernation APIs locally and against the deployed URL.
 Public lobby browsing and delayed spectating remain separate integrations.
 Deploying this Worker does not add a Quick Match button to an already downloaded
 0.1.4-dev executable; the native client needs its corresponding integration.
+
+## Deployment status
+
+The matchmaking backend is deployed at
+`https://seedpc-matchmaking.lord19uga.workers.dev`. Its health check and live
+WebSocket integration tests passed, including queue counts, unique roles,
+private invitation handoff and disconnect/requeue handling. The native
+Quick Match UI and client connection are still pending; existing builds
+continue to use manual Host/Join.

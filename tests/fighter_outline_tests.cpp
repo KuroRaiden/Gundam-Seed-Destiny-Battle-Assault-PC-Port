@@ -55,6 +55,28 @@ int main() {
                         30 * 240 + 30, 30 * 240 + 31})
             require(display[at * 3] == 100, "Fighter/HUD/effect/foreground was overwritten");
         require(display[(11 * 240 + 10) * 3] == 0, "One-pixel black contour is missing");
+        const auto edge = (11 * 240 + 10) * 3;
+        for (const unsigned opacity : {0u, 1u, 25u, 50u, 75u, 99u, 100u}) {
+            outline.set_opacity(opacity);
+            const auto* blended = outline.apply(raw.data(), 240, 160);
+            require(blended[edge] == (100 - opacity), "Outline opacity blending is incorrect");
+            require(raw == before, "Opacity changed source pixels");
+            require(blended[(10 * 240 + 10) * 3] == 100 && blended[(10 * 240 + 11) * 3] == 100,
+                    "Opacity changed fighter or HUD pixels");
+            if (!opacity)
+                require(blended == raw.data() && outline.stats().black_pixels == 0,
+                        "Zero opacity did not bypass presentation");
+        }
+        raw[edge] = 255;
+        raw[edge + 1] = 127;
+        raw[edge + 2] = 1;
+        outline.set_opacity(50);
+        const auto* rounded = outline.apply(raw.data(), 240, 160);
+        require(rounded[edge] == 128 && rounded[edge + 1] == 64 && rounded[edge + 2] == 1,
+                "Opacity rounding lost low RGB values");
+        raw.fill(100);
+        outline.set_opacity(999);
+        require(outline.opacity() == 100, "Opacity maximum was not clamped");
         // A window can re-present the last latched framebuffer while the next
         // frame is only partly rasterized. Keep its complete outline stable.
         std::array<std::uint8_t, 240> next_objects, next_layers;
@@ -79,7 +101,7 @@ int main() {
                 "Restoration retained a stale mask");
         require(outline.apply(raw.data(), 480, 320) == raw.data(), "Wrong-sized image was changed");
         std::puts("PASS: black contour, raw-frame immutability, HUD/effects/foreground, partial "
-                  "frames and restore invalidation");
+                  "frames, opacity blending and restore invalidation");
         return 0;
     } catch (const std::exception& error) {
         std::fprintf(stderr, "%s\n", error.what());

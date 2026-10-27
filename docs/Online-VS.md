@@ -151,7 +151,9 @@ not enter the deterministic game state. Both players must use this build.
 
 ## Local black outlines
 
-The simple black fighter outline is a display effect on each PC. It is not
+The simple black fighter outline and its opacity are display effects on each PC.
+Set the toggle and **Outline opacity** slider on the launcher's **Play** page;
+settings apply when launching. It is not
 transmitted and does not affect simulation checksums, so a compatible opponent
 can use the unoutlined build. Mixed outlined/unoutlined DLLs were tested in
 both host/guest arrangements with matching state after 360 frames and zero

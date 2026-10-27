@@ -97,6 +97,8 @@ Open MS Colors in the launcher to prepare local battle-sprite previews, edit
 colors, and save palettes per player/suit. Online uses your Player 1 profiles
 and shares them with your opponent. Both players need this updated build.
 Play > Black sprite outlines toggles a simple black border around battle fighters.
+Outline opacity sets its strength from 0% invisible to 100% solid black.
+Both settings save automatically, apply when launching and only change your display.
 The preference saves automatically and takes effect when launching a game.
 It only changes your display online; the opponent can choose independently.
 Press Start on character select to cycle colors/variants before pressing A.

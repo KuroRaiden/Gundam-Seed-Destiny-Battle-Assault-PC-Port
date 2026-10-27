@@ -29,6 +29,7 @@ void observe_partial_present(unsigned y, unsigned w, const std::uint8_t* objects
 }
 std::filesystem::path output;
 bool training_only = false, expect_disabled = false;
+unsigned expected_opacity = 100;
 void require(bool ok, const char* message) {
     if (!ok)
         throw std::runtime_error(message);
@@ -59,6 +60,8 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         seed::configure_jp_combat(ignored, request);
         require(seed::fighter_outlines_enabled() != expect_disabled,
                 "Runtime did not load the launcher outline preference");
+        require(seed::fighter_outline_opacity() == expected_opacity,
+                "Runtime did not load launcher outline opacity");
         advance(600);
         if (expect_disabled) {
             require(seed::outlined_combat_pixels(machine.pixels()) == machine.pixels(),
@@ -84,6 +87,28 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         };
         write("-raw.rgb", raw);
         write("-outlined.rgb", display);
+        // Alpha changes are presentation only; compare every channel with the
+        // solid contour and verify that the canonical machine state is exact.
+        seed::set_fighter_outline_opacity(100);
+        const auto* solid_pixels = seed::outlined_combat_pixels(raw);
+        const std::vector<std::uint8_t> solid(solid_pixels, solid_pixels + original.size());
+        for (const unsigned opacity : {0u, 25u, 50u, 75u, 100u}) {
+            seed::set_fighter_outline_opacity(opacity);
+            const auto* blended = seed::outlined_combat_pixels(raw);
+            if (!opacity)
+                require(blended == raw, "Zero opacity changed the displayed frame");
+            for (unsigned channel = 0; channel < original.size(); ++channel) {
+                const unsigned wanted =
+                    solid[channel] != original[channel]
+                        ? (unsigned(original[channel]) * (100 - opacity) + 50) / 100
+                        : original[channel];
+                require(blended[channel] == wanted,
+                        "Native contour alpha changed a protected pixel or blended incorrectly");
+            }
+            require(machine.save(after, error) && after == before,
+                    "Opacity altered the native snapshot");
+        }
+        seed::set_fighter_outline_opacity(expected_opacity);
         // Exercise actual PPU callbacks while a window may still present the
         // previous latched RGB frame. Only complete metadata can replace it.
         original_observer = g_seed_obj_line_observer;
@@ -138,6 +163,8 @@ int main(int argc, char** argv) {
                 training_only = true;
             else if (std::string(argv[i]) == "--expect-disabled")
                 expect_disabled = true;
+            else if (std::string(argv[i]) == "--expect-opacity" && i + 1 < argc)
+                expected_opacity = unsigned(std::stoul(argv[++i]));
             else if (std::string(argv[i]) == "--out" && i + 1 < argc)
                 output = argv[++i];
             else

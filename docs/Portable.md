@@ -51,9 +51,11 @@ See [Training tools](Training-Tools.md), [branding](Branding.md), [frame meter](
 ## Sprite outlines
 
 On the launcher's **Play** page, **Black sprite outlines** switches the one-pixel
-black fighter border on or off. The preference saves automatically and applies
-when launching. It defaults on for older settings and only affects your display,
-so opponents can use a different preference without affecting rollback.
+black fighter border on or off. **Outline opacity** sets its strength from 0%
+(invisible) to 100% (solid black). Both preferences save automatically and apply
+when launching. Older settings default to enabled and 100% opacity. These only
+affect your display, so opponents can use different settings without affecting
+rollback.
 
 ## Launcher version and updates
 

@@ -20,7 +20,8 @@ filenames or locations; it opens in the selected path's folder, falling back to
 An extracted 16 KB BIOS is required; ZIP archives are not accepted.
 
 The original inputs are read in place. On first launch, selector art is generated
-locally under `assets/`. **Prepare previews** in MS Colors similarly generates
+locally under `assets/`, along with stage previews and the US Training font.
+**Prepare previews** in MS Colors similarly generates
 its local preview cache. No Python, compiler or extra download is required for
 normal play. Generated `.bin` caches remain local and are excluded from releases.
 
@@ -29,9 +30,12 @@ selections retain their locations. Released settings contain only the shared
 `gamefiles` defaults, never the developer's paths, controls, saves or colors.
 
 Local VS replaces the US Password entry; Training uses the JP roster and engine.
-F5 opens its frame meter without pausing, and F4 opens controls. Online VS uses
-codes/links and keeps the same room for rematches. Names and title statistics
-remain available. Both players should use the same updated build.
+Stage select offers 25 normal JP stages plus Random. Training has an English
+pause menu using the US ROM font, F5 frame meter, F6 hitbox/hurtbox viewer,
+and F2 save / F3 load for practice situations. F4 opens controls. Online VS
+uses codes/links and keeps the same room for rematches. Names and title
+statistics remain available. Both players need the updated build for shared
+stage selection.
 
 `tools/build_portable.py` copies an explicit runtime allowlist, the fixed
 placeholder, the two approved icons and license notices. It accepts no game or
@@ -41,5 +45,5 @@ also scan every archive member against the developer's actual raw inputs.
 Distribution format `seedpc-runtime-only-v3` identifies the new folder/default
 policy; legacy v1/v2 packages retain their original blank-settings rules.
 
-See [branding](Branding.md), [frame meter](Training-Frame-Meter.md),
+See [Training tools](Training-Tools.md), [branding](Branding.md), [frame meter](Training-Frame-Meter.md),
 [palette editor](MS-colors.md) and [license notices](../THIRD_PARTY_NOTICES.md).

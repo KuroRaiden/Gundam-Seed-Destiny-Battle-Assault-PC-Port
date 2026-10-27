@@ -208,6 +208,10 @@ int main(int argc, char** argv) {
             } else if (flag == "--fighters" && i + 2 < argc) {
                 request.fighters[0] = std::stoul(argv[++i]);
                 request.fighters[1] = std::stoul(argv[++i]);
+            } else if (flag == "--stage" && i + 1 < argc) {
+                const auto stage = std::stoul(argv[++i]);
+                require(seed::valid_jp_stage(stage), "Invalid rollback test stage");
+                request.stage = std::uint8_t(stage);
             } else if (flag == "--colors" && i + 2 < argc) {
                 request.colors[0] = std::stoul(argv[++i]);
                 request.colors[1] = std::stoul(argv[++i]);

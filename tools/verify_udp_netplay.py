@@ -25,6 +25,8 @@ def main():
         action="store_true",
         help="Negotiate a common end boundary instead of a fixed horizon",
     )
+    parser.add_argument("--host-module", type=Path, help="Use another compatible combat DLL for seat 1")
+    parser.add_argument("--peer-module", type=Path, help="Use another compatible combat DLL for seat 2 (mixed-build test)")
     parser.add_argument("--custom-colors", action="store_true")
     parser.add_argument("--fighters", type=int, nargs=2)
     parser.add_argument("--colors", type=int, nargs=2)
@@ -44,6 +46,10 @@ def main():
             extra = (["--window"] if args.window else []) + (
                 ["--finish-fence"] if args.finish_fence else []
             )
+            if seat == 0 and args.host_module:
+                extra += ["--module", str(args.host_module.resolve(strict=True))]
+            if seat == 1 and args.peer_module:
+                extra += ["--module", str(args.peer_module.resolve(strict=True))]
             if args.custom_colors:
                 extra += ["--custom-colors"]
             if args.fighters:

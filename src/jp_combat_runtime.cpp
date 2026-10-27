@@ -1,10 +1,14 @@
 #include "jp_combat_runtime.h"
 #include "game_addresses.h"
 #include "jp_frame_probe.h"
+#include "fighter_outline.h"
+#include "training_tools.h"
 #include "mini_json.h"
 #include "mod_function_hooks.h"
 #include "mod_state.h"
 #include "runtime_arm.h"
+#include "runtime_bus_bridge.h"
+#include "gba_bus.h"
 #include <array>
 #include <atomic>
 #include <cstdio>
@@ -75,6 +79,12 @@ void start_match() {
     // Standard, non-link combat. Both fighters use their original Destiny
     // behavior and asset tables; P2's control selector is replaced below.
     const bool training = match_request.mode == JpCombatMode::Training;
+    // The complete snapshot codec requires an emulated clock even for a
+    // cartridge without RTC hardware. Pin Training to the same epoch used by
+    // rollback; the game never observes a host clock through this inactive chip.
+    if (training)
+        if (auto* bus = gbarecomp::active_bus())
+            bus->rtc().set_emulated_clock(946684800);
     bus_write_u32(jp_address::kGameState,
                   training ? jp_address::kStateTraining : jp_address::kStateVersus);
     bus_write_u32(jp_address::kSubstate, 0);
@@ -93,7 +103,7 @@ void start_match() {
         bus_write_u8(jp_address::kPlayerButtonMapping + p,
                      0xE1); // Identity mapping for raw A/B/L/R.
     }
-    bus_write_u8(jp_address::kSharedStartupParameterA, 0);
+    bus_write_u8(jp_address::kSelectedStage, match_request.stage);
     bus_write_u8(jp_address::kSharedStartupParameterB, 0);
     match_started = true;
     sampled_player_inputs = {};
@@ -182,6 +192,35 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
         write(context, reply, sizeof(reply) - 1);
         return 1;
     }
+    if (cmd == "seed_training_tools") {
+        const auto action = value.str("action");
+        if (action == "save" || action == "load")
+            training_request_state(action == "load");
+        else if (action == "boxes") {
+            SDL_Event event{};
+            event.type = SDL_EVENT_KEY_DOWN;
+            event.key.scancode = SDL_SCANCODE_F6;
+            training_tools_event(event, match_request.surface.online);
+        }
+        const auto view = training_view();
+        std::string reply =
+            "{\"ok\":true,\"allowed\":" + std::string(training_tools_allowed() ? "true" : "false") +
+            ",\"boxes_visible\":" + (training_boxes_visible() ? "true" : "false") +
+            ",\"pending\":" + (training_checkpoint_pending() ? "true" : "false") +
+            ",\"paused\":" + (view.paused ? "true" : "false") +
+            ",\"cursor\":" + std::to_string(view.cursor) + ",\"boxes\":[";
+        for (unsigned i = 0; i < view.boxes.size(); ++i) {
+            if (i)
+                reply += ',';
+            const auto& b = view.boxes[i];
+            reply += "[" + std::to_string(b.x) + "," + std::to_string(b.y) + "," +
+                     std::to_string(b.w) + "," + std::to_string(b.h) + "," +
+                     (b.attack ? "true" : "false") + "]";
+        }
+        reply += "]}";
+        write(context, reply.data(), reply.size());
+        return 1;
+    }
     if (cmd == "seed_frame_meter") {
         auto& meter = training_frame_meter();
         const auto action = value.str("action");
@@ -259,6 +298,11 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
     std::string extended(reply, n - 1);
     extended += ",\"colors\":[" + std::to_string(match_request.colors[0]) + "," +
                 std::to_string(match_request.colors[1]) + "]}";
+    extended.pop_back();
+    extended += ",\"stage\":" +
+                std::to_string(
+                    bus_read_u8(jp_address::kBattleContext + jp_address::kBattleStageOffset) & 31) +
+                ",\"requested_stage\":" + std::to_string(match_request.stage) + "}";
     write(context, extended.data(), extended.size());
     return 1;
 }
@@ -278,6 +322,7 @@ void save_host_state(gbarecomp::debug::SnapshotWriter& writer) {
             writer.u16(color);
     }
     writer.u32(static_cast<unsigned>(match_request.mode));
+    writer.u8(match_request.stage);
 }
 bool preflight_host_state(gbarecomp::debug::SnapshotReader& reader) {
     const auto boot = reader.u32();
@@ -294,9 +339,11 @@ bool preflight_host_state(gbarecomp::debug::SnapshotReader& reader) {
             custom &= reader.u16() == color;
     }
     const auto mode = reader.u32();
+    const auto stage = reader.u8();
     return reader.ok() && reader.remaining() == 0 && boot <= 120 && (!did_end || did_start) &&
            (did_start ? boot == 120 : boot < 120) && !(p1 & ~1023u) && !(p2 & ~1023u) && fighters &&
-           colors && custom && mode == static_cast<unsigned>(match_request.mode);
+           colors && custom && mode == static_cast<unsigned>(match_request.mode) &&
+           stage == match_request.stage;
 }
 } // namespace
 void set_jp_frame_inputs(std::uint16_t p1, std::uint16_t p2) {
@@ -308,9 +355,22 @@ bool jp_combat_ended() {
     return match_ended;
 }
 void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& request) {
+    if (!valid_jp_stage(request.stage))
+        throw std::runtime_error("Invalid JP stage");
     match_request = request;
+    // The predicate must not read through the guest bus: even a RAM read
+    // updates hardware open-bus bookkeeping. These existing lifecycle flags
+    // are side-effect-free host reads and already track leaving combat.
+    configure_fighter_outline([] { return match_started && !match_ended; });
     training_frame_meter().configure(request.mode == JpCombatMode::Training,
                                      request.surface.online);
+    configure_training_tools(request.mode == JpCombatMode::Training, request.surface.online,
+                             request.save ? std::filesystem::u8path(request.save)
+                                          : std::filesystem::path{});
+    if (request.mode == JpCombatMode::Training && !request.surface.online) {
+        options.checkpoint_pending = training_checkpoint_pending;
+        options.checkpoint_service = training_service_checkpoint;
+    }
     frame_probe.reset();
     meter_frame_pending = meter_global_hitstop = false;
     startup_frames = 0;
@@ -321,7 +381,7 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
     static const bool state_registered = [] {
         gbarecomp::debug::ModStateProvider provider;
         provider.id = "seed.jp-match";
-        provider.schema = 3;
+        provider.schema = 4;
         provider.save = [](void*, gbarecomp::debug::SnapshotWriter& writer, std::string*) {
             save_host_state(writer);
             return true;
@@ -330,6 +390,8 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
             return preflight_host_state(reader);
         };
         provider.restore = [](void*, gbarecomp::debug::SnapshotReader& reader) {
+            reset_fighter_outline();
+            training_presentation_restored();
             startup_frames = reader.u32();
             match_started = reader.boolean();
             match_ended = reader.boolean();
@@ -345,6 +407,7 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
                     reader.u16();
             }
             reader.u32();
+            reader.u8();
             if (training_frame_meter().allowed()) {
                 training_frame_meter().clear();
                 frame_probe.reset();

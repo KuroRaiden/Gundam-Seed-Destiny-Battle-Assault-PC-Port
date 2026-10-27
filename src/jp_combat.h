@@ -2,16 +2,18 @@
 #include "combat_host.h"
 #include "net_connection.h"
 #include "ms_palette.h"
+#include "jp_stages.h"
 #include <cstdint>
 
 namespace seed {
-inline constexpr unsigned kCombatApiVersion = 7;
+inline constexpr unsigned kCombatApiVersion = 8;
 struct OnlineCombatResult {
     unsigned frames = 0, rollbacks = 0, replayed_frames = 0, max_rollback = 0, stalls = 0,
              desyncs = 0;
     std::uint32_t initial_crc = 0, final_crc = 0, peer_crc = 0;
     float ping_ms = 0, jitter_ms = 0;
     std::uint16_t hp[2]{};
+    std::uint8_t stage = 0;
     bool converged = false;
     char message[192]{};
 };
@@ -27,6 +29,7 @@ struct JpCombatRequest {
     std::uint8_t fighters[2]{1, 8}; // Native JP IDs, including hidden variants 24/26/27.
     std::uint8_t colors[2]{};       // Explicit native palette (0/1), also in mirror matches.
     CustomPalette palettes[2];
+    std::uint8_t stage = 0; // Explicit native JP stage, agreed before online startup.
     void (*sample_inputs)(std::uint16_t* players) = nullptr;
     char player_names[2][49]{"Player 1", "Player 2"};
     NetConnection connection;

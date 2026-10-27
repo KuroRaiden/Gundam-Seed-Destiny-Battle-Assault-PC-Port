@@ -123,6 +123,8 @@ The C++ API is in `src/game_addresses.h`; Python tools import `tools/game_addres
 | `us::kStateCharacterSelect` | `11` | US selector dispatcher, replaced by the JP compositor. | Port hook/capture usage; see source and validation reports |
 | `us::kModePresetVersus` | `6` | US non-link preset battle rules used by the hook. | Port hook/capture usage; see source and validation reports |
 | `us::kFighterStride` | `100` | Stride between native US fighter records. | Port hook/capture usage; see source and validation reports |
+| `us::kTrainingMenuTiles` | `0x083C4F08` | Original US Training pause-menu compressed font graphics. | Native US Training VRAM matched to the Le resource; all 19 sprite frames verified. |
+| `us::kTrainingMenuFrames` | `0x08068AF0` | Original US Training pause-menu sprite-frame pointer table. | US sprite frame 3 is STAND; native OAM and all 19 frames match. |
 
 ## JP
 
@@ -147,7 +149,7 @@ The C++ API is in `src/game_addresses.h`; Python tools import `tools/game_addres
 | `jp::kRightControlDispatch` | `0x08003418` | Original right-fighter control branch intercepted for local P2; Training keeps the native dummy. | Port hook/capture usage; see source and validation reports |
 | `jp::kApplyFighterInput` | `0x08003C78` | Native helper copying a JP input-state record into a fighter input block. | Port hook/capture usage; see source and validation reports |
 | `jp::kPlayerStartupParameterA` | `0x030075F2` | Two per-seat bytes initialized to 4; original option meaning is not yet identified. | Port hook/capture usage; see source and validation reports |
-| `jp::kSharedStartupParameterA` | `0x030075F4` | Shared startup byte initialized to zero; original option meaning is not yet identified. | Port hook/capture usage; see source and validation reports |
+| `jp::kSelectedStage` | `0x030075F4` | Native JP stage ID selected before versus/training initialization; standard rotation uses IDs 0 through 24. | IDA: 0x08002DC0 and 0x080257E8 copy this byte to battle context +34; 0x08005D74 passes its low five bits to stage loader 0x0801A9E8. Native rotation 0x08080340 enumerates 0..24. |
 | `jp::kSharedStartupParameterB` | `0x030075F5` | Second shared startup byte initialized to zero; original option meaning is not yet identified. | Port hook/capture usage; see source and validation reports |
 | `jp::kPlayerStartupParameterB` | `0x030075F6` | Two per-seat startup bytes initialized to zero; original option meaning is not yet identified. | Port hook/capture usage; see source and validation reports |
 | `jp::kPlayerStatParameters` | `0x03007604` | Three stat parameter bytes per seat, 4-byte stride; initialized to 100 for standard combat. | Port hook/capture usage; see source and validation reports |
@@ -210,3 +212,17 @@ The C++ API is in `src/game_addresses.h`; Python tools import `tools/game_addres
 | `jp::kFighterStateThrow` | `20` | Native grapple/self-destruct attack state, including animation continuations. | IDA sub_8007A40 and sub_800B750 |
 | `jp::kBattleSlowdownOffset` | `35` | Low nibble skips combat stepping for the current frame. | IDA sub_8002F2C |
 | `jp::kFighterCommandVariantOffset` | `89` | Accepted native attack command index; preserved across animation continuations. | IDA sub_8007A40 and sub_800779C write PLAYERDATA+89 when accepting commands. |
+| `jp::kBattleStageOffset` | `34` | Low five bits of battle context +34 hold the active native stage ID. | IDA: versus initializer 0x08002DC0, training initializer 0x080257E8 and stage loader call in 0x08005D74. |
+| `jp::kTrainingOptions` | `0x03000DC2` | Three packed native Training option bytes. | IDA sub_8025DE0 / sub_8026344. |
+| `jp::kTrainingCursorY` | `0x03001026` | Native Training pause cursor row position. | IDA sub_8025DE0 and row table 0x080D676E. |
+| `jp::kCameraWorldX` | `0x03000F88` | Native world-space sprite camera X. | IDA sub_80857B8 subtracts this from world X. |
+| `jp::kCameraWorldY` | `0x03000F8A` | Native world-space sprite camera Y. | IDA sub_80857B8 subtracts this from world Y. |
+| `jp::kCameraScreenX` | `0x03000F8C` | Additional native sprite camera X. | IDA sub_80857B8. |
+| `jp::kCameraScreenY` | `0x03000F8E` | Additional native sprite camera Y. | IDA sub_80857B8. |
+| `jp::kScreenOriginX` | `0x03000CB4` | Native screen origin X added during OBJ composition. | IDA sub_80857B8. |
+| `jp::kScreenOriginY` | `0x03000CB6` | Native screen origin Y added during OBJ composition. | IDA sub_80857B8. |
+| `jp::kCollisionPositionPointerOffset` | `8` | Pointer to actor world X/Y in 16.16 coordinates. | IDA sub_8020FE4; signed high halves at +2/+6. |
+| `jp::kCollisionInvulnerableFlag` | `16` | Defender excluded from hit detection. | IDA sub_8020FE4. |
+| `jp::kCollisionGeometryCountOffset` | `5` | Actor byte whose bits 2..3 count collision geometry records. | IDA sub_8020FE4 and sub_8021DD4. |
+| `jp::kCollisionGeometryCountShift` | `2` | Shift of native collision geometry count. | IDA sub_8020FE4. |
+| `jp::kCollisionHitMaskOffset` | `22` | Bits marking already-connected offensive rectangles. | IDA sub_8020FE4 / sub_8021DD4. |

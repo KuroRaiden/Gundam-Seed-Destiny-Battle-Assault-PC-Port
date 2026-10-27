@@ -4,6 +4,7 @@
 
 #include "brand_icons.h"
 #include "combat_host.h"
+#include "fighter_outline.h"
 #include "controller_db.h"
 #include "host_window.h"
 #include "in_game_remap.h"
@@ -11,6 +12,7 @@
 #include "invite_window.h"
 #include "online_lobby.h"
 #include "training_meter_overlay.h"
+#include "training_tools.h"
 #include <stdexcept>
 
 #include <algorithm>
@@ -2563,6 +2565,8 @@ void HostWindow::present(const uint8_t* rgb888, unsigned sampled_w, unsigned sam
         sampled_w = unsigned(b->base_w);
     if (!sampled_h)
         sampled_h = unsigned(b->base_h);
+    rgb888 = seed::outlined_combat_pixels(rgb888, sampled_w, sampled_h);
+    rgb888 = seed::training_display_pixels(rgb888, sampled_w, sampled_h);
     int texture_w = 0, texture_h = 0;
     float tw = 0, th = 0;
     SDL_GetTextureSize(b->texture, &tw, &th);
@@ -2933,6 +2937,11 @@ bool HostWindow::linear_filter() const {
     return open_ && impl_ && static_cast<const Backend*>(impl_)->linear_filter;
 }
 
+void HostWindow::clear_queued_audio() {
+    if (!open_ || !impl_) return;
+    auto* b = static_cast<Backend*>(impl_);
+    if (b->audio_stream) SDL_ClearAudioStream(b->audio_stream);
+}
 void HostWindow::set_audio_enabled(bool enabled) {
     if (!open_ || !impl_)
         return;
@@ -3236,6 +3245,8 @@ HostWindow::Events HostWindow::pump() {
         if (b->online_lobby.event(e))
             continue;
         if (b->remap.event(e, b->online_session))
+            continue;
+        if (!b->remap.is_open() && seed::training_tools_event(e, b->online_session))
             continue;
         if (!b->remap.is_open() && b->training_meter.event(e, b->online_session))
             continue;
@@ -3615,6 +3626,10 @@ HostWindow::Events HostWindow::pump() {
 } // namespace gbarecomp
 
 namespace seed {
+void release_host_controls() {
+    if (auto* b = gbarecomp::seed_active_backend)
+        if (b->inputs) b->inputs->release_guard();
+}
 void show_online_lobby(OnlineLobbyState* state) {
     if (auto* b = gbarecomp::seed_active_backend)
         b->online_lobby.show(state);
@@ -3723,6 +3738,7 @@ bool HostWindow::saved_audio_enhanced(bool& /*enabled*/) const {
 }
 void HostWindow::save_audio_enhanced(bool /*enabled*/) {}
 void HostWindow::set_audio_enabled(bool /*enabled*/) {}
+void HostWindow::clear_queued_audio() {}
 bool HostWindow::audio_enabled() const {
     return false;
 }

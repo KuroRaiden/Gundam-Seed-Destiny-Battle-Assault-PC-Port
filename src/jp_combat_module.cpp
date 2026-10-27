@@ -9,6 +9,8 @@ extern "C" __declspec(dllexport) int SeedRunJpCombat(const seed::JpCombatRequest
     if (!request || request->version != seed::kCombatApiVersion || !request->rom ||
         !request->bios || !request->save)
         return -1;
+    if (!seed::valid_jp_stage(request->stage))
+        return -1;
     for (const auto id : request->fighters)
         if (id < 1 || id > 27)
             return -1;

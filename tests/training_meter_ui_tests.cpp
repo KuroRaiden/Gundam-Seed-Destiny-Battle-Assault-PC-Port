@@ -1,6 +1,7 @@
 #include "host_window.h"
 #include "combat_host.h"
 #include "training_frame_meter.h"
+#include "training_tools.h"
 #include <SDL3/SDL.h>
 #include <array>
 #include <cstdio>
@@ -27,6 +28,8 @@ int main(int argc, char** argv) {
         SDL_SetHint(SDL_HINT_RENDER_DRIVER, "software");
         auto& meter = seed::training_frame_meter();
         meter.configure(true);
+        seed::configure_training_tools(true, false,
+                                       std::filesystem::path(argv[1]).replace_extension(".sav"));
         for (unsigned frame = 0; frame < 50; ++frame) {
             std::array<seed::FighterFrameObservation, 2> sample{};
             sample[0].valid = sample[1].valid = true;
@@ -79,10 +82,58 @@ int main(int argc, char** argv) {
         SDL_DestroySurface(pixels);
         for (auto count : matched)
             require(count > 5, "A requested frame phase color is missing from the native UI");
+        key(SDL_SCANCODE_F6);
+        auto tools = window.pump();
+        require(seed::training_boxes_visible() && !tools.save_slot && !tools.load_slot,
+                "F6 leaked into generic save slots");
+        key(SDL_SCANCODE_F6, true);
+        window.pump();
+        require(seed::training_boxes_visible(), "F6 repeat toggled boxes");
+        key(SDL_SCANCODE_F6, false, false);
+        window.pump();
+        require(seed::training_boxes_visible(), "F6 release toggled boxes");
+        for (auto sc : {SDL_SCANCODE_F2, SDL_SCANCODE_F3}) {
+            key(sc, true);
+            auto ignored = window.pump();
+            require(!seed::training_checkpoint_pending() && !ignored.save_slot &&
+                        !ignored.load_slot,
+                    "State key repeat triggered an operation");
+            key(sc, false, false);
+            ignored = window.pump();
+            require(!seed::training_checkpoint_pending() && !ignored.save_slot &&
+                        !ignored.load_slot,
+                    "State key release triggered an operation");
+        }
+        key(SDL_SCANCODE_F2);
+        tools = window.pump();
+        require(seed::training_checkpoint_pending() && !tools.save_slot && !tools.load_slot,
+                "F2 did not request a Training save exclusively");
+        seed::configure_training_tools(true, false,
+                                       std::filesystem::path(argv[1]).replace_extension(".sav"));
+        key(SDL_SCANCODE_F3);
+        tools = window.pump();
+        require(seed::training_checkpoint_pending() && !tools.save_slot && !tools.load_slot,
+                "F3 leaked into generic slots");
+        seed::configure_training_tools(true, false,
+                                       std::filesystem::path(argv[1]).replace_extension(".sav"));
+        for (auto sc : {SDL_SCANCODE_F7, SDL_SCANCODE_F8}) {
+            key(sc);
+            const auto ignored = window.pump();
+            require(!seed::training_checkpoint_pending() && !ignored.save_slot &&
+                        !ignored.load_slot,
+                    "Retired shortcut triggered a save/load");
+        }
         key(SDL_SCANCODE_F4);
         require(window.pump().remap_pause, "Offline controls did not pause");
         key(SDL_SCANCODE_F5);
         require(window.pump().remap_pause && meter.visible(), "F5 escaped the F4 controls overlay");
+        for (auto sc : {SDL_SCANCODE_F6, SDL_SCANCODE_F2, SDL_SCANCODE_F3}) {
+            key(sc);
+            const auto blocked = window.pump();
+            require(blocked.remap_pause && !seed::training_boxes_visible() &&
+                        !seed::training_checkpoint_pending(),
+                    "Training action escaped F4");
+        }
         window.present(image.data());
         key(SDL_SCANCODE_F4);
         require(!window.pump().remap_pause, "Controls did not resume");
@@ -90,19 +141,36 @@ int main(int argc, char** argv) {
         require(!window.pump().remap_pause && !meter.visible(),
                 "F5 close paused the game or failed");
         meter.configure(false);
+        seed::configure_training_tools(false, false, {});
         key(SDL_SCANCODE_F5);
         window.pump();
         require(!meter.allowed() && !meter.visible(), "VS enabled the Training meter");
+        for (auto sc : {SDL_SCANCODE_F6, SDL_SCANCODE_F2, SDL_SCANCODE_F3}) {
+            key(sc);
+            tools = window.pump();
+            require(!tools.save_slot && !tools.load_slot && !seed::training_checkpoint_pending() &&
+                        !seed::training_boxes_visible(),
+                    "VS leaked a Training hotkey");
+        }
         window.set_network_session(true);
+        seed::configure_training_tools(true, true, {});
+        for (auto sc : {SDL_SCANCODE_F6, SDL_SCANCODE_F2, SDL_SCANCODE_F3}) {
+            key(sc);
+            tools = window.pump();
+            require(!tools.save_slot && !tools.load_slot && !seed::training_checkpoint_pending() &&
+                        !seed::training_boxes_visible(),
+                    "Online leaked a Training hotkey");
+        }
         meter.configure(true, true);
         key(SDL_SCANCODE_F5);
         window.pump();
         require(!meter.visible(), "Online enabled the Training meter");
         window.close();
         SDL_Quit();
-        std::printf("PASS: native F5 open/close/repeat/release, no pause/state hotkey leak, F4 "
-                    "isolation, VS/online gates, rendered phase pixels %u/%u/%u/%u.\n",
-                    matched[0], matched[1], matched[2], matched[3]);
+        std::printf(
+            "PASS: F2 save/F3 load, retired F7/F8 inactive, F5/F6 edges, no state hotkey leak, F4 "
+            "isolation, VS/online gates, rendered phase pixels %u/%u/%u/%u.\n",
+            matched[0], matched[1], matched[2], matched[3]);
         return 0;
     } catch (const std::exception& error) {
         std::fprintf(stderr, "%s\n", error.what());

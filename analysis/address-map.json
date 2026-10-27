@@ -1000,11 +1000,11 @@
     },
     {
       "group": "jp",
-      "name": "shared_startup_parameter_a",
+      "name": "selected_stage",
       "value": "0x030075F4",
       "kind": "address",
-      "meaning": "Shared startup byte initialized to zero; original option meaning is not yet identified.",
-      "evidence": "Port hook/capture usage; see source and validation reports"
+      "meaning": "Native JP stage ID selected before versus/training initialization; standard rotation uses IDs 0 through 24.",
+      "evidence": "IDA: 0x08002DC0 and 0x080257E8 copy this byte to battle context +34; 0x08005D74 passes its low five bits to stage loader 0x0801A9E8. Native rotation 0x08080340 enumerates 0..24."
     },
     {
       "group": "jp",
@@ -1533,6 +1533,134 @@
       "kind": "offset",
       "meaning": "Accepted native attack command index; preserved across animation continuations.",
       "evidence": "IDA sub_8007A40 and sub_800779C write PLAYERDATA+89 when accepting commands."
+    },
+    {
+      "group": "jp",
+      "name": "battle_stage_offset",
+      "value": "34",
+      "kind": "offset",
+      "meaning": "Low five bits of battle context +34 hold the active native stage ID.",
+      "evidence": "IDA: versus initializer 0x08002DC0, training initializer 0x080257E8 and stage loader call in 0x08005D74."
+    },
+    {
+      "group": "us",
+      "name": "training_menu_tiles",
+      "value": "0x083C4F08",
+      "kind": "address",
+      "meaning": "Original US Training pause-menu compressed font graphics.",
+      "evidence": "Native US Training VRAM matched to the Le resource; all 19 sprite frames verified."
+    },
+    {
+      "group": "us",
+      "name": "training_menu_frames",
+      "value": "0x08068AF0",
+      "kind": "address",
+      "meaning": "Original US Training pause-menu sprite-frame pointer table.",
+      "evidence": "US sprite frame 3 is STAND; native OAM and all 19 frames match."
+    },
+    {
+      "group": "jp",
+      "name": "training_options",
+      "value": "0x03000DC2",
+      "kind": "address",
+      "meaning": "Three packed native Training option bytes.",
+      "evidence": "IDA sub_8025DE0 / sub_8026344."
+    },
+    {
+      "group": "jp",
+      "name": "training_cursor_y",
+      "value": "0x03001026",
+      "kind": "address",
+      "meaning": "Native Training pause cursor row position.",
+      "evidence": "IDA sub_8025DE0 and row table 0x080D676E."
+    },
+    {
+      "group": "jp",
+      "name": "camera_world_x",
+      "value": "0x03000F88",
+      "kind": "address",
+      "meaning": "Native world-space sprite camera X.",
+      "evidence": "IDA sub_80857B8 subtracts this from world X."
+    },
+    {
+      "group": "jp",
+      "name": "camera_world_y",
+      "value": "0x03000F8A",
+      "kind": "address",
+      "meaning": "Native world-space sprite camera Y.",
+      "evidence": "IDA sub_80857B8 subtracts this from world Y."
+    },
+    {
+      "group": "jp",
+      "name": "camera_screen_x",
+      "value": "0x03000F8C",
+      "kind": "address",
+      "meaning": "Additional native sprite camera X.",
+      "evidence": "IDA sub_80857B8."
+    },
+    {
+      "group": "jp",
+      "name": "camera_screen_y",
+      "value": "0x03000F8E",
+      "kind": "address",
+      "meaning": "Additional native sprite camera Y.",
+      "evidence": "IDA sub_80857B8."
+    },
+    {
+      "group": "jp",
+      "name": "screen_origin_x",
+      "value": "0x03000CB4",
+      "kind": "address",
+      "meaning": "Native screen origin X added during OBJ composition.",
+      "evidence": "IDA sub_80857B8."
+    },
+    {
+      "group": "jp",
+      "name": "screen_origin_y",
+      "value": "0x03000CB6",
+      "kind": "address",
+      "meaning": "Native screen origin Y added during OBJ composition.",
+      "evidence": "IDA sub_80857B8."
+    },
+    {
+      "group": "jp",
+      "name": "collision_position_pointer_offset",
+      "value": "8",
+      "kind": "offset",
+      "meaning": "Pointer to actor world X/Y in 16.16 coordinates.",
+      "evidence": "IDA sub_8020FE4; signed high halves at +2/+6."
+    },
+    {
+      "group": "jp",
+      "name": "collision_invulnerable_flag",
+      "value": "16",
+      "kind": "mask",
+      "meaning": "Defender excluded from hit detection.",
+      "evidence": "IDA sub_8020FE4."
+    },
+    {
+      "group": "jp",
+      "name": "collision_geometry_count_offset",
+      "value": "5",
+      "kind": "offset",
+      "meaning": "Actor byte whose bits 2..3 count collision geometry records.",
+      "evidence": "IDA sub_8020FE4 and sub_8021DD4."
+    },
+    {
+      "group": "jp",
+      "name": "collision_geometry_count_shift",
+      "value": "2",
+      "kind": "offset",
+      "meaning": "Shift of native collision geometry count.",
+      "evidence": "IDA sub_8020FE4."
+    },
+    {
+      "group": "jp",
+      "name": "collision_hit_mask_offset",
+      "value": "22",
+      "kind": "offset",
+      "meaning": "Bits marking already-connected offensive rectangles.",
+      "evidence": "IDA sub_8020FE4 / sub_8021DD4."
     }
   ]
 }

@@ -101,6 +101,8 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             if (frame % 16 == 0)
                 pump();
         }
+        result.stage = bus_read_u8(jp_address::kBattleContext + jp_address::kBattleStageOffset) & 31;
+        require(result.stage == match.stage, "JP combat loaded a different stage");
         std::vector<std::uint8_t> state;
         std::string error;
         require(machine.save(state, error), error);
@@ -123,6 +125,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             put32(p.data() + 20, configured_target);
             p[24] = match.colors[0];
             p[25] = match.colors[1];
+            p[28] = match.stage;
             for (unsigned seat = 0; seat < 2; ++seat) {
                 p[26 + seat] = match.palettes[seat].enabled;
                 encode_palette(p.data() + 32 + seat * kMsPaletteBytes, match.palettes[seat]);
@@ -132,7 +135,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         auto control = [&] {
             for (const auto& p : transport.take_control()) {
                 if (acknowledge_room_start(transport, p, match.connection, match.fighters,
-                                           match.colors, match.palettes))
+                                           match.colors, match.palettes, match.stage))
                     continue;
                 if (p.size() == 32 && get32(p.data()) == kRoomMagic &&
                     get32(p.data() + 4) == kRoomProtocol && p[9] == 1 - seat && p[8] == 5 &&
@@ -145,7 +148,8 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                     continue;
                 require(get32(p.data() + 4) == kRoomProtocol && p[10] == match.fighters[0] &&
                             p[11] == match.fighters[1] && p[24] == match.colors[0] &&
-                            p[25] == match.colors[1] && get32(p.data() + 20) == configured_target,
+                            p[25] == match.colors[1] && p[28] == match.stage &&
+                            get32(p.data() + 20) == configured_target,
                         "Opponent uses a different online battle configuration");
                 for (unsigned seat = 0; seat < 2; ++seat) {
                     CustomPalette palette;

@@ -32,10 +32,13 @@ def main():
         action="store_true",
         help="Require both locally saved palettes to synchronize",
     )
+    parser.add_argument("--stages", default="0", help="Comma-separated native stage IDs or random, cycled per match")
     parser.add_argument("--finish-fence", action="store_true")
     parser.add_argument("--matches", type=int, default=1)
     parser.add_argument("--frames", type=int, default=240)
     args = parser.parse_args()
+    stages = [255 if value.strip().lower() == "random" else int(value) for value in args.stages.split(",")]
+    assert stages and all(0 <= value < 25 or value == 255 for value in stages)
     assert 1 <= args.matches <= 1000 and 3 <= args.frames <= 18000
     args.out = args.out.resolve()
     args.out.mkdir(parents=True, exist_ok=True)
@@ -178,12 +181,39 @@ def main():
             # Keep releasing held input between matches so A cannot auto-ready.
             for client in clients:
                 client.frames(2, 0, 0)
+            # Confirm fighters, then wait for the host-authoritative stage screen.
+            for client in clients:
+                client.frames(2, 1, 0)
+            until = time.monotonic() + 8
+            while True:
+                for client in clients:
+                    client.frames(24, 0, 0)
+                stage_states = [client.status() for client in clients]
+                if all(state["stage_active"] for state in stage_states):
+                    break
+                assert time.monotonic() < until, stage_states
+                time.sleep(0.01)
+            wanted = stages[(match_number - 1) % len(stages)]
+            for _ in range(27):
+                if host.status()["stage_cursor"] == wanted:
+                    break
+                host.local_tap(16)
+            assert host.status()["stage_cursor"] == wanted
+            until = time.monotonic() + 5
+            while guest.status()["stage_cursor"] != wanted:
+                host.frames(4, 0, 0)
+                guest.frames(4, 0, 0)
+                assert time.monotonic() < until
+                time.sleep(0.01)
+            host.screenshot(case / f"stage-select-{match_number}.png", selector=True)
+            evidence.append(dict(stage="stage-select", match=match_number, cursor=wanted))
             until = time.monotonic() + 35
             first = True
             while True:
                 with ThreadPoolExecutor(2) as pool:
                     jobs = [
-                        pool.submit(client.frames, 600, 1 if first else 0, 0) for client in clients
+                        pool.submit(client.frames, 600, 1 if first and seat == 0 else 0, 0)
+                        for seat, client in enumerate(clients)
                     ]
                     for job in jobs:
                         job.result(timeout=50)
@@ -197,6 +227,7 @@ def main():
             for state in states:
                 assert (
                     state["online_converged"]
+                    and (wanted == 255 or state["online_stage"] == wanted)
                     and (
                         state["online_frames"] >= args.frames
                         if args.finish_fence
@@ -217,6 +248,7 @@ def main():
                 ], state
             assert (
                 states[0]["online_crc"] == states[1]["online_crc"]
+                and states[0]["online_stage"] == states[1]["online_stage"]
                 and states[0]["online_epoch"] == states[1]["online_epoch"]
             ), states
             evidence.append(

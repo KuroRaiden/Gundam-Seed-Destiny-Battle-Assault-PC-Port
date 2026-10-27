@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "runtime.h"
 #include "jp_asset_import.h"
+#include "us_training_art.h"
 #include "local_vs_runtime.h"
 #include "invite_window.h"
 #include "invite_code.h"
@@ -16,12 +17,14 @@
 namespace {
 void import_jp_art(const std::filesystem::path& base, const std::string& rom,
                    const std::string& bios, const std::filesystem::path& output,
-                   bool colors = false) {
+                   bool colors = false, bool stages = false) {
     const auto library = LoadLibraryW((base / "SeedJpCombat.dll").c_str());
     if (!library)
         throw std::runtime_error("The JP combat module is missing or could not be loaded.");
     const auto import = reinterpret_cast<seed::ImportJpSelectionArt>(
-        GetProcAddress(library, colors ? "SeedImportJpColorPreviews" : "SeedImportJpSelectionArt"));
+        GetProcAddress(library, stages   ? "SeedImportJpStagePreviews"
+                                : colors ? "SeedImportJpColorPreviews"
+                                         : "SeedImportJpSelectionArt"));
     const auto result = import ? import(rom.c_str(), bios.c_str(), output.string().c_str()) : 1;
     FreeLibrary(library);
     if (result)
@@ -34,8 +37,8 @@ int main(int argc, char** argv) {
     options.builtin_game_name = "Gundam SEED: Battle Assault (US)";
     options.builtin_rom_sha1 = "8287d3d336d94a85c5cb22da0fd84918199197e1";
     options.diagnostic_replay_default = false;
-    std::string jp_rom, bios, save, join_code, import_output;
-    bool import_colors = false;
+    std::string us_rom, jp_rom, bios, save, join_code, import_output;
+    bool import_colors = false, import_stages = false;
     int jp_debug_port = 0;
     std::vector<char*> args{argv[0]};
     for (int i = 1; i < argc; ++i) {
@@ -43,6 +46,11 @@ int main(int argc, char** argv) {
         if (flag == "--import-jp-color-previews" && i + 1 < argc) {
             import_output = argv[++i];
             import_colors = true;
+            continue;
+        }
+        if (flag == "--import-jp-stage-previews" && i + 1 < argc) {
+            import_output = argv[++i];
+            import_stages = true;
             continue;
         }
         if (flag == "--import-jp-assets" && i + 1 < argc) {
@@ -61,6 +69,8 @@ int main(int argc, char** argv) {
             jp_debug_port = std::stoi(argv[++i]);
             continue;
         }
+        if (flag == "--rom" && i + 1 < argc)
+            us_rom = argv[i + 1];
         if (flag == "--bios" && i + 1 < argc)
             bios = argv[i + 1];
         if (flag == "--save" && i + 1 < argc)
@@ -75,12 +85,17 @@ int main(int argc, char** argv) {
         const auto base = std::filesystem::absolute(argv[0]).parent_path();
         const auto art = base / "assets" / "destiny-selection.bin";
         if (!import_output.empty()) {
-            import_jp_art(base, jp_rom, bios, std::filesystem::u8path(import_output),
-                          import_colors);
+            import_jp_art(base, jp_rom, bios, std::filesystem::u8path(import_output), import_colors,
+                          import_stages);
             return 0;
         }
         if (!std::filesystem::is_regular_file(art))
             import_jp_art(base, jp_rom, bios, art);
+        const auto stages = base / "assets" / "destiny-stages.bin";
+        if (!std::filesystem::is_regular_file(stages))
+            import_jp_art(base, jp_rom, bios, stages, false, true);
+        seed::UsTrainingArt::prepare(std::filesystem::u8path(us_rom),
+                                     base / "assets" / "us-training-menu.bin");
         if (!join_code.empty())
             seed::queue_game_invite(join_code);
         seed::configure_local_vs(options,

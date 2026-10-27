@@ -120,13 +120,18 @@ def main():
         assert s["preview"] == [12, 13], s
         us.screenshot(args.out / "training-selection.png", selector=True)
         us.local_tap(1)
+        us.frames(30, 0, 0)
+        assert us.status()["stage_active"], us.status()
+        us.local_tap(16)
+        us.local_tap(16)
+        us.screenshot(args.out / "training-stage-select.png", selector=True)
         with ThreadPoolExecutor(1) as executor:
-            advancing = executor.submit(us.frames, 60, 0, 0)
+            advancing = executor.submit(us.frames, 60, 1, 0)
             jp = Client(args.port + 1, process)
             jp.frames(600, 0, 0)
             s = record(jp, "jp-training")
             assert (
-                s["training"] and s["state"] == 8 and s["fighters"] == [13, 14] and min(s["hp"]) > 0
+                s["training"] and s["state"] == 8 and s["fighters"] == [13, 14] and s["stage"] == 2 and min(s["hp"]) > 0
             ), s
             jp.screenshot(args.out / "training-battle.png")
             jp.frames(240, 0, 0)

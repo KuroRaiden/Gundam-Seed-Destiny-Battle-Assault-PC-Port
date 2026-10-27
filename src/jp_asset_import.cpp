@@ -492,3 +492,109 @@ extern "C" __declspec(dllexport) int SeedImportJpColorPreviews(const char* rom, 
         return 1;
     }
 }
+
+namespace {
+struct StageCapture {
+    Donor* donor;
+    std::filesystem::path output;
+};
+StageCapture* stage_capture = nullptr;
+int capture_stage_previews(gbarecomp::NativeFrameControl& machine) {
+    machine.seed_clock(946684800);
+    Bytes pack{'S', 'E', 'E', 'D', 'S', 'T', '1', 0};
+    put32(pack, seed::kJpStageCount);
+    put32(pack, width);
+    put32(pack, height);
+    const auto digest = hash(stage_capture->donor->rom, BCRYPT_SHA256_ALG_HANDLE, 32);
+    for (unsigned i = 0; i < digest.size(); i += 2)
+        pack.push_back(std::uint8_t(std::stoul(digest.substr(i, 2), nullptr, 16)));
+    std::vector<gbarecomp::NativeFrameControl::AudioBlock> audio;
+    for (unsigned stage = 0; stage < seed::kJpStageCount; ++stage) {
+        if (stage) {
+            seed::JpCombatRequest request;
+            request.stage = std::uint8_t(stage);
+            gbarecomp::RunOptions ignored;
+            seed::configure_jp_combat(ignored, request);
+        }
+        for (unsigned frame = 0; frame < 600; ++frame) {
+            seed::set_jp_frame_inputs(0, 0);
+            require(machine.advance(1023), "Stage preview initialization stopped");
+            machine.drain_audio(audio);
+        }
+        require((bus_read_u8(jp::kBattleContext + jp::kBattleStageOffset) & 31) == stage,
+                "Stage preview loaded the wrong native stage");
+        // Original stage planes BG0/BG1, with HUD, fighters and window masks
+        // disabled for this local cache capture only. Gameplay is never modified.
+        const auto display = bus_read_u16(common::kIoBegin);
+        bus_write_u16(common::kIoBegin, (1u << 8) | (1u << 9));
+        seed::set_jp_frame_inputs(0, 0);
+        require(machine.advance(1023), "Stage preview rendering stopped");
+        machine.drain_audio(audio);
+        const auto* rgb = machine.pixels();
+        for (unsigned pixel = 0; pixel < width * height; ++pixel)
+            put16(pack, (rgb[pixel * 3] >> 3) | ((rgb[pixel * 3 + 1] >> 3) << 5) |
+                        ((rgb[pixel * 3 + 2] >> 3) << 10));
+        bus_write_u16(common::kIoBegin, display);
+    }
+    const auto pending = stage_capture->output.wstring() + L".pending-" +
+                         std::to_wstring(GetCurrentProcessId());
+    {
+        std::ofstream file(pending, std::ios::binary);
+        file.write(reinterpret_cast<const char*>(pack.data()), std::streamsize(pack.size()));
+        file.close();
+        require(bool(file), "Cannot write local stage previews");
+    }
+    if (!MoveFileExW(pending.c_str(), stage_capture->output.c_str(),
+                     MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+        std::filesystem::remove(pending);
+        throw std::runtime_error("Cannot install local stage previews");
+    }
+    std::fprintf(stderr, "Imported %u native stage previews locally\n", seed::kJpStageCount);
+    return 0;
+}
+} // namespace
+extern "C" __declspec(dllexport) int SeedImportJpStagePreviews(const char* rom, const char* bios,
+                                                               const char* destination) {
+    try {
+        require(rom && bios && destination, "Missing local game input paths");
+        Donor donor(std::filesystem::u8path(rom));
+        const auto firmware = read_file(std::filesystem::u8path(bios));
+        require(firmware.size() == 16384 && hash(firmware, BCRYPT_SHA1_ALG_HANDLE, 20) ==
+                                                "300c20df6731a33952ded8c436f7f186d25d3492",
+                "Select the supported extracted GBA BIOS");
+        const auto output = std::filesystem::absolute(std::filesystem::u8path(destination));
+        for (const auto* input : {rom, bios}) {
+            std::error_code error;
+            require(!std::filesystem::equivalent(output, std::filesystem::u8path(input), error),
+                    "The stage cache must not overwrite game files");
+        }
+        std::filesystem::create_directories(output.parent_path());
+        const auto save = output.parent_path() /
+                          (".stage-import-" + std::to_string(GetCurrentProcessId()) + ".sav");
+        require(!std::filesystem::exists(save), "Stage preview cache is already in use");
+        struct Cleanup {
+            std::filesystem::path save;
+            ~Cleanup() {
+                std::error_code error;
+                std::filesystem::remove(save, error);
+                stage_capture = nullptr;
+            }
+        } cleanup{save};
+        StageCapture capture{&donor, output};
+        stage_capture = &capture;
+        gbarecomp::RunOptions options;
+        seed::JpCombatRequest request;
+        seed::configure_jp_combat(options, request);
+        options.native_frame_driver = capture_stage_previews;
+        const auto save_text = save.string();
+        std::vector<std::string> values{"GundamSeedRecomp.exe", "--rom", rom, "--bios", bios,
+                                        "--bios-hle", "--save", save_text};
+        std::vector<char*> args;
+        for (auto& value : values)
+            args.push_back(value.data());
+        return gbarecomp::run_game(int(args.size()), args.data(), options);
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "Local stage preview import: %s\n", error.what());
+        return 1;
+    }
+}

@@ -2,6 +2,7 @@
 #include "input_state.h"
 #include "fighter_colors.h"
 #include "ms_palette.h"
+#include "jp_stages.h"
 #include <array>
 #include <cstdint>
 
@@ -57,6 +58,10 @@ struct LocalVsSelection {
     unsigned ready_frames = 0;
     bool cancelled = false;
     bool launch = false;
+    bool stage_enabled = false; // The game routes opt in; older narrow fixtures use stage 0.
+    bool stage_active = false, stage_confirmed = false, stage_release_guard = false;
+    std::uint8_t stage_cursor = 0, stage = 0;
+    void back_to_fighters();
     bool supported(std::uint8_t fighter) const {
         return fighter < 32 && (available_fighters & (1u << fighter));
     }

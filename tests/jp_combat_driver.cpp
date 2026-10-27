@@ -12,6 +12,11 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--fighters" && i + 2 < argc) {
             request.fighters[0] = std::stoi(argv[++i]);
             request.fighters[1] = std::stoi(argv[++i]);
+        } else if (std::string(argv[i]) == "--stage" && i + 1 < argc) {
+            const auto stage = std::stoi(argv[++i]);
+            if (!seed::valid_jp_stage(stage))
+                return 2;
+            request.stage = std::uint8_t(stage);
         } else if (std::string(argv[i]) == "--colors" && i + 2 < argc) {
             request.colors[0] = std::stoi(argv[++i]);
             request.colors[1] = std::stoi(argv[++i]);
@@ -20,8 +25,11 @@ int main(int argc, char** argv) {
             request.palettes[1] = ms_test_palette(1);
         } else if (std::string(argv[i]) == "--training")
             request.mode = seed::JpCombatMode::Training;
-        else
+        else {
+            if (std::string(argv[i]) == "--save" && i + 1 < argc)
+                request.save = argv[i + 1];
             args.push_back(argv[i]);
+        }
     }
     seed::configure_jp_combat(options, request);
     return gbarecomp::run_game(int(args.size()), args.data(), options);

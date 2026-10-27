@@ -1,0 +1,39 @@
+--- a/src/gba/gba_ppu.cpp
++++ b/src/gba/gba_ppu.cpp
+@@ -14,6 +14,11 @@
+ #include "snapshot.h"
+ 
+ namespace gba {
++
++// Optional read-only object ownership tap for downstream presentation effects.
++// It does not alter any raster pixel, guest device state, timing or snapshot.
++extern "C" void (*g_seed_obj_line_observer)(unsigned, unsigned, const std::uint8_t*,
++                                             const std::uint8_t*, const std::uint8_t*) = nullptr;
+ 
+ // Widescreen margin tilemap provider (Step C). When set (by the runtime-side
+ // sidecar) and the wide path samples a margin column (hardware x outside
+@@ -687,6 +692,8 @@
+     uint8_t* row = rgb + y * kScreenWidth * 3;
+     if (dispcnt & 0x0080u) {
+         std::memset(row, 0xFF, kScreenWidth * 3);
++        if (g_seed_obj_line_observer)
++            g_seed_obj_line_observer(y, kScreenWidth, nullptr, nullptr, oam);
+         return;
+     }
+ 
+@@ -1346,6 +1353,15 @@
+             dst[2] = top[x].rgb[2];
+ #endif
+         }
++    }
++    if (g_seed_obj_line_observer) {
++        std::uint8_t objects[GbaPpu::kScreenWidth], layers[GbaPpu::kScreenWidth];
++        for (unsigned x = 0; x < kScreenWidth; ++x) {
++            objects[x] = top[x].layer == 4 ? std::uint8_t(top[x].key & 127) : 255;
++            layers[x] = std::uint8_t((std::min(unsigned(top[x].key) >> 8, 4u) << 3) |
++                                     top[x].layer);
++        }
++        g_seed_obj_line_observer(y, kScreenWidth, objects, layers, oam);
+     }
+     return;
+ }

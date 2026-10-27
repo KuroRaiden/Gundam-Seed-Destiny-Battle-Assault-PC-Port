@@ -27,6 +27,14 @@ void inputs(std::uint16_t* out) {
         key.key.key = SDLK_F4;
         SDL_PushEvent(&key);
     }
+    if (windowed && (frame == 20 || frame == 21 || frame == 22)) {
+        SDL_Event key{};
+        key.type = SDL_EVENT_KEY_DOWN;
+        constexpr SDL_Scancode training_keys[]{SDL_SCANCODE_F6, SDL_SCANCODE_F2, SDL_SCANCODE_F3};
+        key.key.scancode = training_keys[frame - 20];
+        key.key.key = SDL_GetKeyFromScancode(key.key.scancode, SDL_KMOD_NONE, false);
+        SDL_PushEvent(&key);
+    }
     if (frame < 40)
         out[0] = seat ? 32 : 16;
     else {

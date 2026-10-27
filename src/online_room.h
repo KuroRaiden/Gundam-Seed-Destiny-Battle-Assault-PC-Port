@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 namespace seed {
-inline constexpr std::uint32_t kRoomProtocol = 0x00080001;
+inline constexpr std::uint32_t kRoomProtocol = 0x00090001;
 inline constexpr std::uint32_t kRoomMagic = 0x31524353; // SCR1
 inline constexpr std::uint32_t kCombatControlMagic = 0x314E504A;
 inline constexpr unsigned kCombatControlPacketBytes = 32 + 2 * kMsPaletteBytes;
@@ -16,7 +16,8 @@ constexpr std::uint32_t next_match_epoch(std::uint32_t epoch) {
 // This prevents a lost final lobby packet from stranding the host.
 bool acknowledge_room_start(UdpTransport& transport, const std::vector<std::uint8_t>& packet,
                             const NetConnection& connection, const std::uint8_t* fighters,
-                            const std::uint8_t* colors, const CustomPalette* palettes);
+                            const std::uint8_t* colors, const CustomPalette* palettes,
+                            std::uint8_t stage = 0);
 // A peer can reach selection before its opponent receives the last match
 // checksum ack. Keep servicing that completed match without leaving the room.
 bool acknowledge_match_finish(UdpTransport& transport, const std::vector<std::uint8_t>& packet,
@@ -80,6 +81,9 @@ class OnlineRoom {
     std::uint64_t completed_matches_ = 0;
     std::array<std::uint8_t, 2> fighters_{}, colors_{};
     std::array<CustomPalette, 2> palettes_{};
+    std::uint32_t selection_revision_ = 0;
+    std::uint8_t stage_ = 0;
+    bool stage_enabled_ = false;
     std::array<std::string, 2> names_{"Player 1", "Player 2"};
 };
 } // namespace seed

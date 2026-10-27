@@ -53,9 +53,10 @@ bool header(const std::vector<std::uint8_t>& p, unsigned remote) {
 } // namespace
 bool acknowledge_room_start(UdpTransport& transport, const std::vector<std::uint8_t>& p,
                             const NetConnection& c, const std::uint8_t* fighters,
-                            const std::uint8_t* colors, const CustomPalette* palettes) {
+                            const std::uint8_t* colors, const CustomPalette* palettes, std::uint8_t stage) {
     if (!header(p, 1 - c.seat) || p[8] != 3 || get32(p.data() + 20) != c.epoch ||
-        !valid_jp_color(p[24], p[26]) || !valid_jp_color(p[25], p[27]))
+        !valid_jp_color(p[24], p[26]) || !valid_jp_color(p[25], p[27]) ||
+        !valid_jp_stage(p[30]) || p[30] != stage || p[31] > 1)
         return false;
     for (unsigned seat = 0; seat < 2; ++seat) {
         const auto choice = jp_combat_choice(p[24 + seat], p[26 + seat]);
@@ -145,12 +146,23 @@ void OnlineRoom::send(unsigned kind, const LocalVsSelection* selection) {
             encode_palette(p.data() + 32 + kPlayerNameBytes + 1, s.palette);
     }
     if (kind == 2) {
+        p[15] = selection ? std::uint8_t(unsigned(selection->stage_enabled) |
+                                       (selection->stage_active << 1) |
+                                       (selection->stage_confirmed << 2)) : 0;
+        p[30] = selection ? selection->stage_cursor : 0;
+        p[31] = selection ? selection->stage : 0;
         std::copy(names_[seat_].begin(), names_[seat_].end(), p.begin() + 32);
     }
     p[24] = fighters_[0];
     p[25] = fighters_[1];
     p[26] = colors_[0];
     p[27] = colors_[1];
+    if (kind == 2)
+        put32(p.data() + 24, selection_revision_);
+    if (kind == 3 || kind == 4) {
+        p[30] = stage_;
+        p[31] = stage_enabled_;
+    }
     if (kind == 3 || kind == 4)
         for (unsigned seat = 0; seat < 2; ++seat) {
             p[28 + seat] = palettes_[seat].enabled;
@@ -178,6 +190,9 @@ void OnlineRoom::reset(bool notify_peer) {
     fighters_ = {};
     colors_ = {};
     palettes_ = {};
+    selection_revision_ = 0;
+    stage_ = 0;
+    stage_enabled_ = false;
     names_ = {"Player 1", "Player 2"};
     failed_ = false;
 }
@@ -242,6 +257,10 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
             CustomPalette custom;
             if (!decode_palette(p.data() + 32 + kPlayerNameBytes + 1, p[14], custom))
                 continue;
+            if ((p[15] & ~7u) || bool(p[15] & 1) != selection.stage_enabled ||
+                ((p[15] & 2) && !(p[15] & 1)) || ((p[15] & 4) && !(p[15] & 2)) ||
+                !valid_stage_cursor(p[30]) || !valid_jp_stage(p[31]))
+                continue;
             const auto cursor = p[10], fighter = p[11];
             if (cursor >= kJpPortraits.size() ||
                 (kJpPortraits[cursor] == 255 && cursor != 11 && cursor != 12) ||
@@ -249,11 +268,19 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
                 (p[12] && fighter == 255) ||
                 (fighter == 255 ? p[13] != 0 : !valid_jp_color(fighter, p[13])))
                 continue;
+            const auto revision = get32(p.data() + 24);
+            if (!seat_ && revision != selection_revision_)
+                continue; // A pre-Back ready packet cannot reconfirm the next selection.
             const auto incoming_epoch = get32(p.data() + 20);
             if (!incoming_epoch || (epoch_ && incoming_epoch != epoch_) || (!epoch_ && seat_ != 1))
                 continue;
             if (!epoch_)
                 epoch_ = incoming_epoch;
+            if (seat_ && revision != selection_revision_) {
+                selection.seats[1].ready = false;
+                release_guard_ = true;
+                selection_revision_ = revision;
+            }
             awaiting_peer_ = false;
             names_[1 - seat_] = std::string(name, end);
             remote_sequence_ = seq;
@@ -261,13 +288,27 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
             last_receive_ = now();
             connected_ = true;
             selection.seats[1 - seat_] = {cursor, fighter, bool(p[12]), p[13], custom};
+            if (seat_ && selection.stage_enabled) {
+                const bool active = p[15] & 2;
+                if (selection.stage_active && !active) {
+                    selection.seats[1].ready = false;
+                    release_guard_ = true;
+                }
+                selection.stage_active = active;
+                selection.stage_confirmed = p[15] & 4;
+                selection.stage_cursor = p[30];
+                selection.stage = p[31];
+            }
             status_ = seat_ ? "Connected. You control Player 2 with your Player 1 bindings."
                             : "Connected. You control Player 1.";
         } else if (p[8] == 3 && seat_ == 1 && connected_ && selection.seats[0].ready &&
                    selection.seats[1].ready) {
             if (p[24] != selection.seats[0].fighter || p[25] != selection.seats[1].fighter ||
                 p[26] != selection.seats[0].color || p[27] != selection.seats[1].color ||
-                get32(p.data() + 20) != epoch_ || awaiting_peer_)
+                get32(p.data() + 20) != epoch_ || awaiting_peer_ ||
+                !valid_jp_stage(p[30]) || p[31] != unsigned(selection.stage_enabled) ||
+                (selection.stage_enabled && (!selection.stage_active ||
+                 !selection.stage_confirmed || selection.stage != p[30])))
                 continue;
             std::array<CustomPalette, 2> custom;
             if (!decode_palette(p.data() + 32, p[28], custom[0]) ||
@@ -275,6 +316,8 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
                 custom[0] != selection.seats[0].palette || custom[1] != selection.seats[1].palette)
                 continue;
             palettes_ = custom;
+            stage_ = p[30];
+            stage_enabled_ = p[31];
             epoch_ = get32(p.data() + 20);
             fighters_ = {p[24], p[25]};
             colors_ = {p[26], p[27]};
@@ -283,7 +326,7 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
             last_receive_ = now();
         } else if (p[8] == 4 && seat_ == 0 && pending_ && get32(p.data() + 20) == epoch_ &&
                    p[24] == fighters_[0] && p[25] == fighters_[1] && p[26] == colors_[0] &&
-                   p[27] == colors_[1]) {
+                   p[27] == colors_[1] && p[30] == stage_ && p[31] == unsigned(stage_enabled_)) {
             CustomPalette first, second;
             if (!decode_palette(p.data() + 32, p[28], first) ||
                 !decode_palette(p.data() + 32 + kMsPaletteBytes, p[29], second) ||
@@ -304,6 +347,12 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
     if (launch_)
         return;
     if (connected_ && !pending_) {
+        if (!seat_ && selection.stage_active &&
+            (!selection.seats[0].ready || !selection.seats[1].ready))
+        {
+            selection.back_to_fighters();
+            ++selection_revision_;
+        }
         if (release_guard_) {
             if (!local_input)
                 release_guard_ = false;
@@ -312,17 +361,24 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
         }
         inputs_.advance(seat_ ? 0 : local_input, seat_ ? local_input : 0);
         selection.local_seat_mask = 1u << seat_;
+        const bool was_stage = selection.stage_active;
         selection.advance(inputs_);
+        if (!seat_ && was_stage && !selection.stage_active)
+            ++selection_revision_;
         selection.launch = false;
-        selection.ready_frames = 0;
+        if (!selection.stage_enabled || seat_)
+            selection.ready_frames = 0;
         if (selection.cancelled) {
             close();
             return;
         }
-        if (!seat_ && !awaiting_peer_ && selection.seats[0].ready && selection.seats[1].ready) {
+        if (!seat_ && !awaiting_peer_ && selection.seats[0].ready && selection.seats[1].ready &&
+            (!selection.stage_enabled || selection.stage_confirmed)) {
             fighters_ = {selection.seats[0].fighter, selection.seats[1].fighter};
             colors_ = {selection.seats[0].color, selection.seats[1].color};
             palettes_ = {selection.seats[0].palette, selection.seats[1].palette};
+            stage_ = selection.stage;
+            stage_enabled_ = selection.stage_enabled;
             pending_ = true;
             last_send_ = 0;
         }
@@ -361,6 +417,9 @@ void OnlineRoom::match_returned(LocalVsSelection& selection, std::uint32_t final
     last_send_ = 0;
     inputs_ = {};
     selection.cancelled = selection.launch = false;
+    selection_revision_ = 0;
+    selection.stage_active = selection.stage_confirmed = false;
+    selection.stage_release_guard = true;
     selection.ready_frames = 0;
     for (auto& seat : selection.seats)
         seat.ready = false;

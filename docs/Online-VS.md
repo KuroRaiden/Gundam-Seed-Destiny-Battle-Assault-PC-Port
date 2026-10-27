@@ -39,7 +39,8 @@ Once connected, the lobby closes and each machine controls its own cursor on
 the JP grid using **Player 1 bindings**. The joining machine owns Player 2.
 Press **Start** to cycle your fighter's colors/hidden variants before confirming
 with A. Selection and match startup verify the same choices on both peers.
-Confirm both fighters to start JP combat. The US menu pauses while its JP DLL
+Confirm both fighters, then the host chooses and confirms a stage to start JP combat.
+Both players see the same stage preview; Random resolves once before startup. The US menu pauses while its JP DLL
 borrows the same SDL3 window, renderer, controls and UDP socket. There is one
 active simulation per player, with both fighters in it; no GBA cable or second
 local simulation is involved. After a completed match, both players return to
@@ -49,8 +50,10 @@ Names, palette profiles, the invitation and the existing connection remain
 active until a player leaves. Ready flags reset, and held buttons must be
 released before confirming the next fighter. B or Esc leaves the room.
 
-Room protocol 8 requires updated builds on both machines. Every match advances
-a shared nonzero input epoch; old selection, startup and game packets cannot
+Room protocol 9 requires updated builds on both machines. Every match advances
+a shared nonzero input epoch; the stage is included in the acknowledged start
+contract and combat configuration. Returning from stage select also changes a
+host-owned selection revision, rejecting earlier ready packets. In addition, old selection, startup and game packets cannot
 ready or start the next match. The selector can acknowledge the previous match's
 final checksum while the other peer finishes, avoiding a reconnect when its
 last acknowledgement was lost. Failed or unconverged matches still close the
@@ -111,8 +114,11 @@ The automated checks use two processes on one Windows machine. On October 26,
 2026 the user also reported a successful local-PC/Shadow-PC online smoke test,
 with synchronized movement/attacks, names and live 31–32 ms ping visible.
 See `validation/manual-online-smoke.json`. The exact NAT route was not
-instrumented. Broader Internet performance and long-session coverage remain
-unverified. The port still reports missing static coverage and uses
+instrumented. The user also confirmed a successful rollback match between
+North Carolina and Georgia (NC vs GA), and the launcher records that test under
+**Ready**. This is user-reported gameplay validation; no packet trace or timing
+measurements were supplied for that match. Broader Internet performance and
+long-session coverage remain unverified. The port still reports missing static coverage and uses
 the framework's interpreter bridge for some guest code. This is not a fully
 static recompile.
 
@@ -142,3 +148,11 @@ window title displays both names, the configured input delay in frames, the
 most recent rollback length in frames and measured round-trip ping in ms.
 The title refreshes four times per second. This is display metadata and does
 not enter the deterministic game state. Both players must use this build.
+
+## Local black outlines
+
+The simple black fighter outline is a display effect on each PC. It is not
+transmitted and does not affect simulation checksums, so a compatible opponent
+can use the unoutlined build. Mixed outlined/unoutlined DLLs were tested in
+both host/guest arrangements with matching state after 360 frames and zero
+desyncs. See [black outlines](Black-Outlines.md).

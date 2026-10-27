@@ -61,7 +61,9 @@ during capture cancels that capture first. **Discard changes** closes without
 saving. The launcher reloads in-game edits when its game process exits. F4 is
 reserved for this overlay. Production online tests kept F4 open for 50 frames
 while two real UDP/Gekko peers continued and converged, including under a
-Clumsy delay/loss profile. Cross-machine Internet coverage remains unfinished.
+Clumsy delay/loss profile. The user also confirmed a successful rollback
+match between North Carolina and Georgia (NC vs GA). Project status lists the
+JP combat roster and this rollback test under **Ready**.
 
 The main-menu label is now **LOCAL VS**, drawn with original glyphs copied from
 NORMAL and VS menu art plus the SELECT footer. Palette indices and highlight colors are
@@ -90,3 +92,5 @@ Release downloads do not include cartridges, BIOS or the generated selector
 pack. Select and verify your own three inputs under Game files. Launch game is
 available without a pre-existing art cache and generates that cache locally
 before starting the US menu. A source build script is not required for setup.
+
+Training uses an English pause menu with the US ROM font. F5 opens the frame meter, F6 toggles red hitboxes/green hurtboxes, and F2/F3 save/reload a practice situation. These tools are offline Training only; see [Training tools](Training-Tools.md).

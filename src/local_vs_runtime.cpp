@@ -117,6 +117,7 @@ void battle_entry(MenuBattleMode mode) {
     selection = {};
     selection.training = mode == MenuBattleMode::Training;
     selection.jp_layout = true;
+    selection.stage_enabled = true;
     selection.palette_for = selected_ms_palette;
     selection.seats[0].cursor = 13;
     selection.seats[1].cursor = 22;
@@ -191,6 +192,7 @@ int initialize_us_selection(std::uint32_t pc, int, ArmCpuState*) {
     selection = {};
     selection.training = battle_mode == MenuBattleMode::Training;
     selection.jp_layout = true;
+    selection.stage_enabled = true;
     selection.palette_for = selected_ms_palette;
     enable_roster();
     for (unsigned player = 0; player < 2; ++player) {
@@ -334,6 +336,7 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
                 request.qualification_frames = online_qualification_frames;
                 request.qualification_end_frame = online_qualification_end_frame;
             }
+            request.stage = selection.stage;
             request.mode = battle_mode == MenuBattleMode::Training ? JpCombatMode::Training
                                                                    : JpCombatMode::Versus;
             request.rom = jp_rom_path.c_str();
@@ -389,6 +392,8 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             seat.ready = false;
         selection.ready_frames = 0;
         selection.launch = false;
+        selection.stage_active = selection.stage_confirmed = false;
+        selection.stage_release_guard = true;
         inputs = {};
         inputs.advance(sampled_player_inputs[0], sampled_player_inputs[1]);
         for (unsigned p = 0; p < 2; ++p)
@@ -534,6 +539,11 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
                 (selection.seats[1].palette.enabled ? "true" : "false") + "]";
     extended += ",\"online_matches\":" + std::to_string(online_room.completed_matches()) +
                 ",\"online_epoch\":" + std::to_string(online_room.epoch());
+    extended += ",\"stage_active\":" + std::string(selection.stage_active ? "true" : "false") +
+                ",\"stage_cursor\":" + std::to_string(selection.stage_cursor) +
+                ",\"stage_confirmed\":" + (selection.stage_confirmed ? "true" : "false") +
+                ",\"stage\":" + std::to_string(selection.stage);
+    extended += ",\"online_stage\":" + std::to_string(last_online_result.stage);
     extended += ",\"online_status\":";
     gbarecomp::json::append_quoted(extended, online_lobby.status);
     extended += ",\"players\":[";
@@ -557,6 +567,7 @@ void configure_local_vs(gbarecomp::RunOptions& options, const std::filesystem::p
                         const std::string& jp_rom, const std::string& bios, const std::string& save,
                         int debug_port) {
     jp_art.load(art_path);
+    jp_art.load_stages(art_path.parent_path() / "destiny-stages.bin");
     std::string palette_error;
     if (!ms_colors.load(art_path.parent_path().parent_path() / "ms-colors.ini", palette_error))
         std::fprintf(stderr, "%s\n", palette_error.c_str());

@@ -1,0 +1,83 @@
+--- a/src/runtime/runtime.h
++++ b/src/runtime/runtime.h
+@@ -48,6 +48,10 @@
+ // provide --config or --rom-sha1).
+ struct RunOptions {
+     int (*native_frame_driver)(NativeFrameControl& control)=nullptr;
++    // Game-owned checkpoints, serviced only after native dispatch unwinds.
++    // A true service result reports a successful restore.
++    bool (*checkpoint_pending)() = nullptr;
++    bool (*checkpoint_service)(NativeFrameControl&) = nullptr;
+     // Optional adapter installed by games that link gbarecomp_netplay.
+     std::shared_ptr<GbaNetplayLaunch> netplay;
+     const char*   builtin_game_name = nullptr;
+--- a/src/runtime/host_window.h
++++ b/src/runtime/host_window.h
+@@ -106,6 +106,7 @@
+     bool saved_audio_enhanced(bool& enabled) const;
+     void save_audio_enhanced(bool enabled);
+     void set_audio_enabled(bool enabled);
++    void clear_queued_audio();
+     bool audio_enabled() const;
+     void set_resize_driven_view(bool enabled);
+ #if defined(GBARECOMP_RUNTIME_UI)
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -2364,6 +2364,25 @@
+         return false;
+     };
+ 
++    NativeFrameState checkpoint_state(bus, ppu, rom_sha1, debug::global_mod_state_registry());
++    NativeFrameControl checkpoint_control;
++    checkpoint_control.save = [&](std::vector<std::uint8_t>& bytes, std::string& error) {
++        return checkpoint_state.save(bytes, error);
++    };
++    checkpoint_control.load = [&](const std::vector<std::uint8_t>& bytes, std::string& error) {
++        if (!checkpoint_state.load(bytes, error)) return false;
++        sync_frame_counter();
++        gba_mod_audio_on_savestate_load();
++        runtime_fp_reset();
++        ++g_runtime_state_epoch;
++        return true;
++    };
++    checkpoint_control.frame = [&] { return ppu.frame_count(); };
++    auto service_checkpoint = [&] {
++        return opts.checkpoint_pending && opts.checkpoint_pending() &&
++               opts.checkpoint_service && opts.checkpoint_service(checkpoint_control);
++    };
++
+     // ── Save-state hooks ───────────────────────────────────────────
+     // Only ever invoked at a clean dispatch boundary: TCP commands run
+     // between step calls, and the host-window hotkey is sampled at the
+@@ -2786,6 +2805,7 @@
+                 // persists, so input set before `continue` holds across frames.
+                 bool ok = step_frame();
+                 if (ok) wram_trace_tick();
++                service_checkpoint();
+                 std::lock_guard<std::mutex> lk(ctl_m);
+                 if (st == RS_STEP) {
+                     ctl_step_ok   = ok;
+@@ -3788,6 +3808,8 @@
+         if (!args.window) return;
+         capture_rewind_point();
+         auto ev = win.pump();
++        if (opts.checkpoint_pending && opts.checkpoint_pending())
++            runtime_request_present_unwind();
+         if(remap_paused && !ev.remap_pause && pacer)pacer->reset();
+         remap_paused=ev.remap_pause;
+         if (observer) {
+@@ -4849,6 +4871,14 @@
+         service_host_pause();
+         if (host_quit) break;
+         if (!step_once()) break;
++        // Never resume a restored machine through its previous C++ stack.
++        if (service_checkpoint()) {
++            last_presented_frame = ppu.frame_count() - 1;
++            win.clear_queued_audio();
++            if (pacer) pacer->reset();
++            rewind_history.clear();
++            next_rewind_capture_frame = ppu.frame_count();
++        }
+         if (input_replay_requested) {
+             // A windowed capture applies guest input only at frame
+             // boundaries (below), where playback reapplies it.

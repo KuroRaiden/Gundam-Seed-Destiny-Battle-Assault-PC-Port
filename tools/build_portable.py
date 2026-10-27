@@ -82,7 +82,7 @@ def main():
    with different names or use files stored in another folder.
 
 This download contains no ROMs, BIOS, saves, player profiles or game asset caches.
-The JP selector art is generated locally from your Japanese ROM on first
+The JP selector art and stage previews are generated locally from your Japanese ROM on first
 launch. Your original files are read in place and are never modified.
 No Python installation, compiler or administrator permission is required.
 First launch may take a little longer while the local art cache is prepared.
@@ -92,10 +92,18 @@ folder if you want their saved paths to remain portable when you move it.
 Open MS Colors in the launcher to prepare local battle-sprite previews, edit
 colors, and save palettes per player/suit. Online uses your Player 1 profiles
 and shares them with your opponent. Both players need this updated build.
+Battle fighters have a simple black outline, applied locally for visibility.
+It does not change netplay state or require the opponent to use an outline.
 Press Start on character select to cycle colors/variants before pressing A.
 Each local player uses their own Start binding; in Training, P1 picks both.
+In offline Training, F6 toggles hitboxes/hurtboxes. F2 saves a practice
+situation; F3 reloads it. Start opens the English pause menu using the US font.
+The US font cache is generated locally from your US game file.
+
 Press F4 during play to remap controls. In Training, F5 toggles the frame
 meter without pausing: green startup, red active, blue recovery, yellow hitstun.
+After choosing both fighters, select a stage with left/right and confirm with A.
+Player 1 chooses locally; the host chooses online. Random is available.
 Online VS uses shareable codes/links;
 set Player name before hosting or joining. The title shows names and live
 input delay, last rollback length and ping. Invitation registration is optional.

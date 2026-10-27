@@ -12,10 +12,12 @@ character select and battle-system injection** supplies the expanded combat.
 ## Features
 
 - **Local VS:** two players, two controllers/keyboards, one screen and one game instance.
+- **Black sprite outline:** a simple one-pixel black border around battle fighters, applied locally without changing netplay state.
+- **Stage select:** 25 native JP stages plus Random, with previews in Local VS, Online VS and Training.
 - **Japanese roster and combat:** JP mobile suits, alternate colors and hidden variants behind the US menus.
 - **Launcher palette editor:** edit MS colors with a live preview; custom palettes also sync online.
 - **Online VS:** rollback, automatic NAT hole punching, join codes/links and unlimited rematches in the same room.
-- **Training:** JP practice mode with an **F5 frame meter**: green startup, red active, blue recovery and yellow opponent hitstun.
+- **Training:** JP practice mode with the US-font English pause menu, **F5 frame meter**, **F6 hitbox/hurtbox viewer**, and **F2 save / F3 load** for practice situations.
 - **Controls:** launcher remapping and **F4** in-game remapping. **Start** cycles colors on character select.
 
 The main menu's **VS Mode** opens online play. **Local VS** occupies the former
@@ -64,6 +66,6 @@ This is experimental. Some guest paths still use the framework's interpreter
 bridge; a fully static recompile remains unfinished.
 
 [Portable setup](docs/Portable.md) · [Local VS](docs/Local-VS.md) ·
-[Online VS](docs/Online-VS.md) · [Palette editor](docs/MS-colors.md) ·
-[Frame meter](docs/Training-Frame-Meter.md) · [Source guide](docs/Source-Guide.md) ·
+[Online VS](docs/Online-VS.md) · [Stage select](docs/Stage-Select.md) · [Palette editor](docs/MS-colors.md) ·
+[Training tools](docs/Training-Tools.md) · [Frame meter](docs/Training-Frame-Meter.md) · [Source guide](docs/Source-Guide.md) ·
 [Build notes](docs/Build.md)

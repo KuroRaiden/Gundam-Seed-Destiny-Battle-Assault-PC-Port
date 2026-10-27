@@ -225,6 +225,10 @@ inline constexpr std::uint32_t kStateCharacterSelect = 11;
 inline constexpr std::uint32_t kModePresetVersus = 6;
 // Stride between native US fighter records.
 inline constexpr std::uint32_t kFighterStride = 100;
+// Original US Training pause-menu compressed font graphics.
+inline constexpr std::uint32_t kTrainingMenuTiles = 0x083C4F08;
+// Original US Training pause-menu sprite-frame pointer table.
+inline constexpr std::uint32_t kTrainingMenuFrames = 0x08068AF0;
 } // namespace us
 
 namespace jp {
@@ -266,8 +270,8 @@ inline constexpr std::uint32_t kRightControlDispatch = 0x08003418;
 inline constexpr std::uint32_t kApplyFighterInput = 0x08003C78;
 // Two per-seat bytes initialized to 4; original option meaning is not yet identified.
 inline constexpr std::uint32_t kPlayerStartupParameterA = 0x030075F2;
-// Shared startup byte initialized to zero; original option meaning is not yet identified.
-inline constexpr std::uint32_t kSharedStartupParameterA = 0x030075F4;
+// Native JP stage ID selected before versus/training initialization; standard rotation uses IDs 0 through 24.
+inline constexpr std::uint32_t kSelectedStage = 0x030075F4;
 // Second shared startup byte initialized to zero; original option meaning is not yet identified.
 inline constexpr std::uint32_t kSharedStartupParameterB = 0x030075F5;
 // Two per-seat startup bytes initialized to zero; original option meaning is not yet identified.
@@ -392,6 +396,34 @@ inline constexpr std::uint32_t kFighterStateThrow = 20;
 inline constexpr std::uint32_t kBattleSlowdownOffset = 35;
 // Accepted native attack command index; preserved across animation continuations.
 inline constexpr std::uint32_t kFighterCommandVariantOffset = 89;
+// Low five bits of battle context +34 hold the active native stage ID.
+inline constexpr std::uint32_t kBattleStageOffset = 34;
+// Three packed native Training option bytes.
+inline constexpr std::uint32_t kTrainingOptions = 0x03000DC2;
+// Native Training pause cursor row position.
+inline constexpr std::uint32_t kTrainingCursorY = 0x03001026;
+// Native world-space sprite camera X.
+inline constexpr std::uint32_t kCameraWorldX = 0x03000F88;
+// Native world-space sprite camera Y.
+inline constexpr std::uint32_t kCameraWorldY = 0x03000F8A;
+// Additional native sprite camera X.
+inline constexpr std::uint32_t kCameraScreenX = 0x03000F8C;
+// Additional native sprite camera Y.
+inline constexpr std::uint32_t kCameraScreenY = 0x03000F8E;
+// Native screen origin X added during OBJ composition.
+inline constexpr std::uint32_t kScreenOriginX = 0x03000CB4;
+// Native screen origin Y added during OBJ composition.
+inline constexpr std::uint32_t kScreenOriginY = 0x03000CB6;
+// Pointer to actor world X/Y in 16.16 coordinates.
+inline constexpr std::uint32_t kCollisionPositionPointerOffset = 8;
+// Defender excluded from hit detection.
+inline constexpr std::uint32_t kCollisionInvulnerableFlag = 16;
+// Actor byte whose bits 2..3 count collision geometry records.
+inline constexpr std::uint32_t kCollisionGeometryCountOffset = 5;
+// Shift of native collision geometry count.
+inline constexpr std::uint32_t kCollisionGeometryCountShift = 2;
+// Bits marking already-connected offensive rectangles.
+inline constexpr std::uint32_t kCollisionHitMaskOffset = 22;
 } // namespace jp
 
 } // namespace seed::address

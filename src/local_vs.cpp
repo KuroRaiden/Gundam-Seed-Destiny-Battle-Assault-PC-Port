@@ -1,9 +1,53 @@
 #include "local_vs.h"
 
 namespace seed {
+void LocalVsSelection::back_to_fighters() {
+    stage_active = stage_confirmed = launch = false;
+    stage_release_guard = true;
+    ready_frames = 0;
+    for (auto& seat : seats)
+        seat.ready = false;
+}
 std::uint8_t LocalVsSelection::advance(const MatchInputs& inputs) {
     if (cancelled || launch)
         return 0;
+    if (stage_enabled && stage_active) {
+        for (unsigned seat = 0; seat < 2; ++seat)
+            if ((!training || seat == 0) && (local_seat_mask & (1u << seat)) &&
+                (inputs.players[seat].pressed & 2)) {
+                if (local_seat_mask & 1)
+                    back_to_fighters();
+                else
+                    seats[seat].ready = false; // Host publishes the shared return to fighters.
+                return 1;
+            }
+        if (!(local_seat_mask & 1))
+            return 0;
+        const auto& input = inputs.players[0];
+        if (stage_release_guard) {
+            if (!input.held)
+                stage_release_guard = false;
+            return 0;
+        }
+        const int direction = (input.repeat & (32 | 64)) ? -1
+                              : (input.repeat & (16 | 128)) ? 1 : 0;
+        if (direction) {
+            const int before = stage_cursor == kRandomStage ? kJpStageCount : stage_cursor;
+            const auto next = (before + int(kJpStageCount) + 1 + direction) % (kJpStageCount + 1);
+            stage_cursor = next == kJpStageCount ? kRandomStage : std::uint8_t(next);
+        }
+        if (input.pressed & 1) {
+            if (stage_cursor == kRandomStage) {
+                random ^= random << 13;
+                random ^= random >> 17;
+                random ^= random << 5;
+                stage = std::uint8_t(random % kJpStageCount);
+            } else
+                stage = stage_cursor;
+            stage_confirmed = launch = true;
+        }
+        return direction || stage_confirmed ? 1 : 0;
+    }
     std::uint8_t changed = 0;
     const unsigned training_seat = seats[0].ready ? 1 : 0;
     if (training && training_seat == 1 && !seats[1].ready && (inputs.players[0].pressed & 2)) {
@@ -90,7 +134,15 @@ std::uint8_t LocalVsSelection::advance(const MatchInputs& inputs) {
         return changed;
     }
     ready_frames = seats[0].ready && seats[1].ready ? ready_frames + 1 : 0;
-    launch = ready_frames >= 18;
+    if (stage_enabled) {
+        if (ready_frames >= 18 && (local_seat_mask & 1)) {
+            stage_active = stage_release_guard = true;
+            stage_confirmed = false;
+            ready_frames = 0;
+            return 1;
+        }
+    } else
+        launch = ready_frames >= 18;
     return changed;
 }
 } // namespace seed

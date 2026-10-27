@@ -3,6 +3,7 @@
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 #include "training_frame_meter.h"
+#include "training_tools.h"
 #include <algorithm>
 #include <cstdio>
 
@@ -111,7 +112,10 @@ bool TrainingMeterOverlay::event(const SDL_Event& event, bool online) {
     return true;
 }
 void TrainingMeterOverlay::draw(bool online) {
-    if (online || !training_frame_meter().visible() || !prepare())
+    if (online ||
+        (!training_frame_meter().visible() && !training_boxes_visible() &&
+         training_tools_message().empty()) ||
+        !prepare())
         return;
     auto* previous = ImGui::GetCurrentContext();
     ImGui::SetCurrentContext(context_);
@@ -130,32 +134,50 @@ void TrainingMeterOverlay::draw(bool online) {
     ImGui::NewFrame();
     const auto* view = ImGui::GetMainViewport();
     const float width = std::max(220.f, std::min(960.f, view->Size.x - 16));
-    ImGui::SetNextWindowPos({view->Pos.x + view->Size.x * .5f, view->Pos.y + view->Size.y - 6},
-                            ImGuiCond_Always, {.5f, 1});
-    ImGui::SetNextWindowSize({width, 0}, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(.94f);
-    ImGui::Begin("Training frame meter / F5", nullptr,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
-                     ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::TextWrapped("TRAINING FRAME METER   F5: hide   1 square = 1 game frame");
-    row(0, ImGui::GetContentRegionAvail().x);
-    row(1, ImGui::GetContentRegionAvail().x);
-    const struct {
-        FramePhase phase;
-        const char* label;
-    } legend[] = {{FramePhase::Startup, "Startup"},
-                  {FramePhase::Active, "Active"},
-                  {FramePhase::Recovery, "Recovery"},
-                  {FramePhase::Hitstun, "Hitstun"}};
-    for (unsigned n = 0; n < 4; ++n) {
-        if (n)
+    if (training_boxes_visible() || !training_tools_message().empty()) {
+        ImGui::SetNextWindowPos({view->Pos.x + 8, view->Pos.y + 8}, ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(.9f);
+        ImGui::Begin("Training tools", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                         ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
+        if (training_boxes_visible()) {
+            ImGui::TextColored({1, .22f, .28f, 1}, "Red: hitboxes");
             ImGui::SameLine();
-        ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(color(legend[n].phase)), "%s",
-                           legend[n].label);
+            ImGui::TextColored({.24f, .94f, .45f, 1}, "Green: hurtboxes");
+            ImGui::TextUnformatted("F6: hide  |  F2: save  |  F3: load");
+        }
+        if (!training_tools_message().empty())
+            ImGui::TextUnformatted(training_tools_message().c_str());
+        ImGui::End();
     }
-    ImGui::TextWrapped("Grey: gap/idle | White: hitstop | Thin red: projectile "
-                       "| Startup includes first active");
-    ImGui::End();
+    if (training_frame_meter().visible()) {
+        ImGui::SetNextWindowPos({view->Pos.x + view->Size.x * .5f, view->Pos.y + view->Size.y - 6},
+                                ImGuiCond_Always, {.5f, 1});
+        ImGui::SetNextWindowSize({width, 0}, ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(.94f);
+        ImGui::Begin("Training frame meter / F5", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                         ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::TextWrapped("TRAINING FRAME METER   F5: hide   1 square = 1 game frame");
+        row(0, ImGui::GetContentRegionAvail().x);
+        row(1, ImGui::GetContentRegionAvail().x);
+        const struct {
+            FramePhase phase;
+            const char* label;
+        } legend[] = {{FramePhase::Startup, "Startup"},
+                      {FramePhase::Active, "Active"},
+                      {FramePhase::Recovery, "Recovery"},
+                      {FramePhase::Hitstun, "Hitstun"}};
+        for (unsigned n = 0; n < 4; ++n) {
+            if (n)
+                ImGui::SameLine();
+            ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(color(legend[n].phase)), "%s",
+                               legend[n].label);
+        }
+        ImGui::TextWrapped("Grey: gap/idle | White: hitstop | Thin red: projectile "
+                           "| Startup includes first active");
+        ImGui::End();
+    }
     ImGui::Render();
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer_);
     SDL_SetRenderLogicalPresentation(renderer_, lw, lh, logical);

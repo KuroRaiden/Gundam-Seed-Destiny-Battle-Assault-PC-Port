@@ -474,10 +474,8 @@ void about_page(App& app) {
     ImGui::BulletText("Two-player input model: 8,192 original-ROM calls matched");
     ImGui::BulletText("JP importer: 223 compressed blocks matched");
     ImGui::BulletText("Local VS: independent selection and shared battles");
-    ImGui::Spacing();
-    ImGui::TextColored(kGold, "IN PROGRESS");
-    ImGui::BulletText("Expanded JP combat roster: broader gameplay testing");
-    ImGui::BulletText("Rollback networking and broader gameplay testing");
+    ImGui::BulletText("JP combat roster");
+    ImGui::BulletText("Rollback netplay: NC vs GA test passed");
     card_end();
     card_begin("display", 115);
     ImGui::TextUnformatted("Baseline window size");

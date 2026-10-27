@@ -67,6 +67,71 @@ void JpSelectionArt::rect(int x, int y, int w, int h, std::uint16_t c) {
         for (int px = std::max(0, x); px < std::min(240, x + w); ++px)
             pixels_[py * 240 + px] = c;
 }
+void JpSelectionArt::load_stages(const std::filesystem::path& path) {
+    std::ifstream file(path, std::ios::binary);
+    auto read = [&](void* data, std::size_t size) {
+        if (!file.read(static_cast<char*>(data), size))
+            throw std::runtime_error("Stage preview cache is missing or truncated. Remove "
+                                     "assets/destiny-stages.bin and launch to regenerate it.");
+    };
+    auto u32 = [&] {
+        std::array<unsigned char, 4> b{};
+        read(b.data(), b.size());
+        return unsigned(b[0]) | (unsigned(b[1]) << 8) | (unsigned(b[2]) << 16) |
+               (unsigned(b[3]) << 24);
+    };
+    std::array<char, 8> magic{};
+    read(magic.data(), magic.size());
+    if (magic != std::array<char, 8>{'S','E','E','D','S','T','1',0} ||
+        u32() != kJpStageCount || u32() != 240 || u32() != 160)
+        throw std::runtime_error("Unsupported stage preview cache");
+    std::array<std::uint8_t, 32> hash{};
+    read(hash.data(), hash.size());
+    if (hash != donor_hash)
+        throw std::runtime_error("Stage previews do not match the supported JP donor");
+    for (unsigned stage = 0; stage < kJpStageCount; ++stage) {
+        Image image{240, 160, std::vector<std::uint16_t>(240 * 160)};
+        for (auto& pixel : image.pixels) {
+            std::array<unsigned char, 2> b{};
+            read(b.data(), b.size());
+            pixel = b[0] | (unsigned(b[1]) << 8);
+            if (pixel & 0x8000)
+                throw std::runtime_error("Invalid stage preview pixel");
+        }
+        images_.insert_or_assign(400 + stage, std::move(image));
+    }
+    if (file.peek() != std::char_traits<char>::eof())
+        throw std::runtime_error("Unexpected trailing stage preview data");
+}
+const std::vector<std::uint16_t>& JpSelectionArt::compose_stage(const LocalVsSelection& s) {
+    if (valid_jp_stage(s.stage_cursor))
+        pixels_ = images_.at(400 + s.stage_cursor).pixels;
+    else {
+        pixels_.assign(240 * 160, dark);
+        for (int y = 24; y < 116; ++y)
+            for (int x = 0; x < 240; ++x)
+                pixels_[y * 240 + x] = ((x / 8 + y / 8) & 1) ? color(18, 36, 60) : dark;
+        text(102, 67, "RANDOM", cyan);
+    }
+    rect(0, 0, 240, 24, dark);
+    text(84, 4, "STAGE SELECT", cyan);
+    const std::string who = s.stage_confirmed ? "STARTING MATCH" :
+                            s.local_seat_mask == 2 ? "WAITING FOR HOST" :
+                            s.local_seat_mask == 1 ? "HOST CHOOSES" : "PLAYER 1 CHOOSES";
+    text((240 - int(who.size() * 6)) / 2, 15, who, green);
+    rect(0, 116, 240, 44, dark);
+    const auto number = unsigned(s.stage_cursor) + 1;
+    const auto label = s.stage_cursor == kRandomStage ? std::string("RANDOM") :
+                       std::string("STAGE ") + char('0' + number / 10) + char('0' + number % 10);
+    text((240 - int(label.size() * 6)) / 2, 119, label, cyan);
+    for (unsigned index = 0; index <= kJpStageCount; ++index) {
+        const auto current = s.stage_cursor == kRandomStage ? kJpStageCount : s.stage_cursor;
+        rect(4 + index * 9, 130, 7, 4, index == current ? green : color(52, 70, 90));
+    }
+    const std::string controls = s.local_seat_mask == 2 ? "B BACK" : "LEFT RIGHT SELECT  A OK  B BACK";
+    text((240 - int(controls.size() * 6)) / 2, 142, controls, color(230, 240, 255));
+    return pixels_;
+}
 void JpSelectionArt::blit(unsigned id, int x, int y, bool flip) {
     const auto& image = images_.at(id);
     for (unsigned py = 0; py < image.h; ++py)
@@ -102,6 +167,14 @@ void JpSelectionArt::text(int x, int y, const std::string& value, std::uint16_t 
             glyph = {39, 69, 69, 69, 57};
         else if (ch == '6')
             glyph = {60, 74, 73, 73, 48};
+        else if (ch == '0')
+            glyph = {62, 81, 73, 69, 62};
+        else if (ch == '7')
+            glyph = {1, 113, 9, 5, 3};
+        else if (ch == '8')
+            glyph = {54, 73, 73, 73, 54};
+        else if (ch == '9')
+            glyph = {6, 73, 73, 41, 30};
         for (unsigned col = 0; col < 5; ++col)
             for (unsigned row = 0; row < 7; ++row)
                 if (glyph[col] & (1u << row))
@@ -110,6 +183,8 @@ void JpSelectionArt::text(int x, int y, const std::string& value, std::uint16_t 
     }
 }
 const std::vector<std::uint16_t>& JpSelectionArt::compose(const LocalVsSelection& s) {
+    if (s.stage_enabled && s.stage_active)
+        return compose_stage(s);
     pixels_ = images_.at(0).pixels;
     for (unsigned player = 0; player < 2; ++player) {
         const auto& seat = s.seats[player];

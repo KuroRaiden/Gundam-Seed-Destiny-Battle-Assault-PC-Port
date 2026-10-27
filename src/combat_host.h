@@ -12,6 +12,7 @@ struct CombatSurface {
     LiveControls* inputs = nullptr;
     bool online = false;
 };
+void release_host_controls();
 void sample_host_players(std::uint16_t* players);
 CombatSurface suspend_menu_host();
 void resume_menu_host();

@@ -50,11 +50,13 @@ than static output. Online VS uses the JP-backed ImGui lobby, production GekkoNe
 shareable codes/links and native AutoPunch-compatible hole punching.
 See `Online-VS.md` for validation and remaining Internet coverage.
 
+See [Stage select](Stage-Select.md) for the shared stage screen and native stage mapping.
+
 ## Training
 
 US Training Mode (menu column 2, row 0, state 11) shares the JP selector, with
 P1 choosing both the player and practice opponent. `JpCombatRequest` API version
-7 distinguishes versus and training and carries explicit colors/custom palettes. Training enters JP state 8, substate 0;
+8 distinguishes versus and training and carries explicit colors/custom palettes and stage selection. Training enters JP state 8, substate 0;
 the native initializer at `0x0802579C` establishes practice settings, followed
 by `0x080257E8` for fighter/stage setup. The `0x080030DC` dispatcher calls the
 practice handler at `0x080258B4` in state 8. The P2 input hook is bypassed for

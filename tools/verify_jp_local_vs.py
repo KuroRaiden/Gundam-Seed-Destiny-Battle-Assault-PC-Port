@@ -164,12 +164,18 @@ def main():
         s = record(us, "both-ready")
         assert s["ready"] == [True, True]
         us.screenshot(args.out / "jp-exclusive-selection.png", selector=True)
+        us.frames(30, 0, 0)
+        assert us.status()["stage_active"], us.status()
+        for _ in range(2):
+            us.local_tap(32) # First match: native stage 24; rematch: 22.
+        stage = us.status()["stage_cursor"]
+        us.screenshot(args.out / f"stage-select-{stage}.png", selector=True)
         with ThreadPoolExecutor(1) as executor:
-            advancing = executor.submit(us.frames, 60, 0, 0)
+            advancing = executor.submit(us.frames, 60, 1, 0)
             jp = Client(args.port + 1, process)
             jp.frames(600, 0, 0)
             battle = record(jp, "jp-battle")
-            assert battle["fighters"] == [13, 14] and min(battle["hp"]) > 0
+            assert battle["fighters"] == [13, 14] and min(battle["hp"]) > 0 and battle["stage"] == stage
             jp.screenshot(args.out / "jp-exclusive-battle.png")
             jp.frames(120, 0, 0)
             assert jp.status()["hp"] == battle["hp"], "P2 AI still active"
@@ -204,13 +210,22 @@ def main():
         s = record(us, "rematch")
         assert s["state"] == 11 and s["ready"] == [False, False] and s["link"] == 0
         us.screenshot(args.out / "rematch-selection.png", selector=True)
+        # Release the prior stage-confirm script before readying the rematch.
+        us.frames(3, 0, 0)
         # Re-enter the same module without starting another process.
         us.local_tap(1, 1)
+        us.frames(30, 0, 0)
+        assert us.status()["stage_active"], us.status()
+        for _ in range(2):
+            us.local_tap(32) # First match: native stage 24; rematch: 22.
+        stage = us.status()["stage_cursor"]
+        us.screenshot(args.out / f"stage-select-{stage}.png", selector=True)
         with ThreadPoolExecutor(1) as executor:
-            advancing = executor.submit(us.frames, 60, 0, 0)
+            advancing = executor.submit(us.frames, 60, 1, 0)
             jp = Client(args.port + 1, process)
             jp.frames(480, 0, 0)
-            assert record(jp, "second-match")["fighters"] == [13, 14]
+            second = record(jp, "second-match")
+            assert second["fighters"] == [13, 14] and second["stage"] == stage
             jp.cmd("quit")
             jp.close()
             jp = None

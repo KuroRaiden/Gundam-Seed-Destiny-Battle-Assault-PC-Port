@@ -94,6 +94,14 @@ void JpSelectionArt::text(int x, int y, const std::string& value, std::uint16_t 
             glyph = {0, 66, 127, 64, 0};
         else if (ch == '2')
             glyph = {98, 81, 73, 73, 70};
+        else if (ch == '3')
+            glyph = {34, 65, 73, 73, 54};
+        else if (ch == '4')
+            glyph = {24, 20, 18, 127, 16};
+        else if (ch == '5')
+            glyph = {39, 69, 69, 69, 57};
+        else if (ch == '6')
+            glyph = {60, 74, 73, 73, 48};
         for (unsigned col = 0; col < 5; ++col)
             for (unsigned row = 0; row < 7; ++row)
                 if (glyph[col] & (1u << row))
@@ -104,7 +112,8 @@ void JpSelectionArt::text(int x, int y, const std::string& value, std::uint16_t 
 const std::vector<std::uint16_t>& JpSelectionArt::compose(const LocalVsSelection& s) {
     pixels_ = images_.at(0).pixels;
     for (unsigned player = 0; player < 2; ++player) {
-        const auto id = s.seats[player].fighter;
+        const auto& seat = s.seats[player];
+        const auto id = jp_color_portrait(seat.fighter, seat.color);
         if (id < 30) {
             blit(100 + id, player ? 63 : 80, player ? 80 : 0, player != 0);
             blit(200 + id, player ? 127 : 56, player ? 88 : 8, player != 0);
@@ -134,7 +143,9 @@ const std::vector<std::uint16_t>& JpSelectionArt::compose(const LocalVsSelection
         const auto& seat = s.seats[player];
         if (player)
             line += "  ";
-        line += player ? "2P " : "1P ";
+        line += player ? "2P C" : "1P C";
+        line += char('1' + seat.color);
+        line += " ";
         line += seat.ready                                            ? "READY"
                 : (seat.fighter != 255 && !s.supported(seat.fighter)) ? "NOT PORTED"
                                                                       : "SELECT";
@@ -142,12 +153,14 @@ const std::vector<std::uint16_t>& JpSelectionArt::compose(const LocalVsSelection
     text((240 - int(line.size() * 6)) / 2, 144, line, cyan);
     if (s.training) {
         rect(0, 144, 240, 8, dark);
-        const std::string prompt =
-            s.seats[0].ready ? (s.seats[1].ready ? "TRAINING READY" : "TRAINING SELECT OPPONENT")
-                             : "TRAINING SELECT FIGHTER";
+        const std::string prompt = std::string("1P C") + char('1' + s.seats[0].color) + " COM C" +
+                                   char('1' + s.seats[1].color) +
+                                   (s.seats[1].ready   ? " READY"
+                                    : s.seats[0].ready ? " SELECT COM"
+                                                       : " SELECT 1P");
         text((240 - int(prompt.size() * 6)) / 2, 144, prompt, cyan);
     }
-    text(42, 153, "A READY  B BACK  DPAD MOVE", color(230, 240, 255));
+    text(36, 153, "A READY  B BACK  START COLOR", color(230, 240, 255));
     return pixels_;
 }
 } // namespace seed

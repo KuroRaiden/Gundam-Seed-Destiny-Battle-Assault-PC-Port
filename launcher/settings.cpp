@@ -81,8 +81,11 @@ void Settings::load(const std::filesystem::path& path) {
             }
         }
     }
-    for (auto& file : files)
-        file.verify(path.parent_path());
+    for (unsigned index = 0; index < files.size(); ++index) {
+        if (files[index].path.empty())
+            files[index].path = kPortableGamePaths[index];
+        files[index].verify(path.parent_path());
+    }
 }
 bool Settings::save(const std::filesystem::path& path, std::string& error) const {
     const auto staging = path.parent_path() / L"launcher-settings.pending";

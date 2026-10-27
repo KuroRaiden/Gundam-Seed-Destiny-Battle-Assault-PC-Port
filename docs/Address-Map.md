@@ -173,3 +173,40 @@ The C++ API is in `src/game_addresses.h`; Python tools import `tools/game_addres
 | `jp::kSelectorActorStride` | `32` | Size of a native selector actor record. | Port hook/capture usage; see source and validation reports |
 | `jp::kRomEnd` | `0x08800000` | Exclusive end of the supplied 8 MiB JP cartridge; also bounds address discovery in the shared analysis tool. | Verified cartridge size and ROM base |
 | `jp::kPortraitGrid` | `0x080D7558` | 32-byte native selector portrait order copied into a locally generated art pack. | Verified build_jp_selection.py donor grid read and JpSelectionArt grid validation |
+| `jp::kPlayerPaletteFlags` | `0x03007600` | Two native fighter palette flags (0=primary, 1=alternate). | IDA JP native palette flag/lookup and selector confirmation routines. |
+| `jp::kFighterPaletteFlag` | `0x0800ABDC` | Native effective palette flag; includes automatic mirror recoloring. | IDA decompilation; replaced for explicit player colors. |
+| `jp::kFighterPaletteLookup` | `0x0800AC30` | Native battle palette pointer lookup; descriptor offsets 8/12. | IDA decompilation and native palette comparison. |
+| `jp::kFighterDescriptorTable` | `0x080CD3B0` | Native fighter descriptors, 44 bytes each; palette pointers at offsets 8/12. | IDA native fighter palette lookup. |
+| `jp::kFighterDescriptorStride` | `44` | Bytes per native fighter descriptor. | IDA native fighter palette lookup. |
+| `jp::kFighterPaletteBuffers` | `0x02030200` | Two original 96-byte fighter palette buffers, one per seat. | IDA native fighter initialization at 0x0800A1A4 copies 24 words per seat. |
+| `jp::kBattleFrameBegin` | `0x08002F2C` | Native combat update entry; reads global slowdown before it decrements. | IDA sub_8002F2C |
+| `jp::kBattleFrameTail` | `0x080030DC` | Native post-combat frame dispatch; observational frame-meter hook. | IDA sub_8002F2C calls this after both fighter updates |
+| `jp::kCollisionActors` | `0x02003000` | Native collision actor pool. | IDA sub_8021B3C |
+| `jp::kFighterRecordsOffset` | `44` | First PLAYERDATA relative to JP battle context. | IDA sub_8002F2C and sub_800A1A4 |
+| `jp::kFighterActorPointerOffset` | `32` | PLAYERDATA pointer to the native collision actor. | IDA sub_8005FEC and sub_8007D2C |
+| `jp::kFighterFlagsOffset` | `6` | PLAYERDATA simulation and animation flags. | IDA sub_800ACD4 |
+| `jp::kFighterFreezeOffset` | `21` | PLAYERDATA animation freeze counter. | IDA sub_80060C4 and sub_800ACD4 |
+| `jp::kFighterAnimationFrozenFlag` | `64` | Fighter animation does not advance while this flag is set. | IDA sub_800ACD4 |
+| `jp::kFighterAnimationOffset` | `44` | Embedded native animation state in PLAYERDATA. | IDA sub_800ACB4 |
+| `jp::kAnimationIdOffset` | `34` | Animation index within the native animation bank. | IDA sub_802231C |
+| `jp::kAnimationTickOffset` | `36` | Native animation game-frame clock. | IDA sub_80223A8 |
+| `jp::kAnimationDescriptorCount` | `768` | Maximum loaded native animation descriptors. | IDA sub_80221A8 |
+| `jp::kAnimationDescriptorStride` | `16` | Bytes per loaded animation descriptor. | IDA sub_80221A8 |
+| `jp::kAnimationHitboxRecordStride` | `36` | Bytes per native animation hitbox update record. | IDA sub_8021DD4 |
+| `jp::kCollisionActorCount` | `48` | Native collision actor slots. | IDA sub_8021B3C |
+| `jp::kCollisionActorStride` | `64` | Bytes per native collision actor. | IDA sub_8021B3C |
+| `jp::kCollisionBoxesOffset` | `24` | First geometry record in a collision actor. | IDA sub_8021B3C |
+| `jp::kCollisionBoxStride` | `8` | Bytes per geometry record. | IDA sub_8021B3C |
+| `jp::kCollisionBoxCount` | `4` | Geometry records per actor. | IDA sub_8021B3C |
+| `jp::kCollisionEnabledFlag` | `1` | Native actor participates in collision checks. | IDA sub_8021B3C |
+| `jp::kCollisionDisabledFlag` | `8` | Native actor excluded from collision checks. | IDA sub_8021B3C |
+| `jp::kCollisionTargetsOffset` | `4` | Native actor group and target mask word. | IDA sub_8021B3C |
+| `jp::kCollisionTargetsShift` | `4` | First target-mask bit after the actor group nibble. | IDA sub_8021B3C; projectile ownership needs native qualification |
+| `jp::kFighterStateDamage` | `2` | Native damage-reaction state, including airborne knockdown. | IDA action dispatcher to sub_8008580 |
+| `jp::kFighterStateGuardGround` | `3` | Native ground guard reaction and blockstun. | IDA sub_800664C and sub_8006E04 |
+| `jp::kFighterStateGuardAir` | `4` | Native alternate guard reaction state. | IDA sub_800664C and sub_8006F38 |
+| `jp::kFighterStateAttackGround` | `13` | Native ground attack state. | IDA sub_8007A40 writes at 0x08007C74 |
+| `jp::kFighterStateAttackAir` | `14` | Native airborne attack state. | IDA sub_800779C writes at 0x080078D8 |
+| `jp::kFighterStateThrow` | `20` | Native grapple/self-destruct attack state, including animation continuations. | IDA sub_8007A40 and sub_800B750 |
+| `jp::kBattleSlowdownOffset` | `35` | Low nibble skips combat stepping for the current frame. | IDA sub_8002F2C |
+| `jp::kFighterCommandVariantOffset` | `89` | Accepted native attack command index; preserved across animation continuations. | IDA sub_8007A40 and sub_800779C write PLAYERDATA+89 when accepting commands. |

@@ -1,9 +1,10 @@
-#include "game_addresses.h"
 #include "jp_combat_runtime.h"
-#include "runtime_arm.h"
-#include "mod_function_hooks.h"
+#include "game_addresses.h"
+#include "jp_frame_probe.h"
 #include "mini_json.h"
+#include "mod_function_hooks.h"
 #include "mod_state.h"
+#include "runtime_arm.h"
 #include <array>
 #include <atomic>
 #include <cstdio>
@@ -22,6 +23,34 @@ bool rollback_frame_driven = false;
 std::atomic<bool> scripted_input_enabled{false};
 std::atomic<std::uint32_t> scripted_player_inputs{0};
 std::array<std::uint16_t, 2> sampled_player_inputs{};
+JpFrameProbe frame_probe;
+bool meter_frame_pending = false, meter_global_hitstop = false;
+struct MeterBus {
+    std::uint8_t u8(std::uint32_t address) const {
+        return bus_read_u8(address);
+    }
+    std::uint16_t u16(std::uint32_t address) const {
+        return bus_read_u16(address);
+    }
+    std::uint32_t u32(std::uint32_t address) const {
+        return bus_read_u32(address);
+    }
+};
+int begin_meter_frame(std::uint32_t, int, ArmCpuState*) {
+    meter_frame_pending = match_started && training_frame_meter().allowed();
+    meter_global_hitstop =
+        meter_frame_pending &&
+        (bus_read_u8(jp_address::kBattleContext + jp_address::kBattleSlowdownOffset) & 15);
+    return 0; // Observational; the native function always executes unchanged.
+}
+int finish_meter_frame(std::uint32_t, int, ArmCpuState*) {
+    if (meter_frame_pending && training_frame_meter().allowed() &&
+        bus_read_u32(jp_address::kGameState) == jp_address::kStateTraining) {
+        meter_frame_pending = false;
+        training_frame_meter().observe(frame_probe.sample(MeterBus{}, meter_global_hitstop));
+    }
+    return 0;
+}
 void return_from_guest_hook(ArmCpuState* cpu) {
     const auto target = cpu->R[14];
     cpu->R[15] = target & ~1u;
@@ -54,6 +83,7 @@ void start_match() {
     bus_write_u8(jp_address::kMatchRuleMode, training ? 2 : 6);
     for (unsigned p = 0; p < 2; ++p) {
         bus_write_u8(jp_address::kSelectedFighter1 + p, match_request.fighters[p]);
+        bus_write_u8(jp_address::kPlayerPaletteFlags + p, match_request.colors[p]);
         bus_write_u8(jp_address::kPlayerStartupParameterA + p, 4);
         bus_write_u8(jp_address::kPlayerStartupParameterB + p, 0);
         for (unsigned stat = 0; stat < 3; ++stat)
@@ -70,6 +100,37 @@ void start_match() {
     combat_presentation_enabled(true);
     std::printf("jp_combat: native fighters %u / %u, %s, no serial\n", match_request.fighters[0],
                 match_request.fighters[1], training ? "training" : "versus");
+}
+// Respect the player's explicit choice instead of the cartridge's forced P2
+// recolor when both seats choose the same fighter and palette. Use the current
+// fighter argument for palette resources so native form changes still work.
+int selected_palette_flag(std::uint32_t, int, ArmCpuState* cpu) {
+    if (!match_started || cpu->R[0] > 1)
+        return 0;
+    cpu->R[0] = match_request.colors[cpu->R[0]];
+    return_from_guest_hook(cpu);
+    return 1;
+}
+int selected_palette_pointer(std::uint32_t, int, ArmCpuState* cpu) {
+    const auto seat = cpu->R[0];
+    if (!match_started || seat > 1)
+        return 0;
+    const auto fighter = cpu->R[1 + seat];
+    if (fighter > 27)
+        return 0;
+    if (match_request.palettes[seat].enabled && fighter == match_request.fighters[seat]) {
+        const auto buffer = jp_address::kFighterPaletteBuffers + seat * kMsPaletteBytes;
+        for (unsigned i = 0; i < kMsPaletteColors; ++i)
+            bus_write_u16(buffer + i * 2, match_request.palettes[seat].colors[i]);
+        cpu->R[0] = buffer;
+        return_from_guest_hook(cpu);
+        return 1;
+    }
+    cpu->R[0] = bus_read_u32(jp_address::kFighterDescriptorTable +
+                             jp_address::kFighterDescriptorStride * fighter +
+                             (match_request.colors[seat] ? 12 : 8));
+    return_from_guest_hook(cpu);
+    return 1;
 }
 int update_jp_inputs(std::uint32_t, int, ArmCpuState* cpu) {
     if (!match_started && ++startup_frames >= 120)
@@ -121,13 +182,70 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
         write(context, reply, sizeof(reply) - 1);
         return 1;
     }
+    if (cmd == "seed_frame_meter") {
+        auto& meter = training_frame_meter();
+        const auto action = value.str("action");
+        if (action == "toggle")
+            meter.toggle();
+        else if (action == "clear") {
+            meter.clear();
+            frame_probe.reset();
+        }
+        std::string reply =
+            "{\"ok\":true,\"allowed\":" + std::string(meter.allowed() ? "true" : "false") +
+            ",\"visible\":" + (meter.visible() ? "true" : "false") +
+            ",\"frames\":" + std::to_string(meter.frames()) + ",\"history\":[";
+        for (unsigned seat = 0; seat < 2; ++seat) {
+            if (seat)
+                reply += ',';
+            reply += '[';
+            for (std::size_t index = 0; index < meter.size(); ++index) {
+                if (index)
+                    reply += ',';
+                reply += std::to_string(static_cast<unsigned>(meter.cell(seat, index).phase));
+            }
+            reply += ']';
+        }
+        reply += "],\"summaries\":[";
+        for (unsigned seat = 0; seat < 2; ++seat) {
+            if (seat)
+                reply += ',';
+            const auto& summary = meter.summary(seat);
+            reply +=
+                "{\"startup\":" + (summary.startup ? std::to_string(*summary.startup) : "null") +
+                ",\"preactive\":" + std::to_string(summary.preactive) +
+                ",\"active\":" + std::to_string(summary.active) +
+                ",\"recovery\":" + std::to_string(summary.recovery) +
+                ",\"gap\":" + std::to_string(summary.gap) +
+                ",\"hitstun\":" + std::to_string(summary.hitstun) +
+                ",\"hitstop\":" + std::to_string(summary.hitstop) +
+                ",\"interrupted\":" + (summary.interrupted ? "true" : "false") + "}";
+        }
+        reply += "],\"projectiles\":[";
+        for (unsigned seat = 0; seat < 2; ++seat) {
+            if (seat)
+                reply += ',';
+            reply += '[';
+            for (std::size_t index = 0; index < meter.size(); ++index) {
+                if (index)
+                    reply += ',';
+                reply += meter.cell(seat, index).projectile ? "true" : "false";
+            }
+            reply += ']';
+        }
+        reply += "]}";
+        write(context, reply.data(), reply.size());
+        return 1;
+    }
     if (cmd != "seed_status")
         return 0;
     char reply[1024];
     const int n = std::snprintf(
         reply, sizeof(reply),
-        "{\"ok\":true,\"engine\":\"jp\",\"scripted_input\":%s,\"training\":%s,\"started\":%s,"
-        "\"ended\":%s,\"state\":%u,\"substate\":%u,\"round\":%u,\"fighters\":[%u,%u],\"raw\":[%u,%"
+        "{\"ok\":true,\"engine\":\"jp\",\"scripted_input\":%s,\"training\":%s,"
+        "\"started\":%s,"
+        "\"ended\":%s,\"state\":%u,\"substate\":%u,\"round\":%u,\"fighters\":[%u,"
+        "%u],\"raw\":[%u,%"
         "u],\"battle_input\":[%u,%u],\"hp\":[%u,%u],\"depth\":%u}",
         scripted_input_enabled.load() ? "true" : "false",
         match_request.mode == JpCombatMode::Training ? "true" : "false",
@@ -138,7 +256,10 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
         sampled_player_inputs[1], bus_read_u16(jp_address::kPlayer1MappedInput),
         bus_read_u16(jp_address::kPlayer2MappedInput), bus_read_u16(jp_address::kPlayer1Health),
         bus_read_u16(jp_address::kPlayer2Health), runtime_call_stack_depth());
-    write(context, reply, n);
+    std::string extended(reply, n - 1);
+    extended += ",\"colors\":[" + std::to_string(match_request.colors[0]) + "," +
+                std::to_string(match_request.colors[1]) + "]}";
+    write(context, extended.data(), extended.size());
     return 1;
 }
 void save_host_state(gbarecomp::debug::SnapshotWriter& writer) {
@@ -149,6 +270,13 @@ void save_host_state(gbarecomp::debug::SnapshotWriter& writer) {
         writer.u16(held);
     for (auto fighter : match_request.fighters)
         writer.u8(fighter);
+    for (auto color : match_request.colors)
+        writer.u8(color);
+    for (const auto& palette : match_request.palettes) {
+        writer.boolean(palette.enabled);
+        for (auto color : palette.colors)
+            writer.u16(color);
+    }
     writer.u32(static_cast<unsigned>(match_request.mode));
 }
 bool preflight_host_state(gbarecomp::debug::SnapshotReader& reader) {
@@ -157,10 +285,18 @@ bool preflight_host_state(gbarecomp::debug::SnapshotReader& reader) {
     const auto p1 = reader.u16(), p2 = reader.u16();
     const auto left = reader.u8(), right = reader.u8();
     const bool fighters = left == match_request.fighters[0] && right == match_request.fighters[1];
+    const auto color1 = reader.u8(), color2 = reader.u8();
+    const bool colors = color1 == match_request.colors[0] && color2 == match_request.colors[1];
+    bool custom = true;
+    for (const auto& palette : match_request.palettes) {
+        custom &= reader.boolean() == palette.enabled;
+        for (auto color : palette.colors)
+            custom &= reader.u16() == color;
+    }
     const auto mode = reader.u32();
     return reader.ok() && reader.remaining() == 0 && boot <= 120 && (!did_end || did_start) &&
            (did_start ? boot == 120 : boot < 120) && !(p1 & ~1023u) && !(p2 & ~1023u) && fighters &&
-           mode == static_cast<unsigned>(match_request.mode);
+           colors && custom && mode == static_cast<unsigned>(match_request.mode);
 }
 } // namespace
 void set_jp_frame_inputs(std::uint16_t p1, std::uint16_t p2) {
@@ -173,6 +309,10 @@ bool jp_combat_ended() {
 }
 void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& request) {
     match_request = request;
+    training_frame_meter().configure(request.mode == JpCombatMode::Training,
+                                     request.surface.online);
+    frame_probe.reset();
+    meter_frame_pending = meter_global_hitstop = false;
     startup_frames = 0;
     match_started = match_ended = rollback_frame_driven = false;
     scripted_input_enabled = false;
@@ -181,7 +321,7 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
     static const bool state_registered = [] {
         gbarecomp::debug::ModStateProvider provider;
         provider.id = "seed.jp-match";
-        provider.schema = 1;
+        provider.schema = 3;
         provider.save = [](void*, gbarecomp::debug::SnapshotWriter& writer, std::string*) {
             save_host_state(writer);
             return true;
@@ -197,7 +337,19 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
                 held = reader.u16();
             reader.u8();
             reader.u8();
+            reader.u8();
+            reader.u8();
+            for (unsigned seat = 0; seat < 2; ++seat) {
+                reader.boolean();
+                for (unsigned i = 0; i < kMsPaletteColors; ++i)
+                    reader.u16();
+            }
             reader.u32();
+            if (training_frame_meter().allowed()) {
+                training_frame_meter().clear();
+                frame_probe.reset();
+                meter_frame_pending = meter_global_hitstop = false;
+            }
         };
         std::string error;
         if (!gbarecomp::debug::register_mod_state_provider(provider, &error))
@@ -219,5 +371,17 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
     gba_mod_register_function_entry_plugin("seed.jp-local-right", jp_address::kRightControlDispatch,
                                            1, update_second_fighter_input);
     gba_mod_set_function_hook_enabled("seed.jp-local-right", 1);
+    gba_mod_register_function_entry_plugin("seed.jp-palette-flag", jp_address::kFighterPaletteFlag,
+                                           1, selected_palette_flag);
+    gba_mod_set_function_hook_enabled("seed.jp-palette-flag", 1);
+    gba_mod_register_function_entry_plugin(
+        "seed.jp-palette-pointer", jp_address::kFighterPaletteLookup, 1, selected_palette_pointer);
+    gba_mod_set_function_hook_enabled("seed.jp-palette-pointer", 1);
+    gba_mod_register_function_entry_plugin("seed.jp-meter-begin", jp_address::kBattleFrameBegin, 1,
+                                           begin_meter_frame);
+    gba_mod_register_function_entry_plugin("seed.jp-meter-tail", jp_address::kBattleFrameTail, 1,
+                                           finish_meter_frame);
+    gba_mod_set_function_hook_enabled("seed.jp-meter-begin", training_frame_meter().allowed());
+    gba_mod_set_function_hook_enabled("seed.jp-meter-tail", training_frame_meter().allowed());
 }
 } // namespace seed

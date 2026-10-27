@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-26",
+  "test": "seed_online_rematch_tests",
+  "result": "passed",
+  "cycles": 64,
+  "room_protocol": 8,
+  "transport": "loopback UDP",
+  "checks": [
+    "same invitation and socket",
+    "names and palettes retained",
+    "stale control and game packets rejected",
+    "held confirm release guard",
+    "late native finish checksum re-acknowledged",
+    "wrong finish CRC not acknowledged",
+    "epoch wrap avoids zero",
+    "explicit departure closes the room"
+  ],
+  "network_impairment": "none; late finish acknowledgement retry injected by the test"
+}

@@ -25,6 +25,9 @@ def main():
         action="store_true",
         help="Negotiate a common end boundary instead of a fixed horizon",
     )
+    parser.add_argument("--custom-colors", action="store_true")
+    parser.add_argument("--fighters", type=int, nargs=2)
+    parser.add_argument("--colors", type=int, nargs=2)
     args = parser.parse_args()
     args.out = args.out.resolve()
     args.out.mkdir(parents=True, exist_ok=True)
@@ -41,6 +44,12 @@ def main():
             extra = (["--window"] if args.window else []) + (
                 ["--finish-fence"] if args.finish_fence else []
             )
+            if args.custom_colors:
+                extra += ["--custom-colors"]
+            if args.fighters:
+                extra += ["--fighters", *map(str, args.fighters)]
+            if args.colors:
+                extra += ["--colors", *map(str, args.colors)]
             processes.append(
                 subprocess.Popen(
                     [

@@ -1,13 +1,16 @@
 // Native SDL3 adapter derived from mstan/gbarecomp host_window.cpp.
-// Upstream PolyForm Noncommercial license applies; see app/licenses/GBARecomp.txt.
+// Upstream PolyForm Noncommercial license applies; see
+// app/licenses/GBARecomp.txt.
 
-#include "host_window.h"
-#include "controller_db.h"
-#include "input_bindings.h"
+#include "brand_icons.h"
 #include "combat_host.h"
+#include "controller_db.h"
+#include "host_window.h"
 #include "in_game_remap.h"
-#include "online_lobby.h"
+#include "input_bindings.h"
 #include "invite_window.h"
+#include "online_lobby.h"
+#include "training_meter_overlay.h"
 #include <stdexcept>
 
 #include <algorithm>
@@ -94,8 +97,8 @@ extern "C" JNIEXPORT void JNICALL Java_org_gbarecomp_GbaNative_setDisplayDpi(JNI
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <windows.h>
 #include <dwmapi.h>
+#include <windows.h>
 #endif
 
 namespace gbarecomp {
@@ -392,6 +395,7 @@ struct Backend {
     seed::LiveControls owned_inputs;
     seed::LiveControls* inputs = &owned_inputs;
     seed::InGameRemap remap;
+    seed::TrainingMeterOverlay training_meter;
     seed::OnlineLobby online_lobby;
     bool online_session = false, remap_audio_paused = false, remap_audio_was_paused = true;
     SDL_Window* window = nullptr;
@@ -1277,8 +1281,8 @@ void save_touch_config(const Backend* b) {
     }
 }
 
-// GBA KEYINPUT bit order: 0=A 1=B 2=Sel 3=Sta 4=Right 5=Left 6=Up 7=Down 8=R 9=L.
-// Defaults MATCH recomp-ui's generic keybinds defaults (keybinds.c) so the
+// GBA KEYINPUT bit order: 0=A 1=B 2=Sel 3=Sta 4=Right 5=Left 6=Up 7=Down 8=R
+// 9=L. Defaults MATCH recomp-ui's generic keybinds defaults (keybinds.c) so the
 // launcher's rebind page and the game agree even before keybinds.ini exists:
 // A=X, B=Z, L=C, R=V, Start=Return, Select=RShift, D-pad=arrows.
 // (This supersedes the pre-launcher hardcoded Z/X/A/S layout — one defaults
@@ -1625,7 +1629,8 @@ PresentationLayout current_presentation_layout(Backend* b, int* out_w, int* out_
 #else
     PresentationLayout layout{};
     if (!b->expanded_view && !b->resize_driven_view) {
-        // Mirror SDL_SetRenderLogicalPresentation's letterbox so touch maps exactly.
+        // Mirror SDL_SetRenderLogicalPresentation's letterbox so touch maps
+        // exactly.
         if (!SDL_GetCurrentRenderOutputSize(b->renderer, &drawable_w, &drawable_h))
             SDL_GetWindowSize(b->window, &drawable_w, &drawable_h);
         if (drawable_w > 0 && drawable_h > 0) {
@@ -1948,6 +1953,7 @@ bool HostWindow::open(int scale, int base_w, int base_h, const char* title, cons
     }
     if (b->borrowed)
         SDL_SetWindowTitle(b->window, b->title.c_str());
+    seed::set_game_window_icon(b->window);
 #if defined(__ANDROID__)
     b->fullscreen = 1;
 #endif
@@ -2110,6 +2116,7 @@ bool HostWindow::open(int scale, int base_w, int base_h, const char* title, cons
 
     impl_ = b;
     b->remap.initialize(b->window, b->renderer, b->inputs);
+    b->training_meter.initialize(b->window, b->renderer);
     b->online_lobby.initialize(b->window, b->renderer, b->inputs);
     if (!b->borrowed)
         seed::attach_invite_window(SDL_GetPointerProperty(
@@ -2257,7 +2264,8 @@ void HostWindow::push_audio_block(const int16_t* samples, std::size_t count, uin
     // (gba_audio_callback) drains it at the device rate with band-limited
     // resampling + a P-only fill servo — no queue underrun, no hard flush.
     SDL_LockMutex(b->audio_mtx);
-    rab_push(&b->bridge, samples, static_cast<int>(count)); // mono: count == frames
+    rab_push(&b->bridge, samples,
+             static_cast<int>(count)); // mono: count == frames
     SDL_UnlockMutex(b->audio_mtx);
 
     // ── NES-mode crackle probe (measure step) ──────────────────────────
@@ -2287,8 +2295,10 @@ void HostWindow::push_audio_block(const int16_t* samples, std::size_t count, uin
             double gt_dms = (cc_ns - s_prev_cc_ns) / 1e6;
             s_prev_cc_ns = cc_ns;
             std::fprintf(stderr,
-                         "[gba-audio-probe] pushes=%llu audio=%.1fs bridge_underrun=%llu(%.2f/s) "
-                         "stretch=%.0fms(ev=%llu) overflow_drops=%llu fill_ms=%.1f corr=%+.3f%% "
+                         "[gba-audio-probe] pushes=%llu audio=%.1fs "
+                         "bridge_underrun=%llu(%.2f/s) "
+                         "stretch=%.0fms(ev=%llu) overflow_drops=%llu fill_ms=%.1f "
+                         "corr=%+.3f%% "
                          "gt_compile=%.1fms(+%.1fms)\n",
                          s_pushes, secs, (unsigned long long)st.underrun_events,
                          secs > 0 ? st.underrun_events / secs : 0.0, stretch_ms,
@@ -2438,6 +2448,7 @@ void HostWindow::close() {
     runtime_imgui_shutdown(b);
 #endif
     destroy_sharp_texture(b);
+    b->training_meter.shutdown();
     b->remap.shutdown();
     b->online_lobby.shutdown();
     if (b->texture)
@@ -2593,7 +2604,8 @@ void HostWindow::present(const uint8_t* rgb888, unsigned sampled_w, unsigned sam
         b->presentation_source_w = sampled_w;
         b->presentation_source_h = sampled_h;
         std::fprintf(stderr,
-                     "host_window: render surface logical=%dx%d internal=%ux%u upload=%dx%d\n",
+                     "host_window: render surface logical=%dx%d internal=%ux%u "
+                     "upload=%dx%d\n",
                      b->base_w, b->base_h, sampled_w, sampled_h, texture_w, texture_h);
     }
     // Large elective scales can exceed an older GPU's texture limit. Keep the
@@ -2726,6 +2738,7 @@ void HostWindow::present(const uint8_t* rgb888, unsigned sampled_w, unsigned sam
     }
 #endif
     render_host_layers(b);
+    b->training_meter.draw(b->online_session);
     b->remap.draw(b->online_session);
     b->online_lobby.draw();
     // MC-WS-002: time the present itself (vsync blocks here — or doesn't)
@@ -3223,6 +3236,8 @@ HostWindow::Events HostWindow::pump() {
         if (b->online_lobby.event(e))
             continue;
         if (b->remap.event(e, b->online_session))
+            continue;
+        if (!b->remap.is_open() && b->training_meter.event(e, b->online_session))
             continue;
         b->inputs->event(e, b->window);
 #if defined(GBARECOMP_RUNTIME_UI)

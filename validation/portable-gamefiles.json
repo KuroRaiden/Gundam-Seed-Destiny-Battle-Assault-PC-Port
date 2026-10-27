@@ -1,0 +1,13 @@
+{
+  "date": "2026-10-26",
+  "launcher_defaults": "passed",
+  "relative_paths_and_relocation": "passed",
+  "marker": "gamefiles/Game_and_Bios_Here.file",
+  "runtime_packager": "passed",
+  "ignored_inherited_gamefiles_data": true,
+  "modified_marker_rejected": true,
+  "private_paths_rejected": true,
+  "forbidden_archive_members_rejected": 7,
+  "raw_rom_bios_included": false,
+  "distribution_format": "seedpc-runtime-only-v3"
+}

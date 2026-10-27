@@ -19,3 +19,23 @@ note = "JP input dispatcher: feed two local streams through the original JP inpu
 addr = 0x08003418
 mode = "thumb"
 note = "JP right-fighter control: replace CPU/serial selection with local P2 input."
+
+[[mod_function_hook]]
+addr = 0x0800ABDC
+mode = "thumb"
+note = "Use explicit P1/P2 palette flags, including identical choices in mirror matches."
+
+[[mod_function_hook]]
+addr = 0x0800AC30
+mode = "thumb"
+note = "Resolve each selected native battle palette without automatic mirror recoloring."
+
+[[mod_function_hook]]
+addr = 0x08002F2C
+mode = "thumb"
+note = "Read-only Training meter: begin native battle frame, before slowdown decrement."
+
+[[mod_function_hook]]
+addr = 0x080030DC
+mode = "thumb"
+note = "Read-only Training meter: sample once after native combat, before mode UI."

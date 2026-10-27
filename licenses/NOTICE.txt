@@ -1,0 +1,19 @@
+Gundam SEED Destiny / Battle Assault PC Recomp - third-party notices
+
+GBARecomp by Matthew Stanley: PolyForm Noncommercial 1.0.0.
+arm-recomp-core, Dear ImGui, AutoPunch and GekkoNet's zpp: MIT.
+GekkoNet: BSD 2-Clause. SDL3 and SDL_GameControllerDB: zlib.
+Code adapted by GBARecomp from JRickey/gba-recomp: MIT OR Apache-2.0.
+mGBA-derived BIOS HLE files within GBARecomp: MPL-2.0.
+The accompanying files preserve the applicable upstream license texts.
+
+Source Code Form for the modified MPL-covered bios_hle.cpp and bios_hle.h:
+https://github.com/KuroRaiden/Gundam-Seed-Destiny-Battle-Assault-PC-Port/tree/main/third_party/gbarecomp-mpl
+See portable-manifest.json for the exact source commit.
+These are software HLE implementations, not a Nintendo BIOS image.
+Changes include MSVC portability and complete eight-word CpuFastSet transfers.
+
+No separate blanket license has been selected for original port integration
+code. Third-party terms apply to their respective components. Game names,
+artwork, cartridge software and BIOS images retain their respective owners'
+rights; these software licenses do not grant rights to game or BIOS data.

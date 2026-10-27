@@ -1,0 +1,1 @@
+GBA recomp bringing single-screen Local VS to Gundam SEED, inspired by SNES Super Game Boy multiplayer. Replaces US Password Mode with Local VS, integrates the JP roster and battle system, and adds a launcher palette editor.

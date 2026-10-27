@@ -1,0 +1,9 @@
+Place your own supported game and BIOS files in this folder.
+
+Expected default filenames:
+Mobile Suit Gundam Seed - Battle Assault (USA).gba
+Kidou Senshi Gundam - Seed Destiny (Japan).gba
+gba_bios.bin
+
+No ROM or BIOS data is included with this placeholder.
+Use Game files in the launcher to choose differently named files or another folder.

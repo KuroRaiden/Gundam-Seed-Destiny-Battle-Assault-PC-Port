@@ -1,3 +1,4 @@
+#include "ms_palette_fixture.h"
 #include "jp_combat_runtime.h"
 #include "frame_control.h"
 #include "gekkonet.h"
@@ -195,10 +196,22 @@ int drive(gbarecomp::NativeFrameControl& machine) {
 } // namespace
 int main(int argc, char** argv) {
     try {
+        seed::JpCombatRequest request;
+        request.fighters[0] = 13;
+        request.fighters[1] = 14;
         std::vector<char*> args{argv[0]};
         for (int i = 1; i < argc; ++i) {
             const std::string flag = argv[i];
-            if (flag == "--check-frames" && i + 1 < argc)
+            if (flag == "--custom-colors") {
+                request.palettes[0] = ms_test_palette(0);
+                request.palettes[1] = ms_test_palette(1);
+            } else if (flag == "--fighters" && i + 2 < argc) {
+                request.fighters[0] = std::stoul(argv[++i]);
+                request.fighters[1] = std::stoul(argv[++i]);
+            } else if (flag == "--colors" && i + 2 < argc) {
+                request.colors[0] = std::stoul(argv[++i]);
+                request.colors[1] = std::stoul(argv[++i]);
+            } else if (flag == "--check-frames" && i + 1 < argc)
                 frames = std::stoul(argv[++i]);
             else if (flag == "--report" && i + 1 < argc)
                 report = argv[++i];
@@ -206,9 +219,6 @@ int main(int argc, char** argv) {
                 args.push_back(argv[i]);
         }
         gbarecomp::RunOptions options;
-        seed::JpCombatRequest request;
-        request.fighters[0] = 13;
-        request.fighters[1] = 14;
         seed::configure_jp_combat(options, request);
         options.native_frame_driver = drive;
         return gbarecomp::run_game(int(args.size()), args.data(), options);

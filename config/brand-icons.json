@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "icons": {
+    "Haro.ico": "1a96e941350b1871b8405f2d20f72e0a43b583d1e958d5cbb0ab2f78bea24483",
+    "LauncherShip.ico": "2ccbb7c743eeba41dc3005cffde0e0b5e02f27a01ea77f9558b5c960323cc1d5"
+  },
+  "source": {
+    "haro": "JP shop state 29, OBJ tile 882, palette 5, 32x32 sprite",
+    "launcher_ship": "US difficulty state 17/substate 6, original transparent BG0, 8bpp"
+  },
+  "palette": "Original GBA RGB5 colors; nearest-neighbor icon sizes"
+}

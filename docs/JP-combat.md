@@ -9,8 +9,9 @@ and renderer. The menu's audio stream pauses and resumes on return. Shared
 
 The original 24 grid choices map to native JP IDs 1–23 and 25 (host selector
 IDs 0–22 and 24). JP-exclusive suits use their actual battle routines and
-assets. Additional hidden/palette variants and the original L/R color selector
-are not connected. Standard balanced OS/stat values are taken from the donor
+assets. Start selects both original palettes for every suit and all three hidden
+variants. Native IDs 24, 26 and 27 are now available through their original
+roster slots. Standard balanced OS/stat values are taken from the donor
 selection defaults; there is currently no per-player OS-settings screen.
 
 | JP address | Purpose |
@@ -53,7 +54,7 @@ See `Online-VS.md` for validation and remaining Internet coverage.
 
 US Training Mode (menu column 2, row 0, state 11) shares the JP selector, with
 P1 choosing both the player and practice opponent. `JpCombatRequest` API version
-3 distinguishes versus and training. Training enters JP state 8, substate 0;
+7 distinguishes versus and training and carries explicit colors/custom palettes. Training enters JP state 8, substate 0;
 the native initializer at `0x0802579C` establishes practice settings, followed
 by `0x080257E8` for fighter/stage setup. The `0x080030DC` dispatcher calls the
 practice handler at `0x080258B4` in state 8. The P2 input hook is bypassed for

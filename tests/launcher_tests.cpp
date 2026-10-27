@@ -47,6 +47,17 @@ int wmain(int argc, wchar_t** argv) {
         file.verified = true;
         file.edited();
         require(!file.verified, "Editing did not invalidate identity");
+        sl::Settings defaults;
+        for (unsigned index = 0; index < defaults.files.size(); ++index)
+            require(defaults.files[index].path == sl::kPortableGamePaths[index],
+                    "Default gamefiles path is missing");
+        defaults.load(scratch / L"missing-settings.ini");
+        for (const auto& selected : defaults.files) {
+            require(std::filesystem::path(sl::wide(selected.path)).parent_path() ==
+                        std::filesystem::absolute(scratch) / L"gamefiles",
+                    "Fresh launcher paths did not resolve inside its portable gamefiles folder");
+            require(!selected.verified, "Missing default input was accepted");
+        }
         const auto settings_path = scratch / L"launcher-settings.ini";
         sl::Settings original;
         original.scale = 5;

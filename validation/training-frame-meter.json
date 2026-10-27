@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-26",
+  "status": "integrated-and-tested",
+  "applied_to_e_drive": true,
+  "logic_tests": "passed; Training/online gates, startup, multi-hit gaps, hitstop, interruptions, cancels, continuations and bounded history",
+  "native_layout_synthetic_tests": "passed; offense/hurtbox distinction, disabled/zero geometry, projectile ownership/release and pointer bounds",
+  "native_game": {
+    "initial_roster_fighters": 27,
+    "initial_attack_cases": 56,
+    "final_revision_fighters": [
+      1,
+      13,
+      27
+    ],
+    "final_revision_attack_cases": 8,
+    "guest_memory_unchanged_by_visibility_toggle": true,
+    "active_sequence_pause_resume": "passed",
+    "reports": [
+      "training-meter-native-roster.json",
+      "training-meter-native-final.json"
+    ],
+    "active_sequence_pause_report": "training-meter-active-pause.json"
+  },
+  "native_ui": {
+    "result": "passed",
+    "checks": [
+      "F5 open/close/repeat/release",
+      "no pause or save-state hotkey leakage",
+      "F4 isolation",
+      "Local/Online VS exclusion"
+    ],
+    "green_red_blue_yellow_pixels": [
+      643,
+      647,
+      837,
+      1310
+    ]
+  },
+  "shared_game_window": {
+    "Training_route_and_three_pause_cycles": "passed",
+    "F5_show_hide": "visually confirmed with physical key events through computer-use",
+    "further_input": "stopped injecting controls after user input was detected"
+  },
+  "online_regression": {
+    "matches": 2,
+    "same_invitation": true,
+    "desyncs": 0,
+    "final_machine_checksums_match": true,
+    "report": "training-meter-online-regression.json"
+  },
+  "known_scope": "Native observations; special moves, throw/cancel windows and character-specific recovery options are not exhaustively authored or qualified.",
+  "external_blocker": null,
+  "published": false
+}

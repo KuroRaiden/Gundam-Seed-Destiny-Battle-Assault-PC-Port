@@ -21,6 +21,7 @@ so a developer can move between source, IDA and cartridge evidence.
 | NAT setup | `src/nat_traversal.cpp` | Discover the public endpoint and exchange AutoPunch-compatible probes. |
 | Invitations | `src/invite_code.cpp`, `src/invite_window.cpp` | Validate shareable codes and deliver links to a fresh/existing game. |
 | Controls | `src/live_controls.cpp`, `src/in_game_remap.cpp` | Independent seat inputs and F4 remapping policy. |
+| Training meter | `src/jp_frame_probe.h`, `src/training_frame_meter.cpp`, `src/training_meter_overlay.cpp` | Read native battle frames and render the Training-only F5 timeline. |
 | Player identity | `src/player_profile.cpp` | Persist UTF-8 names and format live match titles. |
 | SDL host | `src/host_window_sdl3.cpp` | Window, audio, gamepads, drawing and shared surface ownership. |
 | Addresses | `analysis/address-map.json` | Authoritative names, values, meanings and evidence. |
@@ -82,6 +83,10 @@ The importer contains no embedded art, cartridge image or BIOS image.
 
 `tools/build_portable.py` copies only approved executables, runtime DLLs, the
 controller database, default settings and licenses. It cannot accept ROM/BIOS
-arguments. `tools/audit_release.py` validates this allowlist, blank game paths
+arguments. `tools/audit_release.py` validates this allowlist, fixed portable game paths
 and a runtime-only manifest, and can scan contents against supplied raw inputs.
+The gamefiles placeholder and prefilled relative paths are fixed templates;
+actual inputs and local settings remain excluded. The requested icons are bound
+to exact approved hashes. [Third-party notices](../THIRD_PARTY_NOTICES.md) include
+the modified MPL-covered source and its upstream terms.
 `tools/publish_private_release.py` audits ZIPs before making any upload request.

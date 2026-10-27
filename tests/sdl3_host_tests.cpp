@@ -1,3 +1,9 @@
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+#include "brand_icons.h"
 #include "host_window.h"
 #include "host_overlay.h"
 #include "jp_selection.h"
@@ -68,6 +74,59 @@ int main(int argc, char** argv) {
         capture = argv[2];
         gbarecomp::HostWindow window;
         require(window.open(2, 240, 160, "SDL3 host validation"), "Native window failed");
+#if defined(_WIN32)
+        int icon_windows = 0;
+        auto** icon_targets = SDL_GetWindows(&icon_windows);
+        require(icon_targets && icon_windows == 1, "Expected one icon test window");
+        const auto handle = static_cast<HWND>(SDL_GetPointerProperty(
+            SDL_GetWindowProperties(icon_targets[0]), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+        SDL_free(icon_targets);
+        auto verify_icon = [&](const auto& expected, const char* label) {
+            const auto icon =
+                reinterpret_cast<HICON>(SendMessageW(handle, WM_GETICON, ICON_SMALL, 0));
+            ICONINFO icon_info{};
+            require(icon && GetIconInfo(icon, &icon_info), "Native window icon missing");
+            BITMAP icon_bitmap{};
+            require(GetObjectW(icon_info.hbmColor, sizeof(icon_bitmap), &icon_bitmap),
+                    "Cannot read native window icon");
+            require(icon_bitmap.bmWidth == seed::kBrandWindowIconSize &&
+                        icon_bitmap.bmHeight == seed::kBrandWindowIconSize,
+                    "Native icon dimensions differ from the requested original icon");
+            BITMAPINFO icon_format{};
+            icon_format.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+            icon_format.bmiHeader.biWidth = seed::kBrandWindowIconSize;
+            icon_format.bmiHeader.biHeight = -int(seed::kBrandWindowIconSize);
+            icon_format.bmiHeader.biPlanes = 1;
+            icon_format.bmiHeader.biBitCount = 32;
+            std::array<std::uint8_t, seed::kBrandWindowIconRgba.size()> icon_pixels{};
+            const auto dc = GetDC(handle);
+            const auto rows = GetDIBits(dc, icon_info.hbmColor, 0, seed::kBrandWindowIconSize,
+                                        icon_pixels.data(), &icon_format, DIB_RGB_COLORS);
+            ReleaseDC(handle, dc);
+            DeleteObject(icon_info.hbmColor);
+            DeleteObject(icon_info.hbmMask);
+            require(rows == seed::kBrandWindowIconSize, "Could not read native icon pixels");
+            unsigned branded_pixels = 0;
+            for (unsigned pixel = 0; pixel < expected.size(); pixel += 4)
+                if (expected[pixel + 3]) {
+                    require(icon_pixels[pixel] == expected[pixel + 2] &&
+                                icon_pixels[pixel + 1] == expected[pixel + 1] &&
+                                icon_pixels[pixel + 2] == expected[pixel],
+                            "Native window icon pixels differ from the original sprite");
+                    ++branded_pixels;
+                }
+            std::printf("Verified %s window icon: %u original sprite pixels.\n", label,
+                        branded_pixels);
+        };
+        verify_icon(seed::kBrandWindowIconRgba, "Haro game");
+        auto** brand_windows = SDL_GetWindows(&icon_windows);
+        require(brand_windows && icon_windows == 1, "Missing launcher icon test window");
+        require(seed::set_launcher_window_icon(brand_windows[0]),
+                "Could not set launcher ship icon");
+        verify_icon(seed::kLauncherWindowIconRgba, "Ship launcher");
+        require(seed::set_game_window_icon(brand_windows[0]), "Could not restore Haro game icon");
+        SDL_free(brand_windows);
+#endif
         require(seed::load_controller_db().loaded, "Bundled controllerdb.txt was not loaded");
         // Direct audio deliberately starts paused until its startup buffer is
         // filled. Feed both paths before checking playback/pause controls.

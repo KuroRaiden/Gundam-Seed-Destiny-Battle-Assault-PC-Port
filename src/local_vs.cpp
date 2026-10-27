@@ -54,6 +54,11 @@ std::uint8_t LocalVsSelection::advance(const MatchInputs& inputs) {
         }
         if (before != seat.cursor) {
             seat.fighter = jp_layout ? kJpPortraits[seat.cursor] : kVsPortraits[seat.cursor];
+            seat.color = 0;
+            changed |= 1u << player;
+        }
+        if (jp_layout && (input.pressed & 8) && supported(seat.fighter)) {
+            seat.color = std::uint8_t((seat.color + 1) % jp_color_count(seat.fighter));
             changed |= 1u << player;
         }
         if (input.pressed & 1) {
@@ -77,6 +82,8 @@ std::uint8_t LocalVsSelection::advance(const MatchInputs& inputs) {
             if (supported(seat.fighter))
                 seat.ready = true;
         }
+        if (jp_layout && palette_for && (local_seat_mask & (1u << player)))
+            seat.palette = palette_for(player, seat.fighter, seat.color);
     }
     if (cancelled) {
         ready_frames = 0;

@@ -6,7 +6,15 @@ import json
 from pathlib import Path
 import shutil
 import zipfile
-from audit_release import audit_archive, CRT_FILES
+from audit_release import (
+    audit_archive,
+    CRT_FILES,
+    BRAND_ICON_FILES,
+    APPROVED_BRAND_ICONS,
+    PORTABLE_SETTINGS,
+    GAMEFILES_MARKER,
+    GAMEFILES_MARKER_TEXT,
+)
 
 
 def digest(path):
@@ -36,10 +44,18 @@ def main():
         {path.name.lower() for path in crt_files}
     ):
         raise RuntimeError("Incomplete x64 C++ runtime")
+    icons = {name for name in BRAND_ICON_FILES if (args.app / name).is_file()}
+    if icons and icons != BRAND_ICON_FILES:
+        raise RuntimeError("Incomplete branding icons")
+    for name in icons:
+        if digest(args.app / name) != APPROVED_BRAND_ICONS[name]:
+            raise RuntimeError("Unapproved branding icon: " + name)
     args.out.mkdir(parents=True)
     for name in required:
         shutil.copy2(args.app / name, args.out / name)
     shutil.copy2(args.launcher, args.out / "GundamSeedLauncher.exe")
+    for name in icons:
+        shutil.copy2(args.app / name, args.out / name)
     licenses = args.out / "licenses"
     licenses.mkdir()
     for path in sorted((args.app / "licenses").glob("*.txt")):
@@ -50,17 +66,22 @@ def main():
     for path in crt_files:
         shutil.copy2(path, args.out / path.name)
     (args.out / "launcher-settings.ini").write_text(
-        'us ""\njapanese ""\nbios ""\nscale "3"\n', encoding="utf-8"
+        PORTABLE_SETTINGS, encoding="utf-8", newline="\n"
     )
+    (args.out / "gamefiles").mkdir()
+    (args.out / GAMEFILES_MARKER).write_bytes(GAMEFILES_MARKER_TEXT)
     (args.out / "START HERE.txt").write_text(
         """Gundam SEED Destiny / Battle Assault PC - Portable
 
 1. Extract the complete ZIP to a writable folder.
 2. Run GundamSeedLauncher.exe and open Game files.
-3. Select your own supported US Battle Assault ROM, JP SEED Destiny ROM,
-   and extracted 16 KB GBA BIOS. Verify all three, then Launch game.
+3. Put your own supported US Battle Assault ROM, JP SEED Destiny ROM, and
+   extracted 16 KB GBA BIOS in gamefiles/. The launcher prefills paths there.
+   Default names are listed in gamefiles/Game_and_Bios_Here.file.
+4. Verify all three in Game files, then Launch game. Browse to select files
+   with different names or use files stored in another folder.
 
-This download contains no ROMs, BIOS, saves, player profiles or extracted art.
+This download contains no ROMs, BIOS, saves, player profiles or game asset caches.
 The JP selector art is generated locally from your Japanese ROM on first
 launch. Your original files are read in place and are never modified.
 No Python installation, compiler or administrator permission is required.
@@ -68,11 +89,26 @@ First launch may take a little longer while the local art cache is prepared.
 
 Settings and saves stay with this folder. Copy your own input files into the
 folder if you want their saved paths to remain portable when you move it.
-Press F4 during play to remap controls. Online VS uses shareable codes/links;
+Open MS Colors in the launcher to prepare local battle-sprite previews, edit
+colors, and save palettes per player/suit. Online uses your Player 1 profiles
+and shares them with your opponent. Both players need this updated build.
+Press Start on character select to cycle colors/variants before pressing A.
+Each local player uses their own Start binding; in Training, P1 picks both.
+Press F4 during play to remap controls. In Training, F5 toggles the frame
+meter without pausing: green startup, red active, blue recovery, yellow hitstun.
+Online VS uses shareable codes/links;
 set Player name before hosting or joining. The title shows names and live
 input delay, last rollback length and ping. Invitation registration is optional.
 If you move the folder, enable links again from its new location.
-""" + f"\nVersion: {args.version}\nSource commit: {args.source_commit}\n",
+Online rooms support continuous rematches: choose fighters and press A again
+after each match. The same code stays active until someone leaves the room.
+"""
+        + (
+            "\nIncludes the requested original Haro game and difficulty-screen ship launcher icons.\n"
+            if icons
+            else ""
+        )
+        + f"\nVersion: {args.version}\nSource commit: {args.source_commit}\n",
         encoding="utf-8",
     )
     (licenses / "Microsoft-Visual-Cpp-Runtime.txt").write_text(
@@ -93,14 +129,17 @@ https://visualstudio.microsoft.com/license-terms/
         if path.is_file()
     }
     manifest = {
-        "schema": 2,
-        "distribution_format": "seedpc-runtime-only-v1",
+        "schema": 4,
+        "distribution_format": "seedpc-runtime-only-v3",
+        "gamefiles_directory": "gamefiles",
         "version": args.version,
         "source_commit": args.source_commit,
         "platform": "windows-x64",
         "roms_included": False,
         "bios_included": False,
-        "generated_art_included": False,
+        "generated_art_included": bool(icons),
+        "game_asset_caches_included": False,
+        "brand_icons": APPROVED_BRAND_ICONS if icons else {},
         "personal_data_included": False,
         "asset_generation": "local_from_user_rom",
         "relative_game_paths": True,

@@ -1,0 +1,63 @@
+{
+  "condition_label": "baseline",
+  "ports": [
+    29350,
+    29351
+  ],
+  "peers": [
+    {
+      "engine": "native-jp",
+      "transport": "udp",
+      "backend": "GekkoNet",
+      "driver": "production-dll",
+      "seat": 0,
+      "frames": 240,
+      "target": 240,
+      "initial_crc": 949800622,
+      "final_crc": 1542488784,
+      "peer_crc": 1542488784,
+      "converged": true,
+      "rollbacks": 0,
+      "replayed_frames": 0,
+      "max_rollback": 0,
+      "stalls": 47,
+      "desyncs": 0,
+      "ping_ms": 14.6,
+      "jitter_ms": 10.3333,
+      "remap_frames": 0,
+      "finish_fence": false,
+      "title": "",
+      "hp": [
+        10240,
+        9472
+      ]
+    },
+    {
+      "engine": "native-jp",
+      "transport": "udp",
+      "backend": "GekkoNet",
+      "driver": "production-dll",
+      "seat": 1,
+      "frames": 240,
+      "target": 240,
+      "initial_crc": 949800622,
+      "final_crc": 1542488784,
+      "peer_crc": 1542488784,
+      "converged": true,
+      "rollbacks": 107,
+      "replayed_frames": 158,
+      "max_rollback": 6,
+      "stalls": 55,
+      "desyncs": 0,
+      "ping_ms": 17.7778,
+      "jitter_ms": 9.875,
+      "remap_frames": 0,
+      "finish_fence": false,
+      "title": "",
+      "hp": [
+        10240,
+        9472
+      ]
+    }
+  ]
+}

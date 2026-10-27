@@ -6,7 +6,11 @@ Destiny grid, then fight with the original JP combat engine. All 24 visible
 grid choices are available. One process and one game window run one advancing
 cartridge at a time. No link cable or second game instance is required.
 
-Move with the D-pad/stick and press GBA **A** to ready. **B** unlocks a ready
+Move with the D-pad/stick and press **Start** to cycle colors/hidden variants
+while unready, then press GBA **A** to ready. Each local seat uses its own
+Start binding. Training uses P1 controls for whichever fighter is being chosen.
+The footer shows each color number. Returning from a match keeps the colors.
+ **B** unlocks a ready
 player; B while unready returns to the US menu. Both ready starts JP combat
 after a short initialization. Match completion clears both ready flags and
 returns to the same selector. **Esc** during combat also returns to selection.

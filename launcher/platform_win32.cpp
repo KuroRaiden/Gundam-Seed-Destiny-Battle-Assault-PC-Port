@@ -61,7 +61,8 @@ std::wstring quote_argument(const std::wstring& value) {
     result.append(slashes * 2, L'\\');
     return result + L'\"';
 }
-std::optional<std::string> pick_file(void* owner, bool bios) {
+std::optional<std::string> pick_file(void* owner, bool bios,
+                                     const std::filesystem::path& initial_folder) {
     IFileOpenDialog* dialog = nullptr;
     if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_INPROC_SERVER,
                                 IID_PPV_ARGS(&dialog))))
@@ -72,6 +73,14 @@ std::optional<std::string> pick_file(void* owner, bool bios) {
     dialog->SetFileTypes(2, filters);
     dialog->SetOptions(FOS_FILEMUSTEXIST | FOS_PATHMUSTEXIST | FOS_FORCEFILESYSTEM);
     dialog->SetTitle(bios ? L"Choose your extracted GBA BIOS" : L"Choose your GBA cartridge");
+    if (!initial_folder.empty()) {
+        IShellItem* folder = nullptr;
+        if (SUCCEEDED(SHCreateItemFromParsingName(initial_folder.c_str(), nullptr,
+                                                  IID_PPV_ARGS(&folder)))) {
+            dialog->SetFolder(folder);
+            folder->Release();
+        }
+    }
     const HRESULT status = dialog->Show(static_cast<HWND>(owner));
     std::optional<std::string> result;
     if (SUCCEEDED(status)) {

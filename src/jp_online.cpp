@@ -111,8 +111,8 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         std::uint64_t last_init = 0, last_done = 0, last_end = 0, stable_since = 0;
         const auto began = now();
         auto send = [&](unsigned type, std::uint32_t crc) {
-            std::array<std::uint8_t, 24> p{};
-            put32(p.data(), 0x314E504A);
+            std::array<std::uint8_t, kCombatControlPacketBytes> p{};
+            put32(p.data(), kCombatControlMagic);
             put32(p.data() + 4, kRoomProtocol);
             p[8] = std::uint8_t(type);
             p[9] = std::uint8_t(seat);
@@ -121,21 +121,39 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             put32(p.data() + 12, match.connection.epoch);
             put32(p.data() + 16, crc);
             put32(p.data() + 20, configured_target);
+            p[24] = match.colors[0];
+            p[25] = match.colors[1];
+            for (unsigned seat = 0; seat < 2; ++seat) {
+                p[26 + seat] = match.palettes[seat].enabled;
+                encode_palette(p.data() + 32 + seat * kMsPaletteBytes, match.palettes[seat]);
+            }
             transport.send_control(p);
         };
         auto control = [&] {
             for (const auto& p : transport.take_control()) {
-                if (acknowledge_room_start(transport, p, match.connection, match.fighters))
+                if (acknowledge_room_start(transport, p, match.connection, match.fighters,
+                                           match.colors, match.palettes))
                     continue;
                 if (p.size() == 32 && get32(p.data()) == kRoomMagic &&
-                    get32(p.data() + 4) == kRoomProtocol && p[9] == 1 - seat && p[8] == 5)
+                    get32(p.data() + 4) == kRoomProtocol && p[9] == 1 - seat && p[8] == 5 &&
+                    (get32(p.data() + 20) == match.connection.epoch ||
+                     get32(p.data() + 20) == next_match_epoch(match.connection.epoch)))
                     throw std::runtime_error("Opponent left online room");
-                if (p.size() != 24 || get32(p.data()) != 0x314E504A || p[9] != 1 - seat ||
+                if (p.size() != kCombatControlPacketBytes ||
+                    get32(p.data()) != kCombatControlMagic || p[9] != 1 - seat ||
                     get32(p.data() + 12) != match.connection.epoch)
                     continue;
                 require(get32(p.data() + 4) == kRoomProtocol && p[10] == match.fighters[0] &&
-                            p[11] == match.fighters[1] && get32(p.data() + 20) == configured_target,
+                            p[11] == match.fighters[1] && p[24] == match.colors[0] &&
+                            p[25] == match.colors[1] && get32(p.data() + 20) == configured_target,
                         "Opponent uses a different online battle configuration");
+                for (unsigned seat = 0; seat < 2; ++seat) {
+                    CustomPalette palette;
+                    require(decode_palette(p.data() + 32 + seat * kMsPaletteBytes, p[26 + seat],
+                                           palette) &&
+                                palette == match.palettes[seat],
+                            "Opponent uses different MS colors");
+                }
                 const auto crc = get32(p.data() + 16);
                 if (p[8] == 1) {
                     require(crc == result.initial_crc,

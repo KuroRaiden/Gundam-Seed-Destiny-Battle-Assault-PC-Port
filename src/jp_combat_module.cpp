@@ -10,7 +10,13 @@ extern "C" __declspec(dllexport) int SeedRunJpCombat(const seed::JpCombatRequest
         !request->bios || !request->save)
         return -1;
     for (const auto id : request->fighters)
-        if (id < 1 || (id > 23 && id != 25))
+        if (id < 1 || id > 27)
+            return -1;
+    for (const auto color : request->colors)
+        if (color > 1)
+            return -1;
+    for (const auto& palette : request->palettes)
+        if (!palette.valid())
             return -1;
     if (request->mode != seed::JpCombatMode::Versus &&
         request->mode != seed::JpCombatMode::Training)

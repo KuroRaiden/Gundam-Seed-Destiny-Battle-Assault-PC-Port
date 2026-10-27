@@ -33,7 +33,19 @@ FORBIDDEN_ROM_HASHES = {
     "cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb",
 }
 BIOS_SHA1 = "300c20df6731a33952ded8c436f7f186d25d3492"
-EXCLUSIONS = ("roms_included", "bios_included", "generated_art_included", "personal_data_included")
+EXCLUSIONS = ("roms_included", "bios_included", "personal_data_included")
+BRAND_ICON_FILES = {"Haro.ico", "LauncherShip.ico"}
+ROOT = Path(__file__).resolve().parents[1]
+GAMEFILES_MARKER = "gamefiles/Game_and_Bios_Here.file"
+GAMEFILES_MARKER_TEXT = (
+    (ROOT / "config/Game_and_Bios_Here.file").read_text(encoding="utf-8").encode("utf-8")
+)
+PORTABLE_SETTINGS = (ROOT / "config/portable-settings.ini").read_text(encoding="utf-8")
+BLANK_SETTINGS = 'us ""\njapanese ""\nbios ""\nscale "3"\n'
+
+APPROVED_BRAND_ICONS = json.loads(
+    (Path(__file__).resolve().parents[1] / "config/brand-icons.json").read_text(encoding="utf-8")
+)["icons"]
 
 
 def audit_archive(path, forbidden_inputs=()):
@@ -62,7 +74,10 @@ def audit_archive(path, forbidden_inputs=()):
             license_file = (
                 len(name.parts) == 3 and name.parts[1] == "licenses" and name.suffix == ".txt"
             )
-            if relative not in RUNTIME_FILES | CRT_FILES and not license_file:
+            if (
+                relative not in RUNTIME_FILES | CRT_FILES | BRAND_ICON_FILES | {GAMEFILES_MARKER}
+                and not license_file
+            ):
                 raise ValueError("Forbidden release file: " + relative)
             if item.file_size > 100_000_000:
                 raise ValueError("Unexpectedly large runtime file")
@@ -86,10 +101,42 @@ def audit_archive(path, forbidden_inputs=()):
     if not RUNTIME_FILES.issubset(members):
         raise ValueError("Incomplete runtime package")
     manifest = json.loads(members["portable-manifest.json"])
-    if manifest.get("distribution_format") != "seedpc-runtime-only-v1" or any(
-        manifest.get(key) is not False for key in EXCLUSIONS
-    ):
+    distribution = manifest.get("distribution_format")
+    gamefiles = distribution == "seedpc-runtime-only-v3"
+    if distribution not in (
+        "seedpc-runtime-only-v1",
+        "seedpc-runtime-only-v2",
+        "seedpc-runtime-only-v3",
+    ) or any(manifest.get(key) is not False for key in EXCLUSIONS):
         raise ValueError("Package is not marked as runtime-only")
+    icons = BRAND_ICON_FILES.intersection(members)
+    branded = bool(icons)
+    if distribution == "seedpc-runtime-only-v1" and branded:
+        raise ValueError("Unexpected branding in a legacy runtime package")
+    if distribution == "seedpc-runtime-only-v2" and not branded:
+        raise ValueError("Legacy branded package has no icons")
+    if branded:
+        if (
+            icons != BRAND_ICON_FILES
+            or manifest.get("generated_art_included") is not True
+            or manifest.get("game_asset_caches_included") is not False
+            or manifest.get("brand_icons") != APPROVED_BRAND_ICONS
+        ):
+            raise ValueError("Unexpected branding/art policy")
+        for name in BRAND_ICON_FILES:
+            if hashlib.sha256(members[name]).hexdigest() != APPROVED_BRAND_ICONS[name]:
+                raise ValueError("Unapproved branding icon: " + name)
+    elif manifest.get("generated_art_included") is not False:
+        raise ValueError("Unexpected art in a runtime package")
+    if gamefiles:
+        if (
+            members.get(GAMEFILES_MARKER) != GAMEFILES_MARKER_TEXT
+            or manifest.get("gamefiles_directory") != "gamefiles"
+            or manifest.get("game_asset_caches_included") is not False
+        ):
+            raise ValueError("Missing or altered gamefiles placeholder policy")
+    elif GAMEFILES_MARKER in members:
+        raise ValueError("Unexpected gamefiles member in a legacy package")
     if manifest.get("asset_generation") != "local_from_user_rom":
         raise ValueError("Missing local asset generation policy")
     expected = manifest["files"]
@@ -101,9 +148,8 @@ def audit_archive(path, forbidden_inputs=()):
             or value["sha256"] != hashlib.sha256(members[name]).hexdigest()
         ):
             raise ValueError("Manifest mismatch: " + name)
-    if (
-        members["launcher-settings.ini"].decode("utf-8").replace("\r\n", "\n")
-        != 'us ""\njapanese ""\nbios ""\nscale "3"\n'
+    if members["launcher-settings.ini"].decode("utf-8").replace("\r\n", "\n") != (
+        PORTABLE_SETTINGS if gamefiles else BLANK_SETTINGS
     ):
         raise ValueError("Personal game paths or settings included")
     return {
@@ -111,9 +157,13 @@ def audit_archive(path, forbidden_inputs=()):
         "files": len(members),
         "roms_included": False,
         "bios_included": False,
-        "generated_art_included": False,
+        "generated_art_included": branded,
+        "brand_icons_included": branded,
+        "game_asset_caches_included": False,
         "personal_data_included": False,
         "embedded_input_scan": len(forbidden),
+        "gamefiles_placeholder": gamefiles,
+        "relative_gamefiles_defaults": gamefiles,
     }
 
 

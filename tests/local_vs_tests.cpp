@@ -154,6 +154,69 @@ int main() {
         for (int i = 0; i < 18; ++i)
             frame(0, 0);
         require(select.launch, "Training did not launch with one controller");
+        // Every original selector palette and hidden variant is reachable by
+        // Start, wraps exactly once, and cannot be changed after confirming.
+        for (unsigned fighter = 0; fighter < 25; ++fighter) {
+            if (!seed::jp_color_count(std::uint8_t(fighter)))
+                continue;
+            select = {};
+            inputs = {};
+            select.jp_layout = true;
+            select.available_fighters = 0x017FFFFFu;
+            select.seats = {{{13, std::uint8_t(fighter), false}, {22, 7, false}}};
+            const unsigned count = fighter == 0 ? 6 : fighter == 22 ? 4 : 2;
+            require(seed::jp_color_count(std::uint8_t(fighter)) == count,
+                    "Incorrect native variant count");
+            for (unsigned color = 1; color <= count; ++color) {
+                frame(8, 0);
+                require(select.seats[0].color == color % count && select.seats[1].color == 0,
+                        "Start did not cycle only its player's colors");
+                frame(8, 0);
+                require(select.seats[0].color == color % count,
+                        "Held Start repeated color changes");
+                frame(0, 0);
+            }
+        }
+        require(seed::jp_combat_choice(0, 2).fighter == 26 &&
+                    seed::jp_combat_choice(0, 4).fighter == 27 &&
+                    seed::jp_combat_choice(0, 5).palette == 1 &&
+                    seed::jp_combat_choice(22, 2).fighter == 24 &&
+                    seed::jp_combat_choice(7, 1).palette == 1,
+                "Hidden variant/native palette mapping changed");
+        select.seats[0] = {13, 0, false};
+        inputs = {};
+        frame(8, 8);
+        require(select.seats[0].color == 1 && select.seats[1].color == 1,
+                "Simultaneous P1/P2 Start was not independent");
+        frame(0, 0);
+        frame(1, 0);
+        frame(0, 0);
+        frame(8, 0);
+        require(select.seats[0].ready && select.seats[0].color == 1, "Confirmed palette changed");
+        frame(0, 0);
+        frame(2, 0);
+        frame(0, 0);
+        frame(16, 0);
+        require(select.seats[0].color == 0, "Moving to another suit retained an invalid color");
+        select.seats[0] = {11, 255, false};
+        inputs = {};
+        frame(8, 0);
+        require(select.seats[0].color == 0 && !select.seats[0].ready,
+                "Start confirmed or colored random");
+        select = {};
+        inputs = {};
+        select.jp_layout = select.training = true;
+        select.available_fighters = 0x017FFFFFu;
+        select.seats = {{{13, 0, false}, {9, 22, false}}};
+        frame(8, 0);
+        frame(0, 0);
+        frame(1, 0);
+        frame(0, 0);
+        frame(8, 0);
+        frame(0, 0);
+        frame(8, 0);
+        require(select.seats[0].color == 1 && select.seats[1].color == 2,
+                "Training Start did not select the current fighter/dummy palette");
         std::puts("PASS: Local/Online/Training menu routes, Preset isolation, two-seat selection "
                   "and single-player JP training selection.");
         return 0;

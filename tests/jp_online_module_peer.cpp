@@ -1,6 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include "ms_palette_fixture.h"
 #include "jp_combat.h"
 #include "udp_transport.h"
 #include "live_controls.h"
@@ -53,6 +54,8 @@ int main(int argc, char** argv) {
         std::filesystem::path report, module;
         unsigned port = 29070, peer = 29071;
         request.qualification_frames = 240;
+        request.fighters[0] = 13;
+        request.fighters[1] = 14;
         for (int i = 1; i < argc; ++i) {
             const std::string flag = argv[i];
             auto value = [&] {
@@ -60,7 +63,16 @@ int main(int argc, char** argv) {
                     throw std::runtime_error("Missing qualification argument");
                 return std::string(argv[++i]);
             };
-            if (flag == "--seat")
+            if (flag == "--custom-colors") {
+                request.palettes[0] = ms_test_palette(0);
+                request.palettes[1] = ms_test_palette(1);
+            } else if (flag == "--fighters") {
+                request.fighters[0] = std::stoul(value());
+                request.fighters[1] = std::stoul(value());
+            } else if (flag == "--colors") {
+                request.colors[0] = std::stoul(value());
+                request.colors[1] = std::stoul(value());
+            } else if (flag == "--seat")
                 seat = std::stoul(value());
             else if (flag == "--net-bind")
                 port = std::stoul(value());
@@ -96,8 +108,6 @@ int main(int argc, char** argv) {
         seed::UdpTransport transport(std::uint16_t(port), "127.0.0.1", std::uint16_t(peer), token);
         request.connection = transport.borrow(seat, 0x53454544);
         request.surface.online = true;
-        request.fighters[0] = 13;
-        request.fighters[1] = 14;
         request.rom = rom.c_str();
         request.bios = bios.c_str();
         request.save = save.c_str();

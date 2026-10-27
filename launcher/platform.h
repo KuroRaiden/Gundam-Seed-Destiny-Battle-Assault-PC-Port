@@ -9,7 +9,8 @@ std::filesystem::path executable_directory();
 std::string utf8(const std::wstring& value);
 std::wstring wide(const std::string& value);
 std::wstring quote_argument(const std::wstring& value);
-std::optional<std::string> pick_file(void* owner, bool bios);
+std::optional<std::string> pick_file(void* owner, bool bios,
+                                     const std::filesystem::path& initial_folder = {});
 std::string file_hash(const std::filesystem::path& path, bool sha1);
 void open_file(const std::filesystem::path& path);
 bool replace_settings_file(const std::filesystem::path& staging, const std::filesystem::path& path,

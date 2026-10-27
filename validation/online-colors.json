@@ -1,0 +1,246 @@
+[
+  {
+    "stage": "connected-jp-selection",
+    "peers": [
+      {
+        "ok": true,
+        "selector": "jp-destiny",
+        "scripted_input": true,
+        "battle_mode": "online",
+        "online_lobby": false,
+        "network_ready": true,
+        "active": true,
+        "state": 11,
+        "substate": 11,
+        "control": 3,
+        "mode": 6,
+        "link": 0,
+        "cursor": [
+          13,
+          22
+        ],
+        "fighters": [
+          1,
+          8
+        ],
+        "preview": [
+          0,
+          7
+        ],
+        "ready": [
+          false,
+          false
+        ],
+        "raw": [
+          0,
+          0
+        ],
+        "battle_input": [
+          458762,
+          0
+        ],
+        "hp": [
+          0,
+          0
+        ],
+        "depth": 0,
+        "online_frames": 0,
+        "online_crc": 0,
+        "online_peer_crc": 0,
+        "online_converged": false,
+        "online_rollbacks": 0,
+        "online_desyncs": 0,
+        "colors": [
+          5,
+          1
+        ],
+        "online_status": "Connected. You control Player 1.",
+        "players": [
+          "Kira",
+          "Athrun"
+        ]
+      },
+      {
+        "ok": true,
+        "selector": "jp-destiny",
+        "scripted_input": true,
+        "battle_mode": "online",
+        "online_lobby": false,
+        "network_ready": true,
+        "active": true,
+        "state": 11,
+        "substate": 11,
+        "control": 3,
+        "mode": 6,
+        "link": 0,
+        "cursor": [
+          13,
+          22
+        ],
+        "fighters": [
+          1,
+          8
+        ],
+        "preview": [
+          0,
+          7
+        ],
+        "ready": [
+          false,
+          false
+        ],
+        "raw": [
+          0,
+          0
+        ],
+        "battle_input": [
+          458762,
+          0
+        ],
+        "hp": [
+          0,
+          0
+        ],
+        "depth": 0,
+        "online_frames": 0,
+        "online_crc": 0,
+        "online_peer_crc": 0,
+        "online_converged": false,
+        "online_rollbacks": 0,
+        "online_desyncs": 0,
+        "colors": [
+          5,
+          1
+        ],
+        "online_status": "Connected. You control Player 2 with your Player 1 bindings.",
+        "players": [
+          "Kira",
+          "Athrun"
+        ]
+      }
+    ]
+  },
+  {
+    "stage": "rollback-and-return",
+    "peers": [
+      {
+        "ok": true,
+        "selector": "jp-destiny",
+        "scripted_input": true,
+        "battle_mode": "online",
+        "online_lobby": true,
+        "network_ready": false,
+        "active": true,
+        "state": 11,
+        "substate": 11,
+        "control": 3,
+        "mode": 6,
+        "link": 0,
+        "cursor": [
+          13,
+          22
+        ],
+        "fighters": [
+          1,
+          8
+        ],
+        "preview": [
+          0,
+          7
+        ],
+        "ready": [
+          false,
+          false
+        ],
+        "raw": [
+          1,
+          0
+        ],
+        "battle_input": [
+          458762,
+          0
+        ],
+        "hp": [
+          0,
+          0
+        ],
+        "depth": 0,
+        "online_invitation": "",
+        "online_frames": 240,
+        "online_crc": 1220172857,
+        "online_peer_crc": 1220172857,
+        "online_converged": true,
+        "online_rollbacks": 1,
+        "online_desyncs": 0,
+        "colors": [
+          5,
+          1
+        ],
+        "online_status": "Online match finished",
+        "players": [
+          "Player 1",
+          "Player 2"
+        ]
+      },
+      {
+        "ok": true,
+        "selector": "jp-destiny",
+        "scripted_input": true,
+        "battle_mode": "online",
+        "online_lobby": true,
+        "network_ready": false,
+        "active": true,
+        "state": 11,
+        "substate": 11,
+        "control": 3,
+        "mode": 6,
+        "link": 0,
+        "cursor": [
+          13,
+          22
+        ],
+        "fighters": [
+          1,
+          8
+        ],
+        "preview": [
+          0,
+          7
+        ],
+        "ready": [
+          false,
+          false
+        ],
+        "raw": [
+          1,
+          0
+        ],
+        "battle_input": [
+          458762,
+          0
+        ],
+        "hp": [
+          0,
+          0
+        ],
+        "depth": 0,
+        "online_invitation": "",
+        "online_frames": 240,
+        "online_crc": 1220172857,
+        "online_peer_crc": 1220172857,
+        "online_converged": true,
+        "online_rollbacks": 0,
+        "online_desyncs": 0,
+        "colors": [
+          5,
+          1
+        ],
+        "online_status": "Online match finished",
+        "players": [
+          "Player 1",
+          "Player 2"
+        ]
+      }
+    ]
+  }
+]

@@ -318,6 +318,80 @@ inline constexpr std::uint32_t kSelectorActorStride = 32;
 inline constexpr std::uint32_t kRomEnd = 0x08800000;
 // 32-byte native selector portrait order copied into a locally generated art pack.
 inline constexpr std::uint32_t kPortraitGrid = 0x080D7558;
+// Two native fighter palette flags (0=primary, 1=alternate).
+inline constexpr std::uint32_t kPlayerPaletteFlags = 0x03007600;
+// Native effective palette flag; includes automatic mirror recoloring.
+inline constexpr std::uint32_t kFighterPaletteFlag = 0x0800ABDC;
+// Native battle palette pointer lookup; descriptor offsets 8/12.
+inline constexpr std::uint32_t kFighterPaletteLookup = 0x0800AC30;
+// Native fighter descriptors, 44 bytes each; palette pointers at offsets 8/12.
+inline constexpr std::uint32_t kFighterDescriptorTable = 0x080CD3B0;
+// Bytes per native fighter descriptor.
+inline constexpr std::uint32_t kFighterDescriptorStride = 44;
+// Two original 96-byte fighter palette buffers, one per seat.
+inline constexpr std::uint32_t kFighterPaletteBuffers = 0x02030200;
+// Native combat update entry; reads global slowdown before it decrements.
+inline constexpr std::uint32_t kBattleFrameBegin = 0x08002F2C;
+// Native post-combat frame dispatch; observational frame-meter hook.
+inline constexpr std::uint32_t kBattleFrameTail = 0x080030DC;
+// Native collision actor pool.
+inline constexpr std::uint32_t kCollisionActors = 0x02003000;
+// First PLAYERDATA relative to JP battle context.
+inline constexpr std::uint32_t kFighterRecordsOffset = 44;
+// PLAYERDATA pointer to the native collision actor.
+inline constexpr std::uint32_t kFighterActorPointerOffset = 32;
+// PLAYERDATA simulation and animation flags.
+inline constexpr std::uint32_t kFighterFlagsOffset = 6;
+// PLAYERDATA animation freeze counter.
+inline constexpr std::uint32_t kFighterFreezeOffset = 21;
+// Fighter animation does not advance while this flag is set.
+inline constexpr std::uint32_t kFighterAnimationFrozenFlag = 64;
+// Embedded native animation state in PLAYERDATA.
+inline constexpr std::uint32_t kFighterAnimationOffset = 44;
+// Animation index within the native animation bank.
+inline constexpr std::uint32_t kAnimationIdOffset = 34;
+// Native animation game-frame clock.
+inline constexpr std::uint32_t kAnimationTickOffset = 36;
+// Maximum loaded native animation descriptors.
+inline constexpr std::uint32_t kAnimationDescriptorCount = 768;
+// Bytes per loaded animation descriptor.
+inline constexpr std::uint32_t kAnimationDescriptorStride = 16;
+// Bytes per native animation hitbox update record.
+inline constexpr std::uint32_t kAnimationHitboxRecordStride = 36;
+// Native collision actor slots.
+inline constexpr std::uint32_t kCollisionActorCount = 48;
+// Bytes per native collision actor.
+inline constexpr std::uint32_t kCollisionActorStride = 64;
+// First geometry record in a collision actor.
+inline constexpr std::uint32_t kCollisionBoxesOffset = 24;
+// Bytes per geometry record.
+inline constexpr std::uint32_t kCollisionBoxStride = 8;
+// Geometry records per actor.
+inline constexpr std::uint32_t kCollisionBoxCount = 4;
+// Native actor participates in collision checks.
+inline constexpr std::uint32_t kCollisionEnabledFlag = 1;
+// Native actor excluded from collision checks.
+inline constexpr std::uint32_t kCollisionDisabledFlag = 8;
+// Native actor group and target mask word.
+inline constexpr std::uint32_t kCollisionTargetsOffset = 4;
+// First target-mask bit after the actor group nibble.
+inline constexpr std::uint32_t kCollisionTargetsShift = 4;
+// Native damage-reaction state, including airborne knockdown.
+inline constexpr std::uint32_t kFighterStateDamage = 2;
+// Native ground guard reaction and blockstun.
+inline constexpr std::uint32_t kFighterStateGuardGround = 3;
+// Native alternate guard reaction state.
+inline constexpr std::uint32_t kFighterStateGuardAir = 4;
+// Native ground attack state.
+inline constexpr std::uint32_t kFighterStateAttackGround = 13;
+// Native airborne attack state.
+inline constexpr std::uint32_t kFighterStateAttackAir = 14;
+// Native grapple/self-destruct attack state, including animation continuations.
+inline constexpr std::uint32_t kFighterStateThrow = 20;
+// Low nibble skips combat stepping for the current frame.
+inline constexpr std::uint32_t kBattleSlowdownOffset = 35;
+// Accepted native attack command index; preserved across animation continuations.
+inline constexpr std::uint32_t kFighterCommandVariantOffset = 89;
 } // namespace jp
 
 } // namespace seed::address

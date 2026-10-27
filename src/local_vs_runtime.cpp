@@ -3,6 +3,7 @@
 #include "local_vs.h"
 #include "input_bindings.h"
 #include "jp_combat.h"
+#include "ms_color_profiles.h"
 #include "main_menu_label.h"
 #include "online_lobby.h"
 #include "online_room.h"
@@ -37,12 +38,13 @@ constexpr const char* kSelectBeginHook = "seed.local-select-begin";
 bool selector_active = false;
 MatchInputs inputs;
 LocalVsSelection selection;
+MsColorProfiles ms_colors;
 VsMenuRoute menu_route;
 MenuBattleMode battle_mode = MenuBattleMode::None;
 OnlineLobbyState online_lobby;
 OnlineRoom online_room;
 OnlineCombatResult last_online_result;
-unsigned online_qualification_frames = 0;
+unsigned online_qualification_frames = 0, online_qualification_end_frame = 0;
 std::string pending_invite;
 unsigned invite_nav_frames = 0;
 void leave_select();
@@ -101,6 +103,13 @@ void write_input(unsigned player) {
     for (unsigned i = 0; i < 16; ++i)
         bus_write_u16(a.history + 2 * i, s.history[i]);
 }
+CustomPalette selected_ms_palette(unsigned seat, std::uint8_t fighter, std::uint8_t color) {
+    if (!valid_jp_color(fighter, color))
+        return {};
+    const auto choice = jp_combat_choice(fighter, color);
+    return ms_colors.get(battle_mode == MenuBattleMode::Online ? 0 : seat, choice.fighter,
+                         choice.palette);
+}
 void battle_entry(MenuBattleMode mode) {
     battle_mode = mode;
     selector_active = true;
@@ -108,6 +117,7 @@ void battle_entry(MenuBattleMode mode) {
     selection = {};
     selection.training = mode == MenuBattleMode::Training;
     selection.jp_layout = true;
+    selection.palette_for = selected_ms_palette;
     selection.seats[0].cursor = 13;
     selection.seats[1].cursor = 22;
     enable_roster();
@@ -124,7 +134,7 @@ void battle_entry(MenuBattleMode mode) {
     if (mode == MenuBattleMode::Online) {
         online_room.close();
         last_online_result = {};
-        online_qualification_frames = 0;
+        online_qualification_frames = online_qualification_end_frame = 0;
         online_lobby.begin();
         show_online_lobby(&online_lobby);
     }
@@ -181,6 +191,7 @@ int initialize_us_selection(std::uint32_t pc, int, ArmCpuState*) {
     selection = {};
     selection.training = battle_mode == MenuBattleMode::Training;
     selection.jp_layout = true;
+    selection.palette_for = selected_ms_palette;
     enable_roster();
     for (unsigned player = 0; player < 2; ++player) {
         const auto id = bus_read_u8(us_address::kSelectedFighter1 + player);
@@ -321,6 +332,7 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
                     std::snprintf(request.player_names[p], sizeof(request.player_names[p]), "%s",
                                   online_room.names()[p].c_str());
                 request.qualification_frames = online_qualification_frames;
+                request.qualification_end_frame = online_qualification_end_frame;
             }
             request.mode = battle_mode == MenuBattleMode::Training ? JpCombatMode::Training
                                                                    : JpCombatMode::Versus;
@@ -329,22 +341,32 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             request.save = jp_save_path.c_str();
             request.debug_port = jp_debug_port;
             request.sample_inputs = sample_combat_inputs;
-            for (unsigned p = 0; p < 2; ++p)
-                request.fighters[p] = selection.seats[p].fighter + 1;
+            for (unsigned p = 0; p < 2; ++p) {
+                const auto choice =
+                    jp_combat_choice(selection.seats[p].fighter, selection.seats[p].color);
+                request.fighters[p] = choice.fighter;
+                request.colors[p] = choice.palette;
+                request.palettes[p] = selection.seats[p].palette;
+            }
             set_invite_busy(true);
             result = run(&request);
             set_invite_busy(false);
             resume_menu_host();
             if (request.surface.online) {
-                if (result < 0 && !online_result.converged)
-                    online_room.close();
                 last_online_result = online_result;
-                online_room.match_returned();
-                online_lobby.begin();
-                online_lobby.status = online_result.message;
-                if (online_lobby.status.empty())
-                    online_lobby.status = "Online match ended.";
-                show_online_lobby(&online_lobby);
+                if (result >= 0 && online_result.converged) {
+                    online_room.match_returned(selection, online_result.final_crc);
+                    online_lobby.open = false;
+                    online_lobby.status = online_room.status();
+                    show_online_lobby(nullptr);
+                } else {
+                    online_room.close();
+                    online_lobby.begin();
+                    online_lobby.status = online_result.message;
+                    if (online_lobby.status.empty())
+                        online_lobby.status = "Online match ended. Connect again to play.";
+                    show_online_lobby(&online_lobby);
+                }
             }
             if (result == 2) {
                 SDL_Event quit{};
@@ -356,7 +378,6 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             std::fprintf(stderr, "JP combat module load failed: %lu\n", GetLastError());
             if (battle_mode == MenuBattleMode::Online) {
                 online_room.close();
-                online_room.match_returned();
                 online_lobby.begin();
                 online_lobby.status =
                     "Could not load the JP combat module. Extract the entire portable ZIP again.";
@@ -428,8 +449,14 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
             std::snprintf(online_lobby.invite.data(), online_lobby.invite.size(), "%s",
                           invite.c_str());
             online_lobby.action = OnlineLobbyAction::Join;
-        } else
-            online_qualification_frames = std::clamp<int>(value.integer("frames", 240), 3, 18000);
+        } else {
+            online_qualification_end_frame =
+                std::clamp<int>(value.integer("end_frame", 0), 0, 18000);
+            online_qualification_frames =
+                online_qualification_end_frame
+                    ? 0
+                    : std::clamp<int>(value.integer("frames", 240), 3, 18000);
+        }
         if (!value.str("name").empty())
             std::snprintf(online_lobby.player_name.data(), online_lobby.player_name.size(), "%s",
                           normalize_player_name(value.str("name")).c_str());
@@ -500,6 +527,13 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
         last_online_result.desyncs);
     std::string extended(reply,
                          static_cast<std::size_t>(std::clamp(size - 1, 0, int(sizeof(reply) - 2))));
+    extended += ",\"colors\":[" + std::to_string(selection.seats[0].color) + "," +
+                std::to_string(selection.seats[1].color) + "]";
+    extended += ",\"custom_colors\":[" +
+                std::string(selection.seats[0].palette.enabled ? "true" : "false") + "," +
+                (selection.seats[1].palette.enabled ? "true" : "false") + "]";
+    extended += ",\"online_matches\":" + std::to_string(online_room.completed_matches()) +
+                ",\"online_epoch\":" + std::to_string(online_room.epoch());
     extended += ",\"online_status\":";
     gbarecomp::json::append_quoted(extended, online_lobby.status);
     extended += ",\"players\":[";
@@ -523,6 +557,9 @@ void configure_local_vs(gbarecomp::RunOptions& options, const std::filesystem::p
                         const std::string& jp_rom, const std::string& bios, const std::string& save,
                         int debug_port) {
     jp_art.load(art_path);
+    std::string palette_error;
+    if (!ms_colors.load(art_path.parent_path().parent_path() / "ms-colors.ini", palette_error))
+        std::fprintf(stderr, "%s\n", palette_error.c_str());
     jp_rom_path = jp_rom;
     bios_path = bios;
     jp_save_path = save;

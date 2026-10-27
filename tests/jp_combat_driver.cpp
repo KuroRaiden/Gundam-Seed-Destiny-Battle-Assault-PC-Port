@@ -1,3 +1,4 @@
+#include "ms_palette_fixture.h"
 #include "jp_combat_runtime.h"
 #include <vector>
 #include <string>
@@ -11,6 +12,12 @@ int main(int argc, char** argv) {
         if (std::string(argv[i]) == "--fighters" && i + 2 < argc) {
             request.fighters[0] = std::stoi(argv[++i]);
             request.fighters[1] = std::stoi(argv[++i]);
+        } else if (std::string(argv[i]) == "--colors" && i + 2 < argc) {
+            request.colors[0] = std::stoi(argv[++i]);
+            request.colors[1] = std::stoi(argv[++i]);
+        } else if (std::string(argv[i]) == "--custom-colors") {
+            request.palettes[0] = ms_test_palette(0);
+            request.palettes[1] = ms_test_palette(1);
         } else if (std::string(argv[i]) == "--training")
             request.mode = seed::JpCombatMode::Training;
         else

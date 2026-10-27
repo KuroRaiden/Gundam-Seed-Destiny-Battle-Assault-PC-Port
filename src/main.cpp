@@ -15,12 +15,13 @@
 // US cartridge host with one-simulation local VS through Password Mode.
 namespace {
 void import_jp_art(const std::filesystem::path& base, const std::string& rom,
-                   const std::string& bios, const std::filesystem::path& output) {
+                   const std::string& bios, const std::filesystem::path& output,
+                   bool colors = false) {
     const auto library = LoadLibraryW((base / "SeedJpCombat.dll").c_str());
     if (!library)
         throw std::runtime_error("The JP combat module is missing or could not be loaded.");
     const auto import = reinterpret_cast<seed::ImportJpSelectionArt>(
-        GetProcAddress(library, "SeedImportJpSelectionArt"));
+        GetProcAddress(library, colors ? "SeedImportJpColorPreviews" : "SeedImportJpSelectionArt"));
     const auto result = import ? import(rom.c_str(), bios.c_str(), output.string().c_str()) : 1;
     FreeLibrary(library);
     if (result)
@@ -34,10 +35,16 @@ int main(int argc, char** argv) {
     options.builtin_rom_sha1 = "8287d3d336d94a85c5cb22da0fd84918199197e1";
     options.diagnostic_replay_default = false;
     std::string jp_rom, bios, save, join_code, import_output;
+    bool import_colors = false;
     int jp_debug_port = 0;
     std::vector<char*> args{argv[0]};
     for (int i = 1; i < argc; ++i) {
         const std::string flag = argv[i];
+        if (flag == "--import-jp-color-previews" && i + 1 < argc) {
+            import_output = argv[++i];
+            import_colors = true;
+            continue;
+        }
         if (flag == "--import-jp-assets" && i + 1 < argc) {
             import_output = argv[++i];
             continue;
@@ -68,7 +75,8 @@ int main(int argc, char** argv) {
         const auto base = std::filesystem::absolute(argv[0]).parent_path();
         const auto art = base / "assets" / "destiny-selection.bin";
         if (!import_output.empty()) {
-            import_jp_art(base, jp_rom, bios, std::filesystem::u8path(import_output));
+            import_jp_art(base, jp_rom, bios, std::filesystem::u8path(import_output),
+                          import_colors);
             return 0;
         }
         if (!std::filesystem::is_regular_file(art))

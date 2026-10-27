@@ -1,5 +1,7 @@
 #pragma once
 #include "input_state.h"
+#include "fighter_colors.h"
+#include "ms_palette.h"
 #include <array>
 #include <cstdint>
 
@@ -40,12 +42,16 @@ struct LocalVsSeat {
     std::uint8_t cursor = 2;
     std::uint8_t fighter = 0;
     bool ready = false;
+    std::uint8_t color = 0; // Start cycles the original JP palettes/variants.
+    CustomPalette palette;
 };
 struct LocalVsSelection {
     std::array<LocalVsSeat, 2> seats{{{2, 0, false}, {10, 7, false}}};
     std::uint32_t random = 0x53454544;
     std::uint16_t available_slots = 0x1FFF;
     std::uint32_t available_fighters = 0xFFF; // US battle implementations.
+    CustomPalette (*palette_for)(unsigned seat, std::uint8_t fighter, std::uint8_t color) = nullptr;
+    unsigned local_seat_mask = 3;
     bool jp_layout = false;
     bool training = false; // P1 chooses their fighter, then the practice opponent.
     unsigned ready_frames = 0;

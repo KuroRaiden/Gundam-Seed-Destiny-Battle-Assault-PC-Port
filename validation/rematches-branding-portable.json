@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-26",
+  "status": "native-icons-and-package-policy-tested",
+  "room_protocol": 8,
+  "combat_abi": 7,
+  "persistent_room_cycles": 64,
+  "native_rematch_matches": 9,
+  "desyncs": 0,
+  "brand_icons": {
+    "Haro.ico": "1a96e941350b1871b8405f2d20f72e0a43b583d1e958d5cbb0ab2f78bea24483",
+    "LauncherShip.ico": "2ccbb7c743eeba41dc3005cffde0e0b5e02f27a01ea77f9558b5c960323cc1d5"
+  },
+  "embedded_icons": {
+    "GundamSeedRecomp.exe": "Haro.ico",
+    "GundamSeedLauncher.exe": "LauncherShip.ico",
+    "sizes": [
+      16,
+      24,
+      32,
+      48,
+      64,
+      128,
+      256
+    ],
+    "all_resource_bitmaps_byte_identical": true
+  },
+  "native_icon_pixels": {
+    "Haro": 593,
+    "launcher_ship": 295
+  },
+  "release_policy": "v3 runtime allowlist, fixed relative gamefiles paths and placeholder, two exact approved branding icons, no ROM/BIOS/cache/profile inputs"
+}

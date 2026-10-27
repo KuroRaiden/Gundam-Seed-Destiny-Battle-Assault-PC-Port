@@ -1,0 +1,12 @@
+{
+  "native_palette_combinations": 54,
+  "indexed_ms_previews": 27,
+  "profile_roundtrip": true,
+  "malformed_profiles_rejected": true,
+  "wire_palette_codec_verified": true,
+  "preview_swatch_isolation": true,
+  "custom_palette_entries_per_seat": 48,
+  "native_custom_palette_comparison": true,
+  "ui_layout_inspected": true,
+  "ui_automation_stopped_by_user": true
+}

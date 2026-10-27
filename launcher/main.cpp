@@ -11,7 +11,9 @@
 #include "imgui_stdlib.h"
 #include "platform.h"
 #include "settings.h"
+#include "ms_colors_ui.h"
 #include "../src/controller_db.h"
+#include "../src/brand_icons.h"
 #include "input_bindings.h"
 #include "invite_code.h"
 #include "invite_window.h"
@@ -30,10 +32,12 @@ constexpr ImVec4 kMuted{0.55f, 0.62f, 0.72f, 1};
 constexpr ImVec4 kGreen{0.42f, 0.84f, 0.62f, 1};
 constexpr ImVec4 kGold{0.96f, 0.74f, 0.36f, 1};
 constexpr ImVec4 kRed{0.96f, 0.48f, 0.48f, 1};
-enum class Page { Play, Files, Controllers, About };
+enum class Page { Play, Files, Controllers, Colors, About };
 struct App {
     sl::Settings settings;
     sl::GameProcess game;
+    sl::MsColorsUi colors;
+    SDL_Renderer* renderer = nullptr;
     std::filesystem::path folder;
     seed::InputDevices devices;
     seed::ControlBindings controls, saved_controls;
@@ -80,6 +84,15 @@ struct App {
         capture = {static_cast<int>(player), bit, slot, SDL_GetTicks() + 180, false};
     }
     void launch() {
+        if (colors.busy()) {
+            message = "Wait for MS preview preparation to finish before launching.";
+            return;
+        }
+        if (!colors.save()) {
+            error = true;
+            message = "Could not save MS colors beside the launcher.";
+            return;
+        }
         if (controls != saved_controls && !save_controls())
             return;
         // Recheck identities immediately before launch, including files changed outside the UI.
@@ -238,7 +251,15 @@ void files_page(App& app) {
         ImGui::SameLine();
         if (ImGui::Button("Browse", ImVec2(88, 0))) {
             try {
-                if (auto selected = sl::pick_file(app.native_window, index == 2)) {
+                auto initial_folder = std::filesystem::path(sl::wide(file.path)).parent_path();
+                if (initial_folder.empty())
+                    initial_folder = app.folder / "gamefiles";
+                else if (initial_folder.is_relative())
+                    initial_folder = app.folder / initial_folder;
+                std::error_code folder_error;
+                if (!std::filesystem::is_directory(initial_folder, folder_error))
+                    initial_folder = app.folder / "gamefiles";
+                if (auto selected = sl::pick_file(app.native_window, index == 2, initial_folder)) {
                     file.path = *selected;
                     file.verify(app.folder);
                     app.save();
@@ -468,6 +489,7 @@ void about_page(App& app) {
 }
 
 void draw(App& app) {
+    app.colors.tick();
     const auto* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
     ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -482,7 +504,7 @@ void draw(App& app) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    const char* pages[] = {"Play", "Game files", "Controllers", "Project status"};
+    const char* pages[] = {"Play", "Game files", "Controllers", "MS Colors", "Project status"};
     for (int index = 0; index < int(std::size(pages)); ++index) {
         const bool selected = static_cast<int>(app.page) == index;
         if (selected)
@@ -509,6 +531,11 @@ void draw(App& app) {
     case Page::Controllers:
         controllers_page(app);
         break;
+    case Page::Colors:
+        app.colors.draw(app.renderer,
+                        app.settings.files[1].verified && app.settings.files[2].verified,
+                        app.settings.files[1].path, app.settings.files[2].path);
+        break;
     case Page::About:
         about_page(app);
         break;
@@ -525,6 +552,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         App app;
         app.folder = sl::executable_directory();
         app.settings.load(app.folder / L"launcher-settings.ini");
+        app.colors.initialize(app.folder);
         int argc = 0;
         LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
         int quit_after = 0;
@@ -581,6 +609,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             app.page = Page::Files;
         else if (page == "controllers")
             app.page = Page::Controllers;
+        else if (page == "colors")
+            app.page = Page::Colors;
         else if (page == "status")
             app.page = Page::About;
         if (page.empty() && std::all_of(app.settings.files.begin(), app.settings.files.end(),
@@ -601,6 +631,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                                       820, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
         if (!app.window)
             throw std::runtime_error(SDL_GetError());
+        seed::set_launcher_window_icon(app.window);
         SDL_SetWindowMinimumSize(app.window, 1020, 760);
         app.native_window = SDL_GetPointerProperty(SDL_GetWindowProperties(app.window),
                                                    SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
@@ -609,6 +640,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             renderer = SDL_CreateRenderer(app.window, "software");
         if (!renderer)
             throw std::runtime_error(SDL_GetError());
+        app.renderer = renderer;
         SDL_SetRenderVSync(renderer, 1);
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -685,6 +717,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         ImGui_ImplSDLRenderer3_Shutdown();
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
+        app.colors.release_texture();
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(app.window);
         SDL_Quit();

@@ -37,10 +37,24 @@ key to them. Each battle has a separate input epoch to reject stale game data.
 
 Once connected, the lobby closes and each machine controls its own cursor on
 the JP grid using **Player 1 bindings**. The joining machine owns Player 2.
+Press **Start** to cycle your fighter's colors/hidden variants before confirming
+with A. Selection and match startup verify the same choices on both peers.
 Confirm both fighters to start JP combat. The US menu pauses while its JP DLL
 borrows the same SDL3 window, renderer, controls and UDP socket. There is one
 active simulation per player, with both fighters in it; no GBA cable or second
-local simulation is involved. After a match, create or join a fresh room.
+local simulation is involved. After a completed match, both players return to
+JP character selection in the same room. Choose fighters/colors and press A
+again for another match. There is no rematch limit and no new code to enter.
+Names, palette profiles, the invitation and the existing connection remain
+active until a player leaves. Ready flags reset, and held buttons must be
+released before confirming the next fighter. B or Esc leaves the room.
+
+Room protocol 8 requires updated builds on both machines. Every match advances
+a shared nonzero input epoch; old selection, startup and game packets cannot
+ready or start the next match. The selector can acknowledge the previous match's
+final checksum while the other peer finishes, avoiding a reconnect when its
+last acknowledgement was lost. Failed or unconverged matches still close the
+room and show the connection error.
 
 F4 opens remapping during online combat while the simulation continues and
 the local input stream is neutral. Native Start pause is suppressed online.
@@ -69,7 +83,8 @@ Completed local-machine checks are recorded in `validation/netplay/`:
 - Production DLL peers over real UDP, identical final full-machine checksums
   and fighter health.
 - Two real US Online VS menu routes, invitations, independent JP selection,
-  native rollback combat and return to the connection window.
+  native rollback combat and return from combat (the original qualification
+  returned to the connection window; current builds retain the room).
 - F4 remained open for 50 online frames while both peers continued and
   converged. Negotiated match-finish boundaries also converged.
 - Clumsy 0.3 configured for 40 ms outbound lag and 2% outbound loss: 600 frames
@@ -100,6 +115,16 @@ instrumented. Broader Internet performance and long-session coverage remain
 unverified. The port still reports missing static coverage and uses
 the framework's interpreter bridge for some guest code. This is not a fully
 static recompile.
+
+`seed_online_rematch_tests` passed 64 consecutive room cycles, including stale
+control/game packets, palette preservation, held-confirm input, repeated late
+finish acknowledgement and explicit departure. Seven production-DLL matches
+passed over loopback UDP: five using a fixed qualification frame and two using
+the normal negotiated finish boundary. Both peers agreed on every final
+checksum and returned to selection with the same invitation, without desyncs.
+See `validation/online-rematches.json` and
+`validation/online-rematches-finish.json`. These new rematch checks did not use
+Clumsy; the impaired-network qualification above predates this change.
 
 `seed_online_lobby_tests` verifies input isolation and cancellation.
 `seed_online_room_tests` verifies invitations, independent selection, startup

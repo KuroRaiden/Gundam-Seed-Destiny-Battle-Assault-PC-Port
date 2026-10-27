@@ -1237,6 +1237,302 @@
       "kind": "address",
       "meaning": "32-byte native selector portrait order copied into a locally generated art pack.",
       "evidence": "Verified build_jp_selection.py donor grid read and JpSelectionArt grid validation"
+    },
+    {
+      "group": "jp",
+      "name": "player_palette_flags",
+      "value": "0x03007600",
+      "kind": "address",
+      "meaning": "Two native fighter palette flags (0=primary, 1=alternate).",
+      "evidence": "IDA JP native palette flag/lookup and selector confirmation routines."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_palette_flag",
+      "value": "0x0800ABDC",
+      "kind": "address",
+      "meaning": "Native effective palette flag; includes automatic mirror recoloring.",
+      "evidence": "IDA decompilation; replaced for explicit player colors."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_palette_lookup",
+      "value": "0x0800AC30",
+      "kind": "address",
+      "meaning": "Native battle palette pointer lookup; descriptor offsets 8/12.",
+      "evidence": "IDA decompilation and native palette comparison."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_descriptor_table",
+      "value": "0x080CD3B0",
+      "kind": "address",
+      "meaning": "Native fighter descriptors, 44 bytes each; palette pointers at offsets 8/12.",
+      "evidence": "IDA native fighter palette lookup."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_descriptor_stride",
+      "value": "44",
+      "kind": "offset",
+      "meaning": "Bytes per native fighter descriptor.",
+      "evidence": "IDA native fighter palette lookup."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_palette_buffers",
+      "value": "0x02030200",
+      "kind": "address",
+      "meaning": "Two original 96-byte fighter palette buffers, one per seat.",
+      "evidence": "IDA native fighter initialization at 0x0800A1A4 copies 24 words per seat."
+    },
+    {
+      "group": "jp",
+      "name": "battle_frame_begin",
+      "value": "0x08002F2C",
+      "kind": "address",
+      "meaning": "Native combat update entry; reads global slowdown before it decrements.",
+      "evidence": "IDA sub_8002F2C"
+    },
+    {
+      "group": "jp",
+      "name": "battle_frame_tail",
+      "value": "0x080030DC",
+      "kind": "address",
+      "meaning": "Native post-combat frame dispatch; observational frame-meter hook.",
+      "evidence": "IDA sub_8002F2C calls this after both fighter updates"
+    },
+    {
+      "group": "jp",
+      "name": "collision_actors",
+      "value": "0x02003000",
+      "kind": "address",
+      "meaning": "Native collision actor pool.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_records_offset",
+      "value": "44",
+      "kind": "offset",
+      "meaning": "First PLAYERDATA relative to JP battle context.",
+      "evidence": "IDA sub_8002F2C and sub_800A1A4"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_actor_pointer_offset",
+      "value": "32",
+      "kind": "offset",
+      "meaning": "PLAYERDATA pointer to the native collision actor.",
+      "evidence": "IDA sub_8005FEC and sub_8007D2C"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_flags_offset",
+      "value": "6",
+      "kind": "offset",
+      "meaning": "PLAYERDATA simulation and animation flags.",
+      "evidence": "IDA sub_800ACD4"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_freeze_offset",
+      "value": "21",
+      "kind": "offset",
+      "meaning": "PLAYERDATA animation freeze counter.",
+      "evidence": "IDA sub_80060C4 and sub_800ACD4"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_animation_frozen_flag",
+      "value": "64",
+      "kind": "mask",
+      "meaning": "Fighter animation does not advance while this flag is set.",
+      "evidence": "IDA sub_800ACD4"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_animation_offset",
+      "value": "44",
+      "kind": "offset",
+      "meaning": "Embedded native animation state in PLAYERDATA.",
+      "evidence": "IDA sub_800ACB4"
+    },
+    {
+      "group": "jp",
+      "name": "animation_id_offset",
+      "value": "34",
+      "kind": "offset",
+      "meaning": "Animation index within the native animation bank.",
+      "evidence": "IDA sub_802231C"
+    },
+    {
+      "group": "jp",
+      "name": "animation_tick_offset",
+      "value": "36",
+      "kind": "offset",
+      "meaning": "Native animation game-frame clock.",
+      "evidence": "IDA sub_80223A8"
+    },
+    {
+      "group": "jp",
+      "name": "animation_descriptor_count",
+      "value": "768",
+      "kind": "count",
+      "meaning": "Maximum loaded native animation descriptors.",
+      "evidence": "IDA sub_80221A8"
+    },
+    {
+      "group": "jp",
+      "name": "animation_descriptor_stride",
+      "value": "16",
+      "kind": "offset",
+      "meaning": "Bytes per loaded animation descriptor.",
+      "evidence": "IDA sub_80221A8"
+    },
+    {
+      "group": "jp",
+      "name": "animation_hitbox_record_stride",
+      "value": "36",
+      "kind": "offset",
+      "meaning": "Bytes per native animation hitbox update record.",
+      "evidence": "IDA sub_8021DD4"
+    },
+    {
+      "group": "jp",
+      "name": "collision_actor_count",
+      "value": "48",
+      "kind": "count",
+      "meaning": "Native collision actor slots.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_actor_stride",
+      "value": "64",
+      "kind": "offset",
+      "meaning": "Bytes per native collision actor.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_boxes_offset",
+      "value": "24",
+      "kind": "offset",
+      "meaning": "First geometry record in a collision actor.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_box_stride",
+      "value": "8",
+      "kind": "offset",
+      "meaning": "Bytes per geometry record.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_box_count",
+      "value": "4",
+      "kind": "count",
+      "meaning": "Geometry records per actor.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_enabled_flag",
+      "value": "1",
+      "kind": "mask",
+      "meaning": "Native actor participates in collision checks.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_disabled_flag",
+      "value": "8",
+      "kind": "mask",
+      "meaning": "Native actor excluded from collision checks.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_targets_offset",
+      "value": "4",
+      "kind": "offset",
+      "meaning": "Native actor group and target mask word.",
+      "evidence": "IDA sub_8021B3C"
+    },
+    {
+      "group": "jp",
+      "name": "collision_targets_shift",
+      "value": "4",
+      "kind": "offset",
+      "meaning": "First target-mask bit after the actor group nibble.",
+      "evidence": "IDA sub_8021B3C; projectile ownership needs native qualification"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_damage",
+      "value": "2",
+      "kind": "value",
+      "meaning": "Native damage-reaction state, including airborne knockdown.",
+      "evidence": "IDA action dispatcher to sub_8008580"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_guard_ground",
+      "value": "3",
+      "kind": "value",
+      "meaning": "Native ground guard reaction and blockstun.",
+      "evidence": "IDA sub_800664C and sub_8006E04"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_guard_air",
+      "value": "4",
+      "kind": "value",
+      "meaning": "Native alternate guard reaction state.",
+      "evidence": "IDA sub_800664C and sub_8006F38"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_attack_ground",
+      "value": "13",
+      "kind": "value",
+      "meaning": "Native ground attack state.",
+      "evidence": "IDA sub_8007A40 writes at 0x08007C74"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_attack_air",
+      "value": "14",
+      "kind": "value",
+      "meaning": "Native airborne attack state.",
+      "evidence": "IDA sub_800779C writes at 0x080078D8"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_throw",
+      "value": "20",
+      "kind": "value",
+      "meaning": "Native grapple/self-destruct attack state, including animation continuations.",
+      "evidence": "IDA sub_8007A40 and sub_800B750"
+    },
+    {
+      "group": "jp",
+      "name": "battle_slowdown_offset",
+      "value": "35",
+      "kind": "offset",
+      "meaning": "Low nibble skips combat stepping for the current frame.",
+      "evidence": "IDA sub_8002F2C"
+    },
+    {
+      "group": "jp",
+      "name": "fighter_command_variant_offset",
+      "value": "89",
+      "kind": "offset",
+      "meaning": "Accepted native attack command index; preserved across animation continuations.",
+      "evidence": "IDA sub_8007A40 and sub_800779C write PLAYERDATA+89 when accepting commands."
     }
   ]
 }

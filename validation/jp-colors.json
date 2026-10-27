@@ -1,0 +1,409 @@
+{
+  "native_fighters": 27,
+  "distinct_palettes_checked": 54,
+  "cases": [
+    {
+      "fighters": [
+        1,
+        1
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "cf2474d2406306e01c92eeec1ca056fa16949586e478eb58b9edd347572080df",
+      "verified": true
+    },
+    {
+      "fighters": [
+        2,
+        2
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "f449baecc1433af3601d7c3eeb457b21430db0ad3fb693036c0fb238d7ef0e0b",
+      "verified": true
+    },
+    {
+      "fighters": [
+        3,
+        3
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "092813efbad1d2b29d8c83af72cefbb406d2d354cc70c0b44d0edb070a28c70e",
+      "verified": true
+    },
+    {
+      "fighters": [
+        4,
+        4
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "8df598523e543eac04d355d763649c5c0c1e8d536209ba05f01e86e9ed750067",
+      "verified": true
+    },
+    {
+      "fighters": [
+        5,
+        5
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "94b5c9224328197abad746caf5df2bcc045338fc3fea90b7d9525793f76ec009",
+      "verified": true
+    },
+    {
+      "fighters": [
+        6,
+        6
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "282604aca333647ba3498136900ca5f419feebf73de6a0dc205fbf88c7f11797",
+      "verified": true
+    },
+    {
+      "fighters": [
+        7,
+        7
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "6d10336938d7a69774b5bca1c2b713eef538aeb08247dedc9e07692268cada90",
+      "verified": true
+    },
+    {
+      "fighters": [
+        8,
+        8
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "deff6649ef00d81b0edb71789722afb882dbc05fc873ea5d257c6faf10072ada",
+      "verified": true
+    },
+    {
+      "fighters": [
+        9,
+        9
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "bd6ed5338a1273a1c8402e743a8476e6e69aa01313b21168eae57f755785cd9d",
+      "verified": true
+    },
+    {
+      "fighters": [
+        10,
+        10
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "c5c8c23dbe4e54eee07418a7093c797b39520c64270e1d4994f67dae443e95c8",
+      "verified": true
+    },
+    {
+      "fighters": [
+        11,
+        11
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "d352381fe57f987fcd3be9d3505943a094cc0ad28feb273a7d76bc4dc9e9bf68",
+      "verified": true
+    },
+    {
+      "fighters": [
+        12,
+        12
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "b9ea124cb3bee9ec01b2d64a3ab0aab0688960d7249f41897708703099830943",
+      "verified": true
+    },
+    {
+      "fighters": [
+        13,
+        13
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "9fef25a47db127895dc9a1e422513b83a434db48409e74da5acfe8b97f56d9d0",
+      "verified": true
+    },
+    {
+      "fighters": [
+        14,
+        14
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "4ac5b135526b6f79cd4c8125b4afe67db36b6ab8623f72e9260ddc0518ac62ce",
+      "verified": true
+    },
+    {
+      "fighters": [
+        15,
+        15
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "1e4029b000ff83e0ec92080cb4593067ce3142ec5316fa5b6b21ab9e6ad7bc07",
+      "verified": true
+    },
+    {
+      "fighters": [
+        16,
+        16
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "f7f5d78194d3633d33d0ac532ba8655c794607a9c0c175d2bf34afc1eb439945",
+      "verified": true
+    },
+    {
+      "fighters": [
+        17,
+        17
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "585d77b40ac0ea31c90941ef88d6ce9f2f34edc35deb6c50c92d69431e901ab9",
+      "verified": true
+    },
+    {
+      "fighters": [
+        18,
+        18
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "9bac0ceb6c8e722a0b9d173b62a4e42c114037a8f4bfc8f3fc0bb06a2048295e",
+      "verified": true
+    },
+    {
+      "fighters": [
+        19,
+        19
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "1dd6dc45fd5491ef997a4fe446a8e4c8f5893f4cdee184bd9fa527923e4bafed",
+      "verified": true
+    },
+    {
+      "fighters": [
+        20,
+        20
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "94b5e928cc090248773147193c8db2b63043f2434c5ad05d5a8eafe43216bdbf",
+      "verified": true
+    },
+    {
+      "fighters": [
+        21,
+        21
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "8fe02685f41a76112ccb49ab296ab75aec14d0952fc2ad10f314b66724bcd78c",
+      "verified": true
+    },
+    {
+      "fighters": [
+        22,
+        22
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "eb7d45ff93c437a7b5ce6eae4f2d7816b4ad0283c2ffc090828d1ba910eb6d83",
+      "verified": true
+    },
+    {
+      "fighters": [
+        23,
+        23
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "5713e38d969b53efa3aec3acbf62de919587b4a59a73295ce1a9682f7b5d46fd",
+      "verified": true
+    },
+    {
+      "fighters": [
+        24,
+        24
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "a7f81fc8df19bc38cf0d9adef3d9e2532b89d7cb42b1b8fb59944c98ce822265",
+      "verified": true
+    },
+    {
+      "fighters": [
+        25,
+        25
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "ebeb7b3086cd5d4a321c9f6746e560babcb0d5b5b735f247b491e91696982ac7",
+      "verified": true
+    },
+    {
+      "fighters": [
+        26,
+        26
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "cf2474d2406306e01c92eeec1ca056fa16949586e478eb58b9edd347572080df",
+      "verified": true
+    },
+    {
+      "fighters": [
+        27,
+        27
+      ],
+      "colors": [
+        0,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "248a510beb2ec3b3108499f96ae499a5f895bdf2c1a32ae135f76d270461d82e",
+      "verified": true
+    },
+    {
+      "fighters": [
+        1,
+        1
+      ],
+      "colors": [
+        0,
+        0
+      ],
+      "training": false,
+      "palette_sha256": "c4ed3289b5ab506b02f05558728df1b7bb36ca3a8e44fd83f2afcd2baa24aa69",
+      "verified": true
+    },
+    {
+      "fighters": [
+        1,
+        1
+      ],
+      "colors": [
+        1,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "700dece99ed4593e3c2cca00c2b4f794de451c1f7091d1c4a00b8f78d41aaa44",
+      "verified": true
+    },
+    {
+      "fighters": [
+        27,
+        27
+      ],
+      "colors": [
+        1,
+        1
+      ],
+      "training": false,
+      "palette_sha256": "824de68b96ee5dd632adb54d5fe67d04b2b5c84b003fe0c369297495fab910c5",
+      "verified": true
+    },
+    {
+      "fighters": [
+        24,
+        26
+      ],
+      "colors": [
+        1,
+        1
+      ],
+      "training": true,
+      "palette_sha256": "6ac9cb4765304ef08360ffe36326f91dd9b0b953915afced9d2dba91835fb990",
+      "verified": true
+    }
+  ]
+}

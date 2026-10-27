@@ -57,3 +57,24 @@ be checked against assembly before writing replacements.
 
 See [JP combat and validation](JP-combat.md) for the one-process handoff,
 full grid roster smoke checks and current limits.
+
+## Launcher updater qualification
+
+`config/version.txt` defines the version embedded in the launcher. A post-build
+receipt records its version and SHA-256; `tools/build_portable.py` rejects a
+mismatched version or executable. New packages use the runtime-only v4 layout
+and include `Update-Portable.ps1`, which uses Windows PowerShell/.NET already
+provided by Windows. The launcher uses WinHTTP and never needs a GitHub token.
+
+Build `seed_launcher_update_tests` to verify version ordering, fixed-release
+handling, release metadata, permitted HTTPS hosts and downgrade prevention.
+Its optional `--live-check SCRATCH` and `--live-download SCRATCH` modes exercise
+the real public GitHub API, native HTTPS redirects, download hashes and the
+running-game guard. Use fresh scratch directories on E:.
+
+`python tests/portable_update_tests.py --out <fresh E: directory>` exercises the
+real installer with isolated fixtures: successful replacement, settings/saves/
+profiles/cache preservation, validate-only, bad ZIP and member hashes, unsafe
+paths, unexpected personal files, duplicate Windows path aliases, blocked game
+inputs, locked runtime files, and rollback after an injected replacement error.
+These fixtures use synthetic data; no original ROM, BIOS or user saves are copied.

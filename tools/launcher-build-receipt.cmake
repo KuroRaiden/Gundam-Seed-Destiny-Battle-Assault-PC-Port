@@ -1,0 +1,5 @@
+file(SHA256 "${APP}" APP_HASH)
+get_filename_component(APP_FOLDER "${APP}" DIRECTORY)
+set(RECEIPT "{\n  \"version\": \"${VERSION}\",\n  \"sha256\": \"${APP_HASH}\"\n}\n")
+file(WRITE "${APP_FOLDER}/launcher-build.json" "${RECEIPT}")
+file(WRITE "${DESTINATION}/launcher-build.json" "${RECEIPT}")

@@ -141,8 +141,10 @@ std::string file_hash(const std::filesystem::path& path, bool sha1) {
     return result;
 }
 void open_file(const std::filesystem::path& path) {
-    ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, path.parent_path().c_str(),
-                  SW_SHOWNORMAL);
+    const auto value = path.wstring();
+    const auto directory = path.parent_path().wstring();
+    ShellExecuteW(nullptr, L"open", value.c_str(), nullptr,
+                  value.starts_with(L"https://") ? nullptr : directory.c_str(), SW_SHOWNORMAL);
 }
 bool replace_settings_file(const std::filesystem::path& staging, const std::filesystem::path& path,
                            std::string& error) {

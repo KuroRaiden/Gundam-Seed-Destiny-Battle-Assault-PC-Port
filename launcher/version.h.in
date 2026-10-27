@@ -1,0 +1,2 @@
+#pragma once
+#define SEED_LAUNCHER_VERSION "@SEED_LAUNCHER_VERSION@"

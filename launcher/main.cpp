@@ -11,6 +11,7 @@
 #include "imgui_stdlib.h"
 #include "platform.h"
 #include "settings.h"
+#include "update.h"
 #include "ms_colors_ui.h"
 #include "../src/controller_db.h"
 #include "../src/brand_icons.h"
@@ -32,9 +33,11 @@ constexpr ImVec4 kMuted{0.55f, 0.62f, 0.72f, 1};
 constexpr ImVec4 kGreen{0.42f, 0.84f, 0.62f, 1};
 constexpr ImVec4 kGold{0.96f, 0.74f, 0.36f, 1};
 constexpr ImVec4 kRed{0.96f, 0.48f, 0.48f, 1};
-enum class Page { Play, Files, Controllers, Colors, About };
+enum class Page { Play, Files, Controllers, Colors, About, Updates };
 struct App {
     sl::Settings settings;
+    std::unique_ptr<sl::LauncherUpdates> updates;
+    bool update_exit = false;
     sl::GameProcess game;
     sl::MsColorsUi colors;
     SDL_Renderer* renderer = nullptr;
@@ -503,6 +506,68 @@ void about_page(App& app) {
     ImGui::TextColored(kMuted, "Dear ImGui + SDL3  /  Licenses included in this folder");
 }
 
+void updates_page(App& app) {
+    title("Updates",
+          "Check this project's stable GitHub releases and update this portable folder.");
+    const auto state = app.updates->state();
+    const bool busy =
+        state.phase == sl::UpdatePhase::Checking || state.phase == sl::UpdatePhase::Downloading;
+    card_begin("update-version", 155);
+    ImGui::Text("Installed version: %s", sl::launcher_version().c_str());
+    if (!state.release.version.empty())
+        ImGui::Text("Latest release: %s", state.release.version.c_str());
+    ImGui::BeginDisabled(busy);
+    if (ImGui::Button("Check for updates", ImVec2(200, 38)))
+        app.updates->check();
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    if (ImGui::Button("GitHub releases", ImVec2(180, 38)))
+        sl::open_file(sl::wide(sl::kReleasePage));
+    card_end();
+    card_begin("update-status", 205);
+    ImGui::TextWrapped("%s",
+                       state.message.empty() ? "Ready to check GitHub." : state.message.c_str());
+    if (state.phase == sl::UpdatePhase::Downloading)
+        ImGui::ProgressBar(state.progress, ImVec2(-1, 24));
+    if (state.phase == sl::UpdatePhase::Available) {
+        ImGui::Text("Download: %.1f MB", double(state.release.bytes) / (1024 * 1024));
+        if (ImGui::Button("Download update", ImVec2(200, 38)))
+            app.updates->download();
+    }
+    if (state.phase == sl::UpdatePhase::Ready) {
+        ImGui::BeginDisabled(app.game.running() || app.colors.busy());
+        if (ImGui::Button("Install and restart", ImVec2(220, 38))) {
+            app.error = false;
+            if (!app.colors.save()) {
+                app.message = "Could not save MS colors before updating.";
+                app.error = true;
+            } else if (app.controls != app.saved_controls && !app.save_controls()) {
+                app.error = true;
+            } else {
+                app.save();
+                if (!app.error && app.updates->install(app.message))
+                    app.update_exit = true;
+                else
+                    app.error = true;
+            }
+        }
+        ImGui::EndDisabled();
+    }
+    ImGui::TextWrapped(
+        "Settings, controls, player names, palettes, saves and game files stay in place.");
+    ImGui::TextColored(kMuted,
+                       "Close the game before installing. The launcher will reopen automatically.");
+    if (app.error && !app.message.empty())
+        ImGui::TextWrapped("%s", app.message.c_str());
+    card_end();
+    if (!state.release.notes.empty()) {
+        ImGui::TextUnformatted("Release notes");
+        ImGui::BeginChild("release-notes", ImVec2(0, 0), ImGuiChildFlags_Borders);
+        ImGui::TextWrapped("%s", state.release.notes.c_str());
+        ImGui::EndChild();
+    }
+}
+
 void draw(App& app) {
     app.colors.tick();
     const auto* viewport = ImGui::GetMainViewport();
@@ -519,7 +584,8 @@ void draw(App& app) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    const char* pages[] = {"Play", "Game files", "Controllers", "MS Colors", "Project status"};
+    const char* pages[] = {"Play",      "Game files",     "Controllers",
+                           "MS Colors", "Project status", "Updates"};
     for (int index = 0; index < int(std::size(pages)); ++index) {
         const bool selected = static_cast<int>(app.page) == index;
         if (selected)
@@ -531,8 +597,15 @@ void draw(App& app) {
     }
     ImGui::Spacing();
     ImGui::Spacing();
-    ImGui::TextColored(kGold, "DEVELOPMENT BUILD");
+    ImGui::TextColored(kGold, sl::launcher_version().find("-dev") != std::string::npos
+                                  ? "DEVELOPMENT BUILD"
+                                  : "PC EDITION");
     ImGui::TextWrapped("F4 in game: controls");
+    const float footer = ImGui::GetWindowHeight() - ImGui::GetStyle().WindowPadding.y -
+                         ImGui::GetTextLineHeightWithSpacing() * 2;
+    ImGui::SetCursorPosY(std::max(ImGui::GetCursorPosY(), footer));
+    ImGui::Separator();
+    ImGui::TextColored(kMuted, "Version %s", sl::launcher_version().c_str());
     ImGui::EndChild();
     ImGui::SameLine(0, 28);
     ImGui::BeginChild("content", ImVec2(0, 0));
@@ -554,6 +627,9 @@ void draw(App& app) {
     case Page::About:
         about_page(app);
         break;
+    case Page::Updates:
+        updates_page(app);
+        break;
     }
     ImGui::EndChild();
     ImGui::End();
@@ -567,6 +643,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         App app;
         app.folder = sl::executable_directory();
         app.settings.load(app.folder / L"launcher-settings.ini");
+        app.updates = std::make_unique<sl::LauncherUpdates>(app.folder);
         app.colors.initialize(app.folder);
         int argc = 0;
         LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
@@ -628,6 +705,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             app.page = Page::Colors;
         else if (page == "status")
             app.page = Page::About;
+        else if (page == "updates")
+            app.page = Page::Updates;
         if (page.empty() && std::all_of(app.settings.files.begin(), app.settings.files.end(),
                                         [](const auto& file) { return file.path.empty(); }))
             app.page = Page::Files;
@@ -705,6 +784,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
             draw(app);
+            if (app.update_exit)
+                done = true;
             ImGui::Render();
             SDL_SetRenderScale(renderer, io.DisplayFramebufferScale.x,
                                io.DisplayFramebufferScale.y);

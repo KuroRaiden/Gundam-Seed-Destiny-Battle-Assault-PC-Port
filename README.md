@@ -18,6 +18,7 @@ character select and battle-system injection** supplies the expanded combat.
 - **Launcher palette editor:** edit MS colors with a live preview; custom palettes also sync online.
 - **Online VS:** rollback, automatic NAT hole punching, join codes/links and unlimited rematches in the same room.
 - **Training:** JP practice mode with the US-font English pause menu, **F5 frame meter**, **F6 hitbox/hurtbox viewer**, and **F2 save / F3 load** for practice situations.
+- **Launcher updates:** version display and GitHub release checks, with verified in-place updates that preserve player settings and saves.
 - **Controls:** launcher remapping and **F4** in-game remapping. **Start** cycles colors on character select.
 
 The main menu's **VS Mode** opens online play. **Local VS** occupies the former

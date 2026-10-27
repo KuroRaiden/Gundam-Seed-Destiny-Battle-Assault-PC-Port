@@ -176,13 +176,25 @@ if(WIN32)
   add_library(seed_launcher_platform STATIC launcher/platform_win32.cpp launcher/settings.cpp)
   target_include_directories(seed_launcher_platform PUBLIC launcher PRIVATE src)
   target_link_libraries(seed_launcher_platform PUBLIC bcrypt ole32 shell32 uuid)
+  file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/config/version.txt" SEED_LAUNCHER_VERSION LIMIT_COUNT 1)
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/config/version.txt")
+  configure_file(launcher/version.h.in generated/launcher_version.h @ONLY)
+  add_library(seed_launcher_updates STATIC launcher/update.cpp)
+  target_include_directories(seed_launcher_updates PUBLIC launcher PRIVATE
+    "${DEPS_DIR}/gbarecomp/src/runtime" "${CMAKE_CURRENT_BINARY_DIR}/generated")
+  target_link_libraries(seed_launcher_updates PUBLIC seed_launcher_platform winhttp)
+  add_executable(seed_launcher_update_tests tests/launcher_update_tests.cpp)
+  target_link_libraries(seed_launcher_update_tests PRIVATE seed_launcher_updates)
   add_executable(GundamSeedLauncher WIN32 launcher/main.cpp launcher/ms_colors_ui.cpp)
   target_compile_definitions(GundamSeedLauncher PRIVATE SDL_MAIN_HANDLED)
-  target_link_libraries(GundamSeedLauncher PRIVATE seed_imgui seed_launcher_platform seed_controls seed_links seed_ms_colors)
+  target_link_libraries(GundamSeedLauncher PRIVATE seed_imgui seed_launcher_platform seed_launcher_updates seed_controls seed_links seed_ms_colors)
   target_sources(GundamSeedLauncher PRIVATE src/app.manifest)
   set(SEED_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app" CACHE PATH "Packaged runtime destination")
   add_custom_command(TARGET GundamSeedLauncher POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/licenses"
+    COMMAND ${CMAKE_COMMAND} "-DAPP=$<TARGET_FILE:GundamSeedLauncher>" "-DVERSION=${SEED_LAUNCHER_VERSION}" "-DDESTINATION=${SEED_APP_DIR}" -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/launcher-build-receipt.cmake"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/launcher/Update-Portable.ps1" "${SEED_APP_DIR}/Update-Portable.ps1"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/launcher/Update-Portable.ps1" "$<TARGET_FILE_DIR:GundamSeedLauncher>/Update-Portable.ps1"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:GundamSeedLauncher>" "${SEED_APP_DIR}/GundamSeedLauncher.exe"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${IMGUI_DIR}/LICENSE.txt" "${SEED_APP_DIR}/licenses/Dear-ImGui.txt"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/SDL3/LICENSE.txt" "${SEED_APP_DIR}/licenses/SDL3.txt"

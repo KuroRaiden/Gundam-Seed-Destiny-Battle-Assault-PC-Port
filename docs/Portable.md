@@ -54,3 +54,30 @@ On the launcher's **Play** page, **Black sprite outlines** switches the one-pixe
 black fighter border on or off. The preference saves automatically and applies
 when launching. It defaults on for older settings and only affects your display,
 so opponents can use a different preference without affecting rollback.
+
+## Launcher version and updates
+
+The bottom left displays the version embedded in the launcher. **Updates** checks
+stable releases from this project's GitHub repository. **Download update** runs
+in the background and verifies the ZIP against GitHub's SHA-256 digest, then
+checks each runtime file against the portable manifest. **Install and restart**
+waits for the launcher to exit, replaces the application files in this folder,
+and reopens the launcher. Close the game and other launchers in that folder first.
+
+Updates preserve `launcher-settings.ini`, controls, names, MS color profiles,
+saves, Training states, game files and locally generated art caches. Fresh-install
+settings in the download do not replace an existing settings file. Only explicitly
+allowed application files, bundled libraries, documentation and license notices
+are updated; other local files are left in place. Normal replacement failures
+restore the previous application files from `.updates/<job>/backup`. The backup
+and installer log remain available there, including after an interrupted update.
+
+Existing 0.1.3 builds need a one-time manual installation of a build containing
+this updater. The new launcher is currently **0.1.4-dev**, ahead of the published
+0.1.3 fixed release, so it will offer the next compatible stable release once
+published. Checks use the public GitHub API without credentials and can be
+rate-limited; there are no periodic background checks.
+
+Development uses `config/version.txt` as the launcher version. The build writes
+`launcher-build.json` alongside the executable; the portable packager verifies
+that receipt so the displayed version and package version cannot disagree.

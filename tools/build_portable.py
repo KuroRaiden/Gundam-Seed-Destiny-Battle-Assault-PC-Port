@@ -26,16 +26,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("app", "launcher", "crt", "out"):
         parser.add_argument("--" + name, type=Path, required=True)
-    parser.add_argument("--version", default="development")
+    parser.add_argument("--version", default=(Path(__file__).resolve().parents[1] / "config/version.txt").read_text().strip())
     parser.add_argument("--source-commit", default="")
     args = parser.parse_args()
     for field in ("app", "launcher", "crt"):
         setattr(args, field, getattr(args, field).resolve(strict=True))
+    receipt_path = args.launcher.parent / "launcher-build.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if receipt.get("version") != args.version or receipt.get("sha256") != digest(args.launcher):
+        raise RuntimeError("Launcher binary/version does not match its build receipt; rebuild before packaging")
     args.out = args.out.resolve()
     archive = args.out.parent / (args.out.name + ".zip")
     if args.out.exists() or archive.exists():
         raise RuntimeError("Portable output already exists; refusing to replace it")
-    required = ["GundamSeedRecomp.exe", "SeedJpCombat.dll", "SDL3.dll", "controllerdb.txt"]
+    required = ["GundamSeedRecomp.exe", "SeedJpCombat.dll", "SDL3.dll", "controllerdb.txt", "Update-Portable.ps1"]
     for name in required:
         if not (args.app / name).is_file():
             raise RuntimeError("Missing runtime file: " + name)
@@ -101,6 +105,12 @@ In offline Training, F6 toggles hitboxes/hurtboxes. F2 saves a practice
 situation; F3 reloads it. Start opens the English pause menu using the US font.
 The US font cache is generated locally from your US game file.
 
+The bottom left of the launcher shows its version. Open Updates to check this
+project's stable GitHub releases. Download update verifies the package; Install
+and restart replaces application files in this folder while preserving settings,
+controls, names, colors, saves, game files and locally generated art caches.
+Close the game before installing. A rollback copy stays in .updates/.
+
 Press F4 during play to remap controls. In Training, F5 toggles the frame
 meter without pausing: green startup, red active, blue recovery, yellow hitstun.
 After choosing both fighters, select a stage with left/right and confirm with A.
@@ -138,8 +148,9 @@ https://visualstudio.microsoft.com/license-terms/
         if path.is_file()
     }
     manifest = {
-        "schema": 4,
-        "distribution_format": "seedpc-runtime-only-v3",
+        "schema": 5,
+        "distribution_format": "seedpc-runtime-only-v4",
+        "update_preserves_settings": True,
         "gamefiles_directory": "gamefiles",
         "version": args.version,
         "source_commit": args.source_commit,

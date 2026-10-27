@@ -57,3 +57,6 @@ __pycache__/
 /recomp_master_misses_*.toml.frag
 /gamefiles/*
 !/gamefiles/Game_and_Bios_Here.file
+
+# Portable updater downloads and rollback copies stay local.
+/.updates/

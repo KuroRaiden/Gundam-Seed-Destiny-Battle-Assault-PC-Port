@@ -16,6 +16,7 @@ RUNTIME_FILES = {
     "START HERE.txt",
     "portable-manifest.json",
 }
+UPDATER_FILES = {"Update-Portable.ps1"}
 CRT_FILES = {
     "concrt140.dll",
     "msvcp140.dll",
@@ -75,7 +76,7 @@ def audit_archive(path, forbidden_inputs=()):
                 len(name.parts) == 3 and name.parts[1] == "licenses" and name.suffix == ".txt"
             )
             if (
-                relative not in RUNTIME_FILES | CRT_FILES | BRAND_ICON_FILES | {GAMEFILES_MARKER}
+                relative not in RUNTIME_FILES | UPDATER_FILES | CRT_FILES | BRAND_ICON_FILES | {GAMEFILES_MARKER}
                 and not license_file
             ):
                 raise ValueError("Forbidden release file: " + relative)
@@ -91,7 +92,7 @@ def audit_archive(path, forbidden_inputs=()):
                 raise ValueError("Embedded raw game input found in " + relative)
             if name.suffix in (".exe", ".dll") and not data.startswith(b"MZ"):
                 raise ValueError("Unexpected non-executable runtime payload")
-            if license_file or name.suffix in (".txt", ".ini", ".json"):
+            if license_file or name.suffix in (".txt", ".ini", ".json", ".ps1"):
                 data.decode("utf-8-sig")
                 if bytes([0]) in data:
                     raise ValueError("Binary data in a text payload")
@@ -102,13 +103,19 @@ def audit_archive(path, forbidden_inputs=()):
         raise ValueError("Incomplete runtime package")
     manifest = json.loads(members["portable-manifest.json"])
     distribution = manifest.get("distribution_format")
-    gamefiles = distribution == "seedpc-runtime-only-v3"
+    gamefiles = distribution in ("seedpc-runtime-only-v3", "seedpc-runtime-only-v4")
     if distribution not in (
         "seedpc-runtime-only-v1",
         "seedpc-runtime-only-v2",
         "seedpc-runtime-only-v3",
+        "seedpc-runtime-only-v4",
     ) or any(manifest.get(key) is not False for key in EXCLUSIONS):
         raise ValueError("Package is not marked as runtime-only")
+    updater = UPDATER_FILES.intersection(members)
+    if (distribution == "seedpc-runtime-only-v4") != bool(updater):
+        raise ValueError("Updater capability and portable format disagree")
+    if updater and manifest.get("update_preserves_settings") is not True:
+        raise ValueError("Missing settings-preserving update policy")
     icons = BRAND_ICON_FILES.intersection(members)
     branded = bool(icons)
     if distribution == "seedpc-runtime-only-v1" and branded:

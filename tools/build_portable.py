@@ -92,8 +92,9 @@ folder if you want their saved paths to remain portable when you move it.
 Open MS Colors in the launcher to prepare local battle-sprite previews, edit
 colors, and save palettes per player/suit. Online uses your Player 1 profiles
 and shares them with your opponent. Both players need this updated build.
-Battle fighters have a simple black outline, applied locally for visibility.
-It does not change netplay state or require the opponent to use an outline.
+Play > Black sprite outlines toggles a simple black border around battle fighters.
+The preference saves automatically and takes effect when launching a game.
+It only changes your display online; the opponent can choose independently.
 Press Start on character select to cycle colors/variants before pressing A.
 Each local player uses their own Start binding; in Training, P1 picks both.
 In offline Training, F6 toggles hitboxes/hurtboxes. F2 saves a practice

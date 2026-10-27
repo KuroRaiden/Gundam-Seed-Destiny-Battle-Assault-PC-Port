@@ -47,3 +47,10 @@ policy; legacy v1/v2 packages retain their original blank-settings rules.
 
 See [Training tools](Training-Tools.md), [branding](Branding.md), [frame meter](Training-Frame-Meter.md),
 [palette editor](MS-colors.md) and [license notices](../THIRD_PARTY_NOTICES.md).
+
+## Sprite outlines
+
+On the launcher's **Play** page, **Black sprite outlines** switches the one-pixel
+black fighter border on or off. The preference saves automatically and applies
+when launching. It defaults on for older settings and only affects your display,
+so opponents can use a different preference without affecting rollback.

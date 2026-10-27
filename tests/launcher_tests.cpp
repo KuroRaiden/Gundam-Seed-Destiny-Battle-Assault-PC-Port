@@ -48,6 +48,7 @@ int wmain(int argc, wchar_t** argv) {
         file.edited();
         require(!file.verified, "Editing did not invalidate identity");
         sl::Settings defaults;
+        require(defaults.fighter_outlines, "Outlines should default on");
         for (unsigned index = 0; index < defaults.files.size(); ++index)
             require(defaults.files[index].path == sl::kPortableGamePaths[index],
                     "Default gamefiles path is missing");
@@ -58,9 +59,19 @@ int wmain(int argc, wchar_t** argv) {
                     "Fresh launcher paths did not resolve inside its portable gamefiles folder");
             require(!selected.verified, "Missing default input was accepted");
         }
+        require(defaults.fighter_outlines, "Missing settings should retain outlines");
+        const auto legacy_path = scratch / L"legacy-settings.ini";
+        {
+            std::ofstream legacy(legacy_path);
+            legacy << "scale 3\nfighter_outlines \"invalid\"\n";
+        }
+        sl::Settings legacy;
+        legacy.load(legacy_path);
+        require(legacy.fighter_outlines, "Legacy/invalid settings disabled outlines");
         const auto settings_path = scratch / L"launcher-settings.ini";
         sl::Settings original;
         original.scale = 5;
+        original.fighter_outlines = false;
         original.files[0].path = "D:\\ROM folder\\US's \\\"path.gba";
         original.files[1].path = sl::utf8(L"D:\\日本語\\Japanese.gba");
         original.files[2].path = "D:\\BIOS folder\\gba.bin";
@@ -71,6 +82,12 @@ int wmain(int argc, wchar_t** argv) {
         sl::Settings loaded;
         loaded.load(settings_path);
         require(loaded.scale == 4, "Scale did not persist");
+        require(!loaded.fighter_outlines, "Disabled outline setting did not persist");
+        loaded.fighter_outlines = true;
+        require(loaded.save(settings_path, error), "Enabled outline settings save failed");
+        sl::Settings enabled;
+        enabled.load(settings_path);
+        require(enabled.fighter_outlines, "Enabled outline setting did not persist");
         for (unsigned index = 0; index < 3; ++index)
             require(loaded.files[index].path == original.files[index].path,
                     "Path round-trip failed");

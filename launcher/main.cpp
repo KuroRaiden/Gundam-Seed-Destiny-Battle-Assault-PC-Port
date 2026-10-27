@@ -97,6 +97,8 @@ struct App {
             return;
         // Recheck identities immediately before launch, including files changed outside the UI.
         verify_all();
+        if (error)
+            return;
         if (!settings.files[0].verified || !settings.files[1].verified ||
             !settings.files[2].verified) {
             error = true;
@@ -221,6 +223,21 @@ void play_page(App& app) {
         ImGui::TextColored(kMuted, "JP selection art will be generated locally on first launch.");
     else
         ImGui::TextColored(kGreen, "Both cartridges and BIOS verified");
+    card_end();
+    card_begin("battle-display", 120);
+    ImGui::TextUnformatted("Battle display");
+    ImGui::BeginDisabled(app.game.running());
+    if (ImGui::Checkbox("Black sprite outlines", &app.settings.fighter_outlines)) {
+        if (!app.settings.save(app.folder / L"launcher-settings.ini", app.message)) {
+            app.settings.fighter_outlines = !app.settings.fighter_outlines;
+            app.error = true;
+        } else {
+            app.message.clear();
+            app.error = false;
+        }
+    }
+    ImGui::EndDisabled();
+    ImGui::TextColored(kMuted, "Saved automatically. Only changes your display online.");
     card_end();
     if (!app.message.empty()) {
         ImGui::TextColored(app.error ? kRed : kMuted, "%s", app.message.c_str());

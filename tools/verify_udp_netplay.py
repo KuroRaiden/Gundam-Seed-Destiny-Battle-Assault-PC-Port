@@ -27,6 +27,7 @@ def main():
     )
     parser.add_argument("--host-module", type=Path, help="Use another compatible combat DLL for seat 1")
     parser.add_argument("--peer-module", type=Path, help="Use another compatible combat DLL for seat 2 (mixed-build test)")
+    parser.add_argument("--peer-exe", type=Path, help="Seat 2 executable with independent local settings")
     parser.add_argument("--custom-colors", action="store_true")
     parser.add_argument("--fighters", type=int, nargs=2)
     parser.add_argument("--colors", type=int, nargs=2)
@@ -59,7 +60,7 @@ def main():
             processes.append(
                 subprocess.Popen(
                     [
-                        str(args.exe.resolve()),
+                        str((args.peer_exe if seat == 1 and args.peer_exe else args.exe).resolve()),
                         "--seat",
                         str(seat),
                         "--net-bind",

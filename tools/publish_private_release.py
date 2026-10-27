@@ -59,7 +59,8 @@ class GitHub:
         request = urllib.request.Request(url, data=body, headers=headers, method=method)
         try:
             with self.opener.open(request, timeout=120) as response:
-                return json.load(response)
+                content = response.read()
+                return json.loads(content) if content else None
         except urllib.error.HTTPError as error:
             raise RuntimeError(f"GitHub release API returned HTTP {error.code}.") from None
 

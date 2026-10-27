@@ -77,6 +77,10 @@ def main():
     parser.add_argument("--notes", required=True, type=Path)
     parser.add_argument("--asset", required=True, type=Path, action="append")
     parser.add_argument("--report", required=True, type=Path)
+    parser.add_argument(
+        "--prerelease", action="store_true",
+        help="Publish as a pre-release without changing Latest",
+    )
     args = parser.parse_args()
     if git("status", "--porcelain"):
         raise RuntimeError("Commit the reviewed source changes before publishing.")
@@ -125,6 +129,7 @@ def main():
         "permissions", {}
     ).get("push"):
         raise RuntimeError("Expected the authorized repository with push permission.")
+    stable_before = api.request("GET", base + "/releases/latest") if args.prerelease else None
     existing = api.request("GET", base + "/releases?per_page=100")
     if any(item["tag_name"] == args.tag for item in existing):
         raise RuntimeError("Release already exists; refusing to replace it automatically.")
@@ -137,7 +142,8 @@ def main():
             "name": args.name,
             "body": args.notes.read_text(encoding="utf-8"),
             "draft": True,
-            "prerelease": False,
+            "prerelease": args.prerelease,
+            "make_latest": "false" if args.prerelease else "true",
             "generate_release_notes": False,
         },
     )
@@ -167,16 +173,25 @@ def main():
             }
         )
         print(json.dumps({"uploaded": asset["name"], "size": asset["size"]}), flush=True)
-    published = api.request("PATCH", base + "/releases/" + str(release["id"]), {"draft": False})
+    api.request(
+        "PATCH", base + "/releases/" + str(release["id"]),
+        {"draft": False, "prerelease": args.prerelease,
+         "make_latest": "false" if args.prerelease else "true"},
+    )
     checked = api.request("GET", base + "/releases/" + str(release["id"]))
-    if checked["draft"] or checked["tag_name"] != args.tag:
+    if checked["draft"] or checked["tag_name"] != args.tag or checked["prerelease"] != args.prerelease:
         raise RuntimeError("Release publication was not confirmed.")
+    stable_after = api.request("GET", base + "/releases/latest") if args.prerelease else None
+    if stable_before and stable_after["id"] != stable_before["id"]:
+        raise RuntimeError("The latest stable release changed during pre-release publication; inspect before continuing.")
     result = {
         "url": checked["html_url"],
         "tag": args.tag,
         "commit": commit,
         "private": repository["private"],
         "published": not checked["draft"],
+        "prerelease": checked["prerelease"],
+        "latest_stable": stable_after["html_url"] if stable_after else checked["html_url"],
         "assets": [
             {
                 "name": asset["name"],

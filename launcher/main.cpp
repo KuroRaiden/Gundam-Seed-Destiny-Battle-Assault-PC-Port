@@ -620,7 +620,7 @@ void draw(App& app) {
                          ImGui::GetTextLineHeightWithSpacing() * 2;
     ImGui::SetCursorPosY(std::max(ImGui::GetCursorPosY(), footer));
     ImGui::Separator();
-    ImGui::TextColored(kMuted, "Version %s", sl::launcher_version().c_str());
+    ImGui::TextColored(kMuted, "%s", sl::launcher_release_name().c_str());
     ImGui::EndChild();
     ImGui::SameLine(0, 28);
     ImGui::BeginChild("content", ImVec2(0, 0));

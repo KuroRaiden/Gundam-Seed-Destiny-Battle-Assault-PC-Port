@@ -186,6 +186,8 @@ if(WIN32)
   target_link_libraries(seed_launcher_platform PUBLIC bcrypt ole32 shell32 uuid)
   file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/config/version.txt" SEED_LAUNCHER_VERSION LIMIT_COUNT 1)
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/config/version.txt")
+  file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/config/release-name.txt" SEED_LAUNCHER_RELEASE_NAME LIMIT_COUNT 1)
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/config/release-name.txt")
   configure_file(launcher/version.h.in generated/launcher_version.h @ONLY)
   add_library(seed_launcher_updates STATIC launcher/update.cpp)
   target_include_directories(seed_launcher_updates PUBLIC launcher PRIVATE

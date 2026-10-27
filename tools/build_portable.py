@@ -29,6 +29,10 @@ def main():
     parser.add_argument("--version", default=(Path(__file__).resolve().parents[1] / "config/version.txt").read_text().strip())
     parser.add_argument("--source-commit", default="")
     args = parser.parse_args()
+    config = Path(__file__).resolve().parents[1] / "config"
+    release_name = ((config / "release-name.txt").read_text().strip()
+                    if args.version == (config / "version.txt").read_text().strip()
+                    else args.version)
     for field in ("app", "launcher", "crt"):
         setattr(args, field, getattr(args, field).resolve(strict=True))
     receipt_path = args.launcher.parent / "launcher-build.json"
@@ -130,7 +134,7 @@ after each match. The same code stays active until someone leaves the room.
             if icons
             else ""
         )
-        + f"\nVersion: {args.version}\nSource commit: {args.source_commit}\n",
+        + f"\nRelease: {release_name}\nVersion: {args.version}\nSource commit: {args.source_commit}\n",
         encoding="utf-8",
     )
     (licenses / "Microsoft-Visual-Cpp-Runtime.txt").write_text(
@@ -156,6 +160,7 @@ https://visualstudio.microsoft.com/license-terms/
         "update_preserves_settings": True,
         "gamefiles_directory": "gamefiles",
         "version": args.version,
+        "release_name": release_name,
         "source_commit": args.source_commit,
         "platform": "windows-x64",
         "roms_included": False,

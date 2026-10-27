@@ -76,11 +76,12 @@ restore the previous application files from `.updates/<job>/backup`. The backup
 and installer log remain available there, including after an interrupted update.
 
 Existing 0.1.3 builds need a one-time manual installation of a build containing
-this updater. The new launcher is currently **0.1.4-dev.1**, ahead of the published
+this updater. The new launcher is currently **0.1.4 matchmaking**, ahead of the published
 0.1.3 fixed release, so it will offer the next compatible stable release once
 published. Checks use the public GitHub API without credentials and can be
 rate-limited; there are no periodic background checks.
 
-Development uses `config/version.txt` as the launcher version. The build writes
+Development uses `config/version.txt` for update comparisons and
+`config/release-name.txt` for the human-readable launcher label. The build writes
 `launcher-build.json` alongside the executable; the portable packager verifies
 that receipt so the displayed version and package version cannot disagree.

@@ -33,6 +33,8 @@ int main(int argc, char** argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds(800));
             return 0;
         }
+        require(launcher_release_name().starts_with(launcher_version()),
+                "Release label does not match version");
         require(compare_versions("0.1.10", "v0.1.9") > 0, "Version numbers sorted lexically");
         require(compare_versions("0.1.3-fixed", "0.1.3") > 0,
                 "Fixed release did not supersede original");

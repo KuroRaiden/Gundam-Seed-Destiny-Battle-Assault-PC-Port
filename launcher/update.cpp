@@ -175,6 +175,9 @@ std::vector<std::wstring> installer_arguments(const std::filesystem::path& root,
 std::string launcher_version() {
     return SEED_LAUNCHER_VERSION;
 }
+std::string launcher_release_name() {
+    return SEED_LAUNCHER_RELEASE_NAME;
+}
 int compare_versions(const std::string& left, const std::string& right) {
     const auto a = version(left), b = version(right);
     return a < b ? -1 : a > b ? 1 : 0;

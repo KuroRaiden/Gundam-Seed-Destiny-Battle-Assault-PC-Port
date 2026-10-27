@@ -33,7 +33,14 @@ int main(int argc, char** argv) {
             seed::LiveControls controls;
             seed::OnlineLobbyState state;
             state.begin();
-            if (argc > 2) {
+            if (argc > 2 && std::string(argv[2]) == "queue") {
+                state.quick.phase = seed::QuickMatchPhase::Searching;
+                state.quick.searching = true;
+                state.quick.waiting = 5;
+                state.quick.eligible = 3;
+                state.quick_region = 1;
+                state.quick.status = "Looking for an opponent...";
+            } else if (argc > 2) {
                 seed::JoinCode code;
                 code.public_endpoint = {0x0100007f, 45678};
                 code.local_port = 45678;

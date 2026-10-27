@@ -43,6 +43,8 @@ VsMenuRoute menu_route;
 MenuBattleMode battle_mode = MenuBattleMode::None;
 OnlineLobbyState online_lobby;
 OnlineRoom online_room;
+QuickMatchClient quick_match;
+constexpr const char* quick_regions[] = {"any", "na", "eu", "as", "oc", "sa", "af"};
 OnlineCombatResult last_online_result;
 unsigned online_qualification_frames = 0, online_qualification_end_frame = 0;
 std::string pending_invite;
@@ -134,6 +136,7 @@ void battle_entry(MenuBattleMode mode) {
     bus_write_u32(us_address::kSubstate, 0);
     if (mode == MenuBattleMode::Online) {
         online_room.close();
+        quick_match.cancel();
         last_online_result = {};
         online_qualification_frames = online_qualification_end_frame = 0;
         online_lobby.begin();
@@ -176,6 +179,7 @@ int update_us_menu_and_inputs(std::uint32_t, int, ArmCpuState* cpu) {
         selector_active = false;
         battle_mode = MenuBattleMode::None;
         online_room.close();
+        quick_match.cancel();
         show_online_lobby(nullptr);
         return 0;
     }
@@ -234,6 +238,7 @@ void leave_select() {
     selector_active = false;
     battle_mode = MenuBattleMode::None;
     online_room.close();
+    quick_match.cancel();
     show_online_lobby(nullptr);
     bus_write_u32(us_address::kNextScene, 4);
     bus_write_u32(us_address::kSubstate, 10); // Original fade-out and hardware cleanup.
@@ -252,19 +257,42 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             const auto action = online_lobby.action;
             online_lobby.action = OnlineLobbyAction::None;
             try {
-                if (action == OnlineLobbyAction::Host)
-                    online_room.host(std::uint16_t(online_lobby.port), online_lobby.address.data(),
-                                     {}, online_lobby.player_name.data());
-                else
-                    online_room.join(online_lobby.invite.data(), {},
-                                     online_lobby.player_name.data());
-                online_lobby.hosting = true;
-                online_lobby.invitation = online_room.invitation();
+                if (action == OnlineLobbyAction::QuickMatch ||
+                    action == OnlineLobbyAction::CancelQuickMatch) {
+                    online_room.close();
+                    quick_match.cancel();
+                    online_lobby.hosting = false;
+                    online_lobby.code.clear();
+                    online_lobby.status.clear();
+                    if (action == OnlineLobbyAction::QuickMatch)
+                        quick_match.search(
+                            online_lobby.player_name.data(),
+                            quick_regions[std::clamp(online_lobby.quick_region, 0, 6)]);
+                } else {
+                    quick_match.cancel();
+                    if (action == OnlineLobbyAction::Host)
+                        online_room.host(std::uint16_t(online_lobby.port),
+                                         online_lobby.address.data(), {},
+                                         online_lobby.player_name.data());
+                    else
+                        online_room.join(online_lobby.invite.data(), {},
+                                         online_lobby.player_name.data());
+                    online_lobby.hosting = true;
+                    online_lobby.invitation = online_room.invitation();
+                }
             } catch (const std::exception& error) {
                 online_lobby.hosting = false;
                 online_lobby.status = error.what();
             }
         }
+        if (online_lobby.open && online_lobby.quick_tab && !online_lobby.hosting)
+            quick_match.observe(online_lobby.player_name.data(),
+                                quick_regions[std::clamp(online_lobby.quick_region, 0, 6)]);
+        else if (online_lobby.open && !online_lobby.quick_tab && !quick_match.view().busy() &&
+                 quick_match.view().phase != QuickMatchPhase::Connected)
+            quick_match.cancel();
+        quick_match.tick(online_room, selection);
+        online_lobby.quick = quick_match.view();
         if (online_room.active()) {
             online_room.tick(selection, online_lobby.open ? 0 : sampled_player_inputs[0]);
             online_lobby.code = online_room.code();
@@ -274,7 +302,9 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
                 selection.cancelled = false;
                 for (auto& seat : selection.seats)
                     seat.ready = false;
+                quick_match.failed(online_room.status());
                 online_lobby.begin();
+                online_lobby.quick = quick_match.view();
                 online_lobby.status = online_room.status();
                 show_online_lobby(&online_lobby);
             }
@@ -364,6 +394,7 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
                     show_online_lobby(nullptr);
                 } else {
                     online_room.close();
+                    quick_match.failed(online_result.message);
                     online_lobby.begin();
                     online_lobby.status = online_result.message;
                     if (online_lobby.status.empty())
@@ -381,6 +412,7 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             std::fprintf(stderr, "JP combat module load failed: %lu\n", GetLastError());
             if (battle_mode == MenuBattleMode::Online) {
                 online_room.close();
+                quick_match.cancel();
                 online_lobby.begin();
                 online_lobby.status =
                     "Could not load the JP combat module. Extract the entire portable ZIP again.";
@@ -439,11 +471,17 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
     if (!gbarecomp::json::parse(request, value))
         return 0;
     const auto cmd = value.str("cmd");
-    if (cmd == "seed_online_host" || cmd == "seed_online_join" ||
+    if (cmd == "seed_online_host" || cmd == "seed_online_join" || cmd == "seed_quick_match" ||
         cmd == "seed_online_qualification") {
         if (!selector_active || battle_mode != MenuBattleMode::Online)
             return 0;
-        if (cmd == "seed_online_host") {
+        if (cmd == "seed_quick_match") {
+            quick_match.fixture(value.str("service", kMatchmakingUrl),
+                                value.flag("loopback", false) ? "127.0.0.1" : "");
+            online_lobby.quick_region = std::clamp<int>(value.integer("region", 0), 0, 6);
+            online_lobby.quick_tab = true;
+            online_lobby.action = OnlineLobbyAction::QuickMatch;
+        } else if (cmd == "seed_online_host") {
             const auto address = value.str("address");
             std::snprintf(online_lobby.address.data(), online_lobby.address.size(), "%s",
                           address.c_str());
@@ -465,6 +503,12 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
         if (!value.str("name").empty())
             std::snprintf(online_lobby.player_name.data(), online_lobby.player_name.size(), "%s",
                           normalize_player_name(value.str("name")).c_str());
+        constexpr char reply[] = "{\"ok\":true}";
+        write(context, reply, sizeof(reply) - 1);
+        return 1;
+    }
+    if (cmd == "seed_quick_match_cancel") {
+        online_lobby.action = OnlineLobbyAction::CancelQuickMatch;
         constexpr char reply[] = "{\"ok\":true}";
         write(context, reply, sizeof(reply) - 1);
         return 1;
@@ -544,6 +588,11 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
                 ",\"stage_confirmed\":" + (selection.stage_confirmed ? "true" : "false") +
                 ",\"stage\":" + std::to_string(selection.stage);
     extended += ",\"online_stage\":" + std::to_string(last_online_result.stage);
+    extended += ",\"quick_phase\":" + std::to_string(int(online_lobby.quick.phase)) +
+                ",\"quick_waiting\":" + std::to_string(online_lobby.quick.waiting) +
+                ",\"quick_eligible\":" + std::to_string(online_lobby.quick.eligible) +
+                ",\"quick_status\":";
+    gbarecomp::json::append_quoted(extended, online_lobby.quick.status);
     extended += ",\"online_status\":";
     gbarecomp::json::append_quoted(extended, online_lobby.status);
     extended += ",\"players\":[";

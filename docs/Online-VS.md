@@ -7,7 +7,27 @@ transition redirects state 12 to the JP-backed selector before the old US
 cable connection screen can advance. The only combat module used by this
 selector is `SeedJpCombat.dll`.
 
-Open **VS Mode**, choose **Host**, then **Create code**. The game selects a UDP
+Open **VS Mode** and choose **Quick Match**. Enter your player name, choose a
+region (or **Any region**), then **Find match**. Offers are accepted automatically;
+when the peer connection is ready, both players enter JP character selection.
+**Cancel search** stops pairing while keeping the Online VS window open.
+
+**Players waiting** counts compatible players still in the queue, excluding
+players already paired or playing. A selected region also shows its eligible
+count. Counts load while the Quick Match tab is open; `--` means they are not
+available yet. Observing the count does not enter the queue. Player names are
+saved locally; the region selection lasts for the current session.
+
+The native client uses the deployed Cloudflare service over HTTPS/WebSocket
+for counts and pairing. It creates the usual AutoPunch room and forwards its
+private invitation only to the assigned opponent. Combat inputs, snapshots and
+rematches continue directly between peers. After the native room connects,
+service failures cannot interrupt selection, combat or rematches. Quick Match
+uses the same direct-connection requirements as Host/Join; it adds no game relay.
+No Cloudflare account is required to play. Public lobby browsing and delayed
+spectating are still separate work.
+
+For a private match, choose **Host**, then **Create code**. The game selects a UDP
 port and discovers its public endpoint with STUN on the same socket used for
 play. Share **Copy code** or **Copy link** with your opponent. In **Join**, paste
 the code or link and choose **Join match**. Players do not enter IP addresses or

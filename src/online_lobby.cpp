@@ -127,24 +127,57 @@ void OnlineLobby::draw() {
     ImGui::Begin("Online VS", &visible,
                  ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize |
                      ImGuiWindowFlags_NoCollapse);
-    ImGui::TextColored({.3f, .83f, .94f, 1}, "SEED DESTINY / 24 MOBILE SUITS");
-    ImGui::BeginDisabled(state_->hosting);
+    ImGui::TextColored({.3f, .83f, .94f, 1}, "SEED DESTINY / EXPANDED ROSTER");
+    ImGui::BeginDisabled(state_->hosting || state_->quick.busy());
     ImGui::SetNextItemWidth(260);
     ImGui::InputText("Player name", state_->player_name.data(), state_->player_name.size());
     ImGui::EndDisabled();
     auto save_name = [&] {
         const auto name = normalize_player_name(state_->player_name.data());
         std::snprintf(state_->player_name.data(), state_->player_name.size(), "%s", name.c_str());
-        return save_player_name(std::filesystem::path(SDL_GetBasePath()), name, state_->status);
+        state_->profile_error.clear();
+        return save_player_name(std::filesystem::path(SDL_GetBasePath()), name,
+                                state_->profile_error);
     };
+    if (!state_->profile_error.empty())
+        ImGui::TextColored({1.f, .4f, .4f, 1.f}, "%s", state_->profile_error.c_str());
     ImGui::Separator();
     ImGui::TextWrapped(
-        "Create a code to host, or paste your opponent's code or invitation link to join.");
-    if (!state_->status.empty())
-        ImGui::TextWrapped("%s", state_->status.c_str());
+        "Find an opponent with Quick Match, or use Host / Join for a private match.");
     ImGui::Spacing();
+    state_->quick_tab = false;
     if (ImGui::BeginTabBar("connection")) {
-        if (ImGui::BeginTabItem("Host")) {
+        if (ImGui::BeginTabItem("Quick Match")) {
+            state_->quick_tab = true;
+            const auto& quick = state_->quick;
+            ImGui::TextUnformatted("Casual matchmaking");
+            if (quick.waiting >= 0) {
+                ImGui::Text("Players waiting: %d", quick.waiting);
+                if (state_->quick_region)
+                    ImGui::Text("Eligible in your region: %d", quick.eligible);
+            } else
+                ImGui::TextDisabled("Players waiting: --");
+            ImGui::BeginDisabled(quick.busy() || state_->hosting);
+            constexpr const char* regions[] = {"Any region", "North America", "Europe", "Asia",
+                                               "Oceania",    "South America", "Africa"};
+            state_->quick_region = std::clamp(state_->quick_region, 0, 6);
+            ImGui::SetNextItemWidth(260);
+            ImGui::Combo("Region", &state_->quick_region, regions, 7);
+            if (ImGui::Button("Find match", {170, 36}) && save_name())
+                state_->action = OnlineLobbyAction::QuickMatch;
+            ImGui::EndDisabled();
+            if (quick.busy()) {
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel search", {150, 36}))
+                    state_->action = OnlineLobbyAction::CancelQuickMatch;
+            }
+            ImGui::TextWrapped("%s", quick.status.c_str());
+            ImGui::TextDisabled("Waiting count excludes players already paired or playing.");
+            ImGui::EndTabItem();
+        }
+        ImGui::BeginDisabled(state_->quick.busy());
+        if (ImGui::BeginTabItem("Host", nullptr,
+                                state_->hosting ? ImGuiTabItemFlags_SetSelected : 0)) {
             if (state_->code.empty()) {
                 ImGui::BeginDisabled(state_->hosting);
                 if (ImGui::Button("Create code", {170, 36}) && save_name())
@@ -173,8 +206,11 @@ void OnlineLobby::draw() {
                 state_->action = OnlineLobbyAction::Join;
             ImGui::EndTabItem();
         }
+        ImGui::EndDisabled();
         ImGui::EndTabBar();
     }
+    if (!state_->status.empty() && !state_->quick_tab)
+        ImGui::TextWrapped("%s", state_->status.c_str());
     ImGui::Spacing();
     ImGui::Separator();
     if (ImGui::SmallButton("Enable invitation links on this PC")) {

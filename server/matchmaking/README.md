@@ -64,14 +64,16 @@ acceptance, disconnects, expiry, malformed messages, restored attachments and
 and WebSocket/hibernation APIs locally and against the deployed URL.
 
 Public lobby browsing and delayed spectating remain separate integrations.
-Deploying this Worker does not add a Quick Match button to an already downloaded
-0.1.4-dev executable; the native client needs its corresponding integration.
+The current native source implements the Quick Match tab, live counts and
+region filtering. Previously downloaded 0.1.4-dev executables need the updated
+native build; deploying a Worker cannot change a downloaded executable.
 
 ## Deployment status
 
 The matchmaking backend is deployed at
 `https://seedpc-matchmaking.lord19uga.workers.dev`. Its health check and live
 WebSocket integration tests passed, including queue counts, unique roles,
-private invitation handoff and disconnect/requeue handling. The native
-Quick Match UI and client connection are still pending; existing builds
-continue to use manual Host/Join.
+private invitation handoff and disconnect/requeue handling. Native Windows clients also passed live count and real UDP-room handoff checks.
+Two full US-menu instances paired through this backend, selected JP fighters
+and stages, completed two synchronized matches in the same room and returned
+to the menu. Private Host/Join remains independent of this service.

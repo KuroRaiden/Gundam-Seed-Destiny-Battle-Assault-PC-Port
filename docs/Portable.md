@@ -33,7 +33,8 @@ Local VS replaces the US Password entry; Training uses the JP roster and engine.
 Stage select offers 25 normal JP stages plus Random. Training has an English
 pause menu using the US ROM font, F5 frame meter, F6 hitbox/hurtbox viewer,
 and F2 save / F3 load for practice situations. F4 opens controls. Online VS
-uses codes/links and keeps the same room for rematches. Names and title
+offers **Quick Match** with live waiting counts and region choices, plus private
+Host/Join codes and links. Both routes keep the same room for rematches. Names and title
 statistics remain available. Both players need the updated build for shared
 stage selection.
 
@@ -75,7 +76,7 @@ restore the previous application files from `.updates/<job>/backup`. The backup
 and installer log remain available there, including after an interrupted update.
 
 Existing 0.1.3 builds need a one-time manual installation of a build containing
-this updater. The new launcher is currently **0.1.4-dev**, ahead of the published
+this updater. The new launcher is currently **0.1.4-dev.1**, ahead of the published
 0.1.3 fixed release, so it will offer the next compatible stable release once
 published. Checks use the public GitHub API without credentials and can be
 rate-limited; there are no periodic background checks.

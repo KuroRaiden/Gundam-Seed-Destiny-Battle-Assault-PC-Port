@@ -117,7 +117,8 @@ Press F4 during play to remap controls. In Training, F5 toggles the frame
 meter without pausing: green startup, red active, blue recovery, yellow hitstun.
 After choosing both fighters, select a stage with left/right and confirm with A.
 Player 1 chooses locally; the host chooses online. Random is available.
-Online VS uses shareable codes/links;
+Online VS offers Quick Match with live queue counts and region choices,
+or private Host/Join codes and links;
 set Player name before hosting or joining. The title shows names and live
 input delay, last rollback length and ping. Invitation registration is optional.
 If you move the folder, enable links again from its new location.

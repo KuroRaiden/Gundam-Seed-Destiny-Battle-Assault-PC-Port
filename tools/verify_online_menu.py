@@ -34,9 +34,12 @@ def main():
     )
     parser.add_argument("--stages", default="0", help="Comma-separated native stage IDs or random, cycled per match")
     parser.add_argument("--finish-fence", action="store_true")
+    parser.add_argument("--quick-match", action="store_true", help="Use live Cloudflare pairing instead of copying a code")
+    parser.add_argument("--matchmaking-service", default="https://seedpc-matchmaking.lord19uga.workers.dev/v1/connect")
     parser.add_argument("--matches", type=int, default=1)
     parser.add_argument("--frames", type=int, default=240)
     args = parser.parse_args()
+    assert not (args.quick_match and args.startup_code)
     stages = [255 if value.strip().lower() == "random" else int(value) for value in args.stages.split(",")]
     assert stages and all(0 <= value < 25 or value == 255 for value in stages)
     assert 1 <= args.matches <= 1000 and 3 <= args.frames <= 18000
@@ -123,15 +126,28 @@ def main():
                 frames=args.frames,
                 end_frame=args.frames if args.finish_fence else 0,
             )
-            if seat == 0:
+            if seat == 0 and not args.quick_match:
                 client.cmd("seed_online_host", address="127.0.0.1", port=args.udp_port, name="Kira")
                 client.frames(2, 0, 0)
                 invitation = client.status()["online_invitation"]
                 assert invitation.startswith("seedpc://join/SEED1-")
         host, guest = clients
-        if not args.startup_code:
+        if args.quick_match:
+            host.cmd("seed_quick_match", name="Kira", service=args.matchmaking_service, loopback=True)
+            until = time.monotonic() + 20
+            while True:
+                for client in clients:
+                    client.frames(2, 0, 0)
+                state = host.status()
+                if state["quick_phase"] == 3 and state["quick_waiting"] >= 1:
+                    break
+                assert time.monotonic() < until, state
+                time.sleep(0.02)
+            evidence.append(dict(stage="live-queue", waiting=state["quick_waiting"]))
+            guest.cmd("seed_quick_match", name="Athrun", service=args.matchmaking_service, loopback=True)
+        elif not args.startup_code:
             guest.cmd("seed_online_join", invite=invitation, name="Athrun")
-        until = time.monotonic() + 10
+        until = time.monotonic() + 25
         while True:
             for client in clients:
                 client.frames(2, 0, 0)
@@ -140,6 +156,9 @@ def main():
                 break
             assert time.monotonic() < until, states
             time.sleep(0.01)
+        if args.quick_match:
+            invitation = states[0]["online_invitation"]
+            assert invitation.startswith("seedpc://join/SEED1-")
         if args.colors:
             for _ in range(5):
                 host.local_tap(8)

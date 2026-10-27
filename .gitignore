@@ -60,3 +60,9 @@ __pycache__/
 
 # Portable updater downloads and rollback copies stay local.
 /.updates/
+
+# Matchmaking service dependencies, local state and account credentials.
+/node_modules/
+/server/matchmaking/node_modules/
+/server/matchmaking/.wrangler/
+/server/matchmaking/.dev.vars

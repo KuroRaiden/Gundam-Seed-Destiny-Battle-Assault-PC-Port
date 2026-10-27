@@ -1,0 +1,7 @@
+{
+  "name": "seedpc-matchmaking",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test core.test.mjs" },
+  "devDependencies": { "wrangler": "4.154.0" }
+}

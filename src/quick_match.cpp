@@ -204,7 +204,8 @@ void QuickMatchClient::open(const std::string& name, const std::string& region, 
     }
 }
 void QuickMatchClient::observe(const std::string& name, const std::string& region) {
-    if (protocol_.view().busy() || protocol_.view().phase == QuickMatchPhase::Connected)
+    if (protocol_.view().busy() || protocol_.view().phase == QuickMatchPhase::Connected ||
+        protocol_.view().phase == QuickMatchPhase::Error)
         return;
     if (protocol_.view().phase == QuickMatchPhase::Offline || region_ != region)
         open(name, region, false);

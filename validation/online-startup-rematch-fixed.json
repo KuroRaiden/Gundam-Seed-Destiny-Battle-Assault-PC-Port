@@ -1,0 +1,60 @@
+{
+  "build": "0.1.4-fixed",
+  "date": "2026-10-28",
+  "startup": {
+    "cases": 52,
+    "fighters": 27,
+    "stages": 25,
+    "maximum_warmup_frames": 157,
+    "round_phase": 0
+  },
+  "input_guard": {
+    "failed_before_fix": true,
+    "failure": "A late battle B input closed the room before the opponent returned",
+    "room_cycles_passed": 64
+  },
+  "impaired_native_peers": {
+    "lag_ms": 65,
+    "jitter_ms": 15,
+    "loss_percent": 3,
+    "finish_ack_delay_ms": 1200,
+    "frames": 270,
+    "final_crc": 1935899759,
+    "desyncs": 0,
+    "packets_dropped": 57,
+    "delayed_finish_acks": 17
+  },
+  "natural_ko": {
+    "frames": 3032,
+    "final_crc": 900786694,
+    "desyncs": 0
+  },
+  "menu_quick_match": {
+    "worker": "local workerd",
+    "matches": 2,
+    "same_invitation": true,
+    "stage_cursors": [
+      4,
+      255
+    ],
+    "final_checksums": [
+      2324582867,
+      430627314
+    ],
+    "desyncs": 0
+  },
+  "matchmaking": {
+    "core_tests_passed": 12,
+    "legacy_fixed_queue_isolation": true,
+    "worker_integration_passed": true,
+    "production_version": "ee770fe7-1329-4fae-941f-d66569ed6968",
+    "production_fixed_legacy_observer_smoke_passed": true,
+    "production_qa_entered_queue": false
+  },
+  "limitations": [
+    "Same-machine automated peers; no new Internet rematch qualification.",
+    "The exact reported disconnect is not conclusively identified. The reproduced input-guard failure is fixed and unexpected returns now keep a reason."
+  ],
+  "private_room_and_stage_checks_passed": true,
+  "runtime_only_package_regressions_passed": true
+}

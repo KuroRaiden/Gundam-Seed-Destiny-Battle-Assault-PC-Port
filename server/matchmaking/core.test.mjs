@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { LobbyCore, PROTOCOL, COMPATIBILITY, validCode, playerName } from "./core.mjs";
+import { LobbyCore, PROTOCOL, COMPATIBILITY, LEGACY_COMPATIBILITY, validCode, playerName } from "./core.mjs";
 class Socket {
   constructor() { this.messages = []; this.closed = false; }
   serializeAttachment(data) { this.data = structuredClone(data); }
@@ -15,9 +15,9 @@ function fixture() {
   const peers = () => sockets.map(socket => ({ socket, data: socket.deserializeAttachment() }));
   const core = () => new LobbyCore(peers, { now: () => time, uuid: () => `id-${++next}` });
   const send = (socket, event) => core().receive({ socket, data: socket.deserializeAttachment() }, JSON.stringify(event));
-  const connect = (name, region="any") => {
+  const connect = (name, region="any", build=COMPATIBILITY) => {
     const socket = new Socket(); sockets.push(socket); core().initialize(socket, "test");
-    send(socket, { type: "hello", protocol: PROTOCOL, build: COMPATIBILITY, name, region });
+    send(socket, { type: "hello", protocol: PROTOCOL, build, name, region });
     return socket;
   };
   return { sockets, core, send, connect,
@@ -122,4 +122,19 @@ test("500 simultaneous clients form 250 distinct pairs without double allocation
   }
   assert.equal(pairs.size,250);assert.equal(f.core().counts().waiting,0);
   for(const members of pairs.values()){assert.equal(members.length,2);assert.notEqual(members[0],members[1]);}
+});
+
+test("legacy and fixed clients keep separate compatible queues and counts", () => {
+  const f=fixture(), old=f.connect("Legacy", "any", LEGACY_COMPATIBILITY), fixed=f.connect("Fixed");
+  f.send(old,{type:"enqueue"});f.send(fixed,{type:"enqueue"});
+  assert.equal(old.data.phase,"queued");assert.equal(fixed.data.phase,"queued");
+  assert.equal(f.core().counts("any", LEGACY_COMPATIBILITY).waiting,1);
+  assert.equal(f.core().counts().waiting,1);
+  assert.equal(old.events("count").at(-1).waiting,1);
+  assert.equal(fixed.events("count").at(-1).waiting,1);
+  const oldPeer=f.connect("Legacy peer", "any", LEGACY_COMPATIBILITY);
+  f.send(oldPeer,{type:"enqueue"});
+  assert.equal(old.data.match,oldPeer.data.match);assert.equal(fixed.data.phase,"queued");
+  const fixedPeer=f.connect("Fixed peer");f.send(fixedPeer,{type:"enqueue"});
+  assert.equal(fixed.data.match,fixedPeer.data.match);assert.notEqual(old.data.match,fixed.data.match);
 });

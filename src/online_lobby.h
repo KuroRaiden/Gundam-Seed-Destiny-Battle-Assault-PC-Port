@@ -12,7 +12,7 @@ struct OnlineLobbyState {
     std::array<char, 256> address{};
     std::array<char, 512> invite{};
     std::array<char, kPlayerNameBytes + 1> player_name{};
-    std::string code, invitation, status, link_status, profile_error;
+    std::string code, invitation, status, link_status, profile_error, connection_error;
     bool hosting = false, quick_tab = false;
     int quick_region = 0;
     QuickMatchView quick;
@@ -31,6 +31,7 @@ struct OnlineLobbyState {
         invitation.clear();
         status.clear();
         profile_error.clear();
+        connection_error.clear();
     }
     void cancel() {
         open = false;

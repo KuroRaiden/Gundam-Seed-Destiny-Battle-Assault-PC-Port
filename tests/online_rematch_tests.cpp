@@ -89,6 +89,13 @@ int main() {
             host.tick(left, 1);
             require(!left.seats[0].ready, "Held A automatically readied a rematch");
             if (match == 0) {
+                // The resumed host can report neutral input while its opponent
+                // is still finishing. A following B attack must remain guarded
+                // until both peers are back in the new selection epoch.
+                host.tick(left, 0);
+                host.tick(left, 2);
+                require(host.active() && !left.cancelled,
+                        "A late battle B input closed the room before the opponent returned");
                 seed::UdpTransport late(b);
                 std::vector<std::uint8_t> done(seed::kCombatControlPacketBytes);
                 put32(done, 0, seed::kCombatControlMagic);

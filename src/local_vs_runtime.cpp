@@ -256,6 +256,7 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
         if (online_lobby.action != OnlineLobbyAction::None) {
             const auto action = online_lobby.action;
             online_lobby.action = OnlineLobbyAction::None;
+            online_lobby.connection_error.clear();
             try {
                 if (action == OnlineLobbyAction::QuickMatch ||
                     action == OnlineLobbyAction::CancelQuickMatch) {
@@ -289,7 +290,8 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             quick_match.observe(online_lobby.player_name.data(),
                                 quick_regions[std::clamp(online_lobby.quick_region, 0, 6)]);
         else if (online_lobby.open && !online_lobby.quick_tab && !quick_match.view().busy() &&
-                 quick_match.view().phase != QuickMatchPhase::Connected)
+                 quick_match.view().phase != QuickMatchPhase::Connected &&
+                 quick_match.view().phase != QuickMatchPhase::Error)
             quick_match.cancel();
         quick_match.tick(online_room, selection);
         online_lobby.quick = quick_match.view();
@@ -306,6 +308,9 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
                 online_lobby.begin();
                 online_lobby.quick = quick_match.view();
                 online_lobby.status = online_room.status();
+                online_lobby.connection_error = online_room.status();
+                std::fprintf(stderr, "online_room_end: %s\n",
+                             online_lobby.connection_error.c_str());
                 show_online_lobby(&online_lobby);
             }
             if (online_room.connected() && online_lobby.open) {
@@ -387,6 +392,12 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             resume_menu_host();
             if (request.surface.online) {
                 last_online_result = online_result;
+                std::fprintf(stderr,
+                             "online_match_end: result=%d converged=%u frames=%u crc=%u "
+                             "peer_crc=%u reason=%s\n",
+                             result, unsigned(online_result.converged), online_result.frames,
+                             online_result.final_crc, online_result.peer_crc,
+                             online_result.message);
                 if (result >= 0 && online_result.converged) {
                     online_room.match_returned(selection, online_result.final_crc);
                     online_lobby.open = false;
@@ -398,7 +409,10 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
                     online_lobby.begin();
                     online_lobby.status = online_result.message;
                     if (online_lobby.status.empty())
-                        online_lobby.status = "Online match ended. Connect again to play.";
+                        online_lobby.status =
+                            "The match ended before both players confirmed the result.";
+                    online_lobby.connection_error = online_lobby.status;
+                    online_lobby.quick = quick_match.view();
                     show_online_lobby(&online_lobby);
                 }
             }

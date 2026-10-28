@@ -41,6 +41,11 @@ def main():
             "SDL3.dll",
         ):
             (app / name).write_bytes(b"MZ-test-runtime")
+        (app / "launcher-build.json").write_text(json.dumps({
+            "version": "1.2.3",
+            "sha256": hashlib.sha256((app / "GundamSeedLauncher.exe").read_bytes()).hexdigest(),
+        }), encoding="utf-8")
+        (app / "Update-Portable.ps1").write_bytes((ROOT / "launcher/Update-Portable.ps1").read_bytes())
         (app / "controllerdb.txt").write_text("controller mappings\n")
         (app / "licenses/dependency.txt").write_text("Upstream license\n")
         for name in ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll"):
@@ -156,6 +161,8 @@ def main():
                 str(crt),
                 "--out",
                 str(branded),
+                "--version",
+                "1.2.3",
             ],
             capture_output=True,
             text=True,

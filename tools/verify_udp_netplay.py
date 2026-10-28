@@ -28,10 +28,22 @@ def main():
     parser.add_argument("--host-module", type=Path, help="Use another compatible combat DLL for seat 1")
     parser.add_argument("--peer-module", type=Path, help="Use another compatible combat DLL for seat 2 (mixed-build test)")
     parser.add_argument("--peer-exe", type=Path, help="Seat 2 executable with independent local settings")
+    parser.add_argument("--net-lag-ms", type=float, default=0)
+    parser.add_argument("--net-jitter-ms", type=float, default=0)
+    parser.add_argument("--net-loss-percent", type=float, default=0)
+    parser.add_argument("--finish-ack-delay-ms", type=float, default=0)
+    parser.add_argument("--natural-finish", action="store_true")
     parser.add_argument("--custom-colors", action="store_true")
     parser.add_argument("--fighters", type=int, nargs=2)
     parser.add_argument("--colors", type=int, nargs=2)
     args = parser.parse_args()
+    assert 0 <= args.net_lag_ms <= 2000 and 0 <= args.net_jitter_ms <= 2000
+    assert 0 <= args.net_loss_percent <= 50 and 0 <= args.finish_ack_delay_ms <= 10000
+    network = None
+    if any((args.net_lag_ms, args.net_jitter_ms, args.net_loss_percent, args.finish_ack_delay_ms)):
+        from udp_test_network import ControlledUdpLink
+        network = ControlledUdpLink(args.port, args.net_lag_ms, args.net_jitter_ms,
+                                    args.net_loss_percent, args.finish_ack_delay_ms)
     args.out = args.out.resolve()
     args.out.mkdir(parents=True, exist_ok=True)
     case = args.out / ("run-" + str(time.monotonic_ns()))
@@ -51,6 +63,8 @@ def main():
                 extra += ["--module", str(args.host_module.resolve(strict=True))]
             if seat == 1 and args.peer_module:
                 extra += ["--module", str(args.peer_module.resolve(strict=True))]
+            if args.natural_finish:
+                extra += ["--natural-finish"]
             if args.custom_colors:
                 extra += ["--custom-colors"]
             if args.fighters:
@@ -66,7 +80,7 @@ def main():
                         "--net-bind",
                         str(args.port + seat),
                         "--net-peer",
-                        str(args.port + 1 - seat),
+                        str(network.ports[seat] if network else args.port + 1 - seat),
                         "--check-frames",
                         str(args.frames),
                         "--report",
@@ -111,7 +125,8 @@ def main():
             assert peer["converged"] and peer["desyncs"] == 0, peer
             assert (
                 peer["frames"] >= args.frames
-                if args.finish_fence
+                if args.finish_fence and not args.natural_finish
+                else peer["frames"] > 0 if args.natural_finish
                 else peer["frames"] == args.frames
             ), peer
             assert peer["final_crc"] == peer["peer_crc"], peer
@@ -123,6 +138,7 @@ def main():
             ports=[args.port, args.port + 1],
             case=str(case),
             peers=peers,
+            network=network.stats if network else None,
         )
         (args.out / "report.json").write_text(json.dumps(result, indent=2) + "\n")
         print(json.dumps(result), flush=True)
@@ -136,6 +152,8 @@ def main():
             process.wait(timeout=10)
         for log in logs:
             log.close()
+        if network:
+            network.close()
 
 
 if __name__ == "__main__":

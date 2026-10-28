@@ -30,6 +30,12 @@ void queued(QuickMatchProtocol& p) {
     p.take_actions();
 }
 void protocol_tests() {
+    QuickMatchClient failed_client;
+    failed_client.failed("Example match-end failure");
+    failed_client.observe("Kira", "any");
+    require(failed_client.view().phase == QuickMatchPhase::Error &&
+                failed_client.view().status == "Example match-end failure",
+            "Opening the connection screen erased the match-end failure");
     for (const auto* address :
          {"https://example.com/v1/connect",
           "http://seedpc-matchmaking.lord19uga.workers.dev/v1/connect",

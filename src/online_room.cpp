@@ -53,10 +53,11 @@ bool header(const std::vector<std::uint8_t>& p, unsigned remote) {
 } // namespace
 bool acknowledge_room_start(UdpTransport& transport, const std::vector<std::uint8_t>& p,
                             const NetConnection& c, const std::uint8_t* fighters,
-                            const std::uint8_t* colors, const CustomPalette* palettes, std::uint8_t stage) {
+                            const std::uint8_t* colors, const CustomPalette* palettes,
+                            std::uint8_t stage) {
     if (!header(p, 1 - c.seat) || p[8] != 3 || get32(p.data() + 20) != c.epoch ||
-        !valid_jp_color(p[24], p[26]) || !valid_jp_color(p[25], p[27]) ||
-        !valid_jp_stage(p[30]) || p[30] != stage || p[31] > 1)
+        !valid_jp_color(p[24], p[26]) || !valid_jp_color(p[25], p[27]) || !valid_jp_stage(p[30]) ||
+        p[30] != stage || p[31] > 1)
         return false;
     for (unsigned seat = 0; seat < 2; ++seat) {
         const auto choice = jp_combat_choice(p[24 + seat], p[26 + seat]);
@@ -147,8 +148,9 @@ void OnlineRoom::send(unsigned kind, const LocalVsSelection* selection) {
     }
     if (kind == 2) {
         p[15] = selection ? std::uint8_t(unsigned(selection->stage_enabled) |
-                                       (selection->stage_active << 1) |
-                                       (selection->stage_confirmed << 2)) : 0;
+                                         (selection->stage_active << 1) |
+                                         (selection->stage_confirmed << 2))
+                          : 0;
         p[30] = selection ? selection->stage_cursor : 0;
         p[31] = selection ? selection->stage : 0;
         std::copy(names_[seat_].begin(), names_[seat_].end(), p.begin() + 32);
@@ -229,8 +231,12 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
     for (const auto& p : transport_->take_control()) {
         if (completed_ &&
             acknowledge_match_finish(*transport_, p, transport_->borrow(seat_, completed_epoch_),
-                                     completed_crc_))
+                                     completed_crc_)) {
+            // A late peer is still reachable while confirming the prior result.
+            if (awaiting_peer_)
+                last_receive_ = now();
             continue;
+        }
         if (!header(p, 1 - seat_))
             continue;
         if (p[8] == 5) {
@@ -305,10 +311,11 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
                    selection.seats[1].ready) {
             if (p[24] != selection.seats[0].fighter || p[25] != selection.seats[1].fighter ||
                 p[26] != selection.seats[0].color || p[27] != selection.seats[1].color ||
-                get32(p.data() + 20) != epoch_ || awaiting_peer_ ||
-                !valid_jp_stage(p[30]) || p[31] != unsigned(selection.stage_enabled) ||
-                (selection.stage_enabled && (!selection.stage_active ||
-                 !selection.stage_confirmed || selection.stage != p[30])))
+                get32(p.data() + 20) != epoch_ || awaiting_peer_ || !valid_jp_stage(p[30]) ||
+                p[31] != unsigned(selection.stage_enabled) ||
+                (selection.stage_enabled &&
+                 (!selection.stage_active || !selection.stage_confirmed ||
+                  selection.stage != p[30])))
                 continue;
             std::array<CustomPalette, 2> custom;
             if (!decode_palette(p.data() + 32, p[28], custom[0]) ||
@@ -348,13 +355,14 @@ void OnlineRoom::tick(LocalVsSelection& selection, std::uint16_t local_input) {
         return;
     if (connected_ && !pending_) {
         if (!seat_ && selection.stage_active &&
-            (!selection.seats[0].ready || !selection.seats[1].ready))
-        {
+            (!selection.seats[0].ready || !selection.seats[1].ready)) {
             selection.back_to_fighters();
             ++selection_revision_;
         }
+        // A resumed host may see masked-neutral input while the other machine
+        // is still in combat. Do not arm A/B until both peers have returned.
         if (release_guard_) {
-            if (!local_input)
+            if (!local_input && !awaiting_peer_)
                 release_guard_ = false;
             else
                 local_input = 0;

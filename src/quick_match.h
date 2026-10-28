@@ -5,7 +5,7 @@
 namespace seed {
 class OnlineRoom;
 struct LocalVsSelection;
-inline constexpr char kMatchmakingCompatibility[] = "seedpc-jp-r9-a8-20261027";
+inline constexpr char kMatchmakingCompatibility[] = "seedpc-jp-r10-a8-20261028";
 enum class QuickMatchPhase {
     Offline,
     Connecting,

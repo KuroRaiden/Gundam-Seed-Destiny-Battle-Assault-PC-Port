@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 namespace seed {
-inline constexpr std::uint32_t kRoomProtocol = 0x00090001;
+inline constexpr std::uint32_t kRoomProtocol = 0x000A0001;
 inline constexpr std::uint32_t kRoomMagic = 0x31524353; // SCR1
 inline constexpr std::uint32_t kCombatControlMagic = 0x314E504A;
 inline constexpr unsigned kCombatControlPacketBytes = 32 + 2 * kMsPaletteBytes;

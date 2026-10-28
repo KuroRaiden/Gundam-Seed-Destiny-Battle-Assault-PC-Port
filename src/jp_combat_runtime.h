@@ -4,5 +4,7 @@
 namespace seed {
 void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& request);
 void set_jp_frame_inputs(std::uint16_t p1, std::uint16_t p2);
+// Read only at deterministic startup frame boundaries, before the first snapshot.
+bool jp_combat_startup_ready();
 bool jp_combat_ended();
 } // namespace seed

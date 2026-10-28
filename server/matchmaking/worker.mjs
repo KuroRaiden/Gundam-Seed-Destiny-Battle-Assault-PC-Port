@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { LobbyCore, PROTOCOL, COMPATIBILITY, REGIONS } from "./core.mjs";
+import { LobbyCore, PROTOCOL, COMPATIBILITY, SUPPORTED_BUILDS, REGIONS } from "./core.mjs";
 function json(value, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
 }
@@ -9,7 +9,7 @@ export default {
     if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
     if (url.pathname === "/" || url.pathname === "/health")
       return json({ service: "seedpc-matchmaking", status: "ok", protocol: PROTOCOL,
-                    compatibility: COMPATIBILITY, gameplay_relay: false });
+                    compatibility: COMPATIBILITY, supported_builds: [...SUPPORTED_BUILDS], gameplay_relay: false });
     if (!["/v1/connect", "/v1/status"].includes(url.pathname)) return json({ error: "not_found" }, 404);
     const object = env.MATCHMAKER.get(env.MATCHMAKER.idFromName("public-lobby-v1"));
     return object.fetch(request);
@@ -49,10 +49,11 @@ export class Matchmaker extends DurableObject {
     const core = this.core(); core.sweep();
     if (url.pathname === "/v1/status") {
       const region = url.searchParams.get("region") ?? "any";
-      if (!REGIONS.has(region) || (url.searchParams.has("build") && url.searchParams.get("build") !== COMPATIBILITY))
+      const build = url.searchParams.get("build") ?? COMPATIBILITY;
+      if (!REGIONS.has(region) || !SUPPORTED_BUILDS.has(build))
         return json({ error: "incompatible_query" }, 400);
       await this.schedule(core);
-      return json({ protocol: PROTOCOL, compatibility: COMPATIBILITY, ...core.counts(region) });
+      return json({ protocol: PROTOCOL, compatibility: build, ...core.counts(region, build) });
     }
     if ((request.headers.get("Upgrade") ?? "").toLowerCase() !== "websocket")
       return json({ error: "websocket_required" }, 426);

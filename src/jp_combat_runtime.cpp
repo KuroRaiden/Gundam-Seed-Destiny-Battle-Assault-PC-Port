@@ -352,6 +352,15 @@ void set_jp_frame_inputs(std::uint16_t p1, std::uint16_t p2) {
     scripted_player_inputs.store((p1 & 1023u) | (std::uint32_t(p2 & 1023u) << 16));
     scripted_input_enabled.store(true);
 }
+bool jp_combat_startup_ready() {
+    // Stop before the native round intro. Unlike presentation predicates this
+    // runs only during deterministic boot, before the shared initial checksum.
+    return match_started && !match_ended &&
+           bus_read_u32(jp_address::kGameState) == jp_address::kStateVersus &&
+           bus_read_u16(jp_address::kPlayer1Health) && bus_read_u16(jp_address::kPlayer2Health) &&
+           (bus_read_u8(jp_address::kBattleContext + jp_address::kBattleStageOffset) & 31) ==
+               match_request.stage;
+}
 bool jp_combat_ended() {
     return match_ended;
 }

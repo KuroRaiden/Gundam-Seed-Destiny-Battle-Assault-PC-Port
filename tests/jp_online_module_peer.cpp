@@ -11,7 +11,7 @@
 #include <stdexcept>
 namespace {
 unsigned seat = 0, input_frame = 0;
-bool windowed = false, finish_fence = false;
+bool windowed = false, finish_fence = false, natural_finish = false;
 unsigned remap_frames = 0;
 SDL_Window* title_window = nullptr;
 std::string observed_title;
@@ -34,6 +34,11 @@ void inputs(std::uint16_t* out) {
         key.key.scancode = training_keys[frame - 20];
         key.key.key = SDL_GetKeyFromScancode(key.key.scancode, SDL_KMOD_NONE, false);
         SDL_PushEvent(&key);
+    }
+    if (natural_finish) {
+        out[0] = seat ? 0 : std::uint16_t(16 | (frame % 30 < 3 ? 1 : 0));
+        out[1] = 0;
+        return;
     }
     if (frame < 40)
         out[0] = seat ? 32 : 16;
@@ -102,6 +107,8 @@ int main(int argc, char** argv) {
                 windowed = true;
             else if (flag == "--finish-fence")
                 finish_fence = true;
+            else if (flag == "--natural-finish")
+                natural_finish = true;
             else if (flag != "--bios-hle")
                 throw std::runtime_error("Unknown qualification argument: " + flag);
         }
@@ -126,6 +133,11 @@ int main(int argc, char** argv) {
         if (finish_fence) {
             request.qualification_end_frame = request.qualification_frames;
             request.qualification_frames = 0;
+        }
+        if (natural_finish) {
+            request.qualification_frames = 0;
+            request.qualification_end_frame = 0;
+            windowed = true;
         }
         SDL_Window* window = nullptr;
         SDL_Renderer* renderer = nullptr;
@@ -177,7 +189,7 @@ int main(int argc, char** argv) {
                          observed_title.find(" | Ping ") == std::string::npos))
             throw std::runtime_error(
                 "Live window title did not show player names and network statistics");
-        if (windowed && !seat && remap_frames < 40)
+        if (windowed && !natural_finish && !seat && remap_frames < 40)
             throw std::runtime_error(
                 "F4 remapping did not remain open while online frames advanced");
         if (renderer)

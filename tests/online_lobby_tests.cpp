@@ -33,7 +33,11 @@ int main(int argc, char** argv) {
             seed::LiveControls controls;
             seed::OnlineLobbyState state;
             state.begin();
-            if (argc > 2 && std::string(argv[2]) == "queue") {
+            if (argc > 2 && std::string(argv[2]) == "failure") {
+                state.connection_error = "Opponent disconnected while confirming the match result.";
+                state.quick.phase = seed::QuickMatchPhase::Error;
+                state.quick.status = state.connection_error;
+            } else if (argc > 2 && std::string(argv[2]) == "queue") {
                 state.quick.phase = seed::QuickMatchPhase::Searching;
                 state.quick.searching = true;
                 state.quick.waiting = 5;

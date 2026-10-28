@@ -127,8 +127,10 @@ See the [Clumsy manual](https://jagt.github.io/clumsy/manual.html).
 matrix for baseline, 40 ms/2% loss, 100 ms/5% loss and 10% loss, with scoped
 filters, recorded process lifetime, automatic timeout and cleanup. Only the
 40 ms/2% profile has been qualified here; the broader scripted matrix has not
-been completed. `tools/verify_udp_netplay.py` alone does not inject faults;
-its condition label is only a label. Use Clumsy to apply the actual conditions.
+been completed. `tools/verify_udp_netplay.py` also supports isolated loopback
+impairment using `--net-lag-ms`, `--net-jitter-ms`, `--net-loss-percent` and
+`--finish-ack-delay-ms`. These flags run a scoped UDP proxy; they do not
+change system networking. `--condition-label` alone does not inject faults.
 
 The automated checks use two processes on one Windows machine. On October 26,
 2026 the user also reported a successful local-PC/Shadow-PC online smoke test,
@@ -158,6 +160,37 @@ agreement and borrowed socket lifetime. `tools/verify_online_menu.py` exercises
 the full menu-to-online-to-menu path. `tools/verify_menu_modes.py` and
 `tools/verify_jp_local_vs.py` guard the disconnected lobby, JP Training and
 Local VS paths against regressions.
+
+## Match startup and return to selection
+
+The 0.1.4 fixed build synchronizes at the first initialized native battle
+frame, before the round intro. The original 0.1.4 advanced 600 neutral frames
+before synchronizing, which skipped the intro and part of the round timer.
+The startup regression checks all 27 native fighter IDs and 25 stages and
+requires round phase zero; all 52 cases initialize in at most 157 frames.
+
+After a successful result, A/B remain guarded until both players return to
+the next character-select epoch and release their controls. Previously, a
+neutral input before the opponent returned could arm B and let a subsequent
+battle attack close the room. A regression reproduced that failure before the
+fix and now passes as part of 64 consecutive room cycles. Late, validated
+result acknowledgements also refresh the returning peer's liveness.
+
+Connection errors remain visible above the online tabs until the player
+starts another action. `last-game.log` records match convergence, frame and
+checksum results, and the reason for an unexpected return to connection.
+This covers the reproduced input bug; other Internet disconnect causes
+remain possible and should now leave a visible reason.
+
+The fixed build passed a natural KO and a separate run with 65 ms one-way
+lag, 15 ms jitter, 3% configured packet loss and a 1,200 ms extra final-ACK
+delay. Both peers agreed on the final frame and checksum, without desyncs.
+Two full menu-driven Quick Match rematches also retained one invitation,
+including stage changes. These new impaired checks used the isolated proxy,
+not Clumsy. See `validation/online-startup-rematch-fixed.json`.
+
+The initial synchronized state changed, so both players need the fixed build.
+Quick Match keeps old and fixed clients in separate compatible queues.
 
 ## Player names and title statistics
 

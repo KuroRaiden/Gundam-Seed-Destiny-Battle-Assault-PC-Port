@@ -94,14 +94,23 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         machine.seed_clock(946684800);
         std::vector<gbarecomp::NativeFrameControl::AudioBlock> audio;
         banner = "Preparing JP combat...";
-        for (unsigned frame = 0; frame < 600; ++frame) {
+        unsigned startup_frames = 0;
+        for (; startup_frames < 600; ++startup_frames) {
             set_jp_frame_inputs(0, 0);
             require(machine.advance(1023), "JP startup stopped");
             machine.drain_audio(audio);
-            if (frame % 16 == 0)
+            if (startup_frames % 16 == 0)
                 pump();
+            if (jp_combat_startup_ready()) {
+                ++startup_frames;
+                break;
+            }
         }
-        result.stage = bus_read_u8(jp_address::kBattleContext + jp_address::kBattleStageOffset) & 31;
+        require(jp_combat_startup_ready(), "JP battle initialization did not finish");
+        std::fprintf(stderr, "online_startup: ready before round intro after %u native frames\n",
+                     startup_frames);
+        result.stage =
+            bus_read_u8(jp_address::kBattleContext + jp_address::kBattleStageOffset) & 31;
         require(result.stage == match.stage, "JP combat loaded a different stage");
         std::vector<std::uint8_t> state;
         std::string error;
@@ -245,8 +254,14 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             for (int i = 0; i < count; ++i) {
                 if (events[i]->type == GekkoSessionStarted)
                     started = true;
-                if (events[i]->type == GekkoPlayerDisconnected)
+                if (events[i]->type == GekkoPlayerDisconnected) {
+                    std::fprintf(stderr,
+                                 "online_disconnect_state: seat=%u frame=%u target=%u done=%u "
+                                 "ack=%u crc=%u peer_crc=%u\n",
+                                 seat, next, target, unsigned(peer_done), unsigned(peer_done_ack),
+                                 result.final_crc, result.peer_crc);
                     throw std::runtime_error("Opponent disconnected");
+                }
                 if (events[i]->type == GekkoDesyncDetected) {
                     ++result.desyncs;
                     throw std::runtime_error("Rollback checksum mismatch; match stopped");

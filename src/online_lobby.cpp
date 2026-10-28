@@ -141,6 +141,11 @@ void OnlineLobby::draw() {
     };
     if (!state_->profile_error.empty())
         ImGui::TextColored({1.f, .4f, .4f, 1.f}, "%s", state_->profile_error.c_str());
+    if (!state_->connection_error.empty()) {
+        ImGui::PushStyleColor(ImGuiCol_Text, {1.f, .4f, .4f, 1.f});
+        ImGui::TextWrapped("%s", state_->connection_error.c_str());
+        ImGui::PopStyleColor();
+    }
     ImGui::Separator();
     ImGui::TextWrapped(
         "Find an opponent with Quick Match, or use Host / Join for a private match.");

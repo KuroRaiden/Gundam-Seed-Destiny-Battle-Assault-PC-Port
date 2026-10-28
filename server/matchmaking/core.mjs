@@ -1,6 +1,8 @@
 // Shared lobby coordination only. No gameplay inputs, game snapshots or ROM data.
 export const PROTOCOL = 1;
-export const COMPATIBILITY = "seedpc-jp-r9-a8-20261027";
+export const COMPATIBILITY = "seedpc-jp-r10-a8-20261028";
+export const LEGACY_COMPATIBILITY = "seedpc-jp-r9-a8-20261027";
+export const SUPPORTED_BUILDS = new Set([COMPATIBILITY, LEGACY_COMPATIBILITY]);
 export const REGIONS = new Set(["any", "na", "eu", "as", "oc", "sa", "af"]);
 const encoder = new TextEncoder();
 export function playerName(value) {
@@ -26,25 +28,30 @@ export class LobbyCore {
     catch { /* A disconnect never blocks another participant. */ }
   }
   all() { return this.peers().filter(p => p.data && p.data.phase !== "closed"); }
-  waiting(region = "any") {
-    return this.all().filter(p => p.data.build === COMPATIBILITY && p.data.phase === "queued" &&
+  waiting(region = "any", build = COMPATIBILITY) {
+    return this.all().filter(p => (build === null ? SUPPORTED_BUILDS.has(p.data.build) : p.data.build === build) && p.data.phase === "queued" &&
       this.now() - this.fresh(p) <= 75000 &&
       (region === "any" || p.data.region === "any" || p.data.region === region));
   }
-  counts(region = "any") {
-    return { type: "count", waiting: this.waiting().length,
-             eligible: this.waiting(region).length, region };
+  counts(region = "any", build = COMPATIBILITY) {
+    return { type: "count", waiting: this.waiting("any", build).length,
+             eligible: this.waiting(region, build).length, region };
   }
   broadcastCounts() {
     if (this.notify) { this.notify(); return; }
     const peers = this.all();
-    const queued = peers.filter(p => p.data.phase === "queued" && p.data.build === COMPATIBILITY &&
-                                  this.now() - this.fresh(p) <= 75000);
-    const eligible = new Map([...REGIONS].map(region => [region, queued.filter(p =>
-      region === "any" || p.data.region === "any" || p.data.region === region).length]));
-    for (const peer of peers) if (peer.data.build === COMPATIBILITY)
-      this.send(peer, { type: "count", waiting: queued.length,
-                        eligible: eligible.get(peer.data.region), region: peer.data.region });
+    const queued = this.waiting("any", null);
+    const byBuild = new Map([...SUPPORTED_BUILDS].map(build => {
+      const tickets = queued.filter(p => p.data.build === build);
+      const eligible = new Map([...REGIONS].map(region => [region, tickets.filter(p =>
+        region === "any" || p.data.region === "any" || p.data.region === region).length]));
+      return [build, { waiting: tickets.length, eligible }];
+    }));
+    for (const peer of peers) if (SUPPORTED_BUILDS.has(peer.data.build)) {
+      const counts = byBuild.get(peer.data.build);
+      this.send(peer, { type: "count", waiting: counts.waiting,
+                        eligible: counts.eligible.get(peer.data.region), region: peer.data.region });
+    }
   }
   initialize(socket, ip) {
     const peer = { socket, data: { id: this.uuid(), ip, phase: "new", name: "Player",
@@ -74,16 +81,16 @@ export class LobbyCore {
     try {
       if (event.type === "hello") {
         if (!["new", "idle"].includes(peer.data.phase)) throw new Error("already_searching");
-        if (event.protocol !== PROTOCOL || event.build !== COMPATIBILITY) throw new Error("incompatible_build");
+        if (event.protocol !== PROTOCOL || !SUPPORTED_BUILDS.has(event.build)) throw new Error("incompatible_build");
         if (!REGIONS.has(event.region)) throw new Error("invalid_region");
         peer.data.name = playerName(event.name);
         peer.data.region = event.region;
         peer.data.build = event.build;
         peer.data.phase = "idle";
         this.save(peer);
-        this.send(peer, { ...this.counts(peer.data.region), type: "ready" });
+        this.send(peer, { ...this.counts(peer.data.region, peer.data.build), type: "ready" });
       } else if (event.type === "enqueue") {
-        if (peer.data.build !== COMPATIBILITY) throw new Error("hello_required");
+        if (!SUPPORTED_BUILDS.has(peer.data.build)) throw new Error("hello_required");
         if (peer.data.phase === "queued") { this.send(peer, { type: "searching" }); return; }
         if (peer.data.phase !== "idle") throw new Error("already_matched");
         peer.data.phase = "queued"; peer.data.since = this.now();
@@ -124,7 +131,7 @@ export class LobbyCore {
           }
         }
       } else if (event.type === "count") {
-        this.send(peer, this.counts(peer.data.region));
+        this.send(peer, this.counts(peer.data.region, peer.data.build));
       } else throw new Error("unknown_message");
     } catch (error) { this.reject(peer, error.message); }
     this.broadcastCounts();
@@ -158,11 +165,11 @@ export class LobbyCore {
     this.release(peer, true); this.pair(); this.broadcastCounts();
   }
   pair() {
-    const queued = this.waiting().sort((a,b) => a.data.since - b.data.since || a.data.id.localeCompare(b.data.id));
+    const queued = this.waiting("any", null).sort((a,b) => a.data.since - b.data.since || a.data.id.localeCompare(b.data.id));
     while (queued.length > 1) {
       const first = queued.shift();
-      const index = queued.findIndex(other => first.data.region === "any" || other.data.region === "any" ||
-                                             first.data.region === other.data.region);
+      const index = queued.findIndex(other => first.data.build === other.data.build &&
+        (first.data.region === "any" || other.data.region === "any" || first.data.region === other.data.region));
       if (index < 0) continue;
       const second = queued.splice(index, 1)[0];
       const match = this.uuid(), deadline = this.now() + 15000;

@@ -22,6 +22,12 @@ This service is separate from the existing manual Host/Join codes.
   waiting tickets, excluding offered matches, active players and observers.
 - `ping` receives the automatic `pong` response without waking a sleeping object.
 
+The service accepts both the original 0.1.4 compatibility ID and the fixed
+build ID. Pairing and waiting counts are isolated by compatibility ID; old
+clients can still play each other, while fixed clients receive only fixed
+opponents. `GET /v1/status?build=<compatibility-id>` selects the matching
+counter. Both players must update to play together with the restored intro.
+
 Names and pending match metadata live in WebSocket attachments so hibernation
 can reconstruct them. Invitation codes are forwarded only to the assigned peer;
 they are never included in public counters or stored in a database. Routine
@@ -49,7 +55,7 @@ npx wrangler dev --local --ip 127.0.0.1 --port 8788 --persist-to <E-work-directo
 node integration.mjs http://127.0.0.1:8788
 npx wrangler login --scopes account:read user:read workers_scripts:write
 npx wrangler deploy
-node integration.mjs https://<worker>.<account-subdomain>.workers.dev
+node integration.mjs https://<worker>.<account-subdomain>.workers.dev --observe-only
 ```
 
 For this workspace, keep npm caches, Wrangler configuration, logs, temporary
@@ -60,8 +66,9 @@ SQLite-backed class, which is supported on the Workers Free plan.
 
 The core tests cover pairing, duplicate tickets, regions, invitation isolation,
 acceptance, disconnects, expiry, malformed messages, restored attachments and
-500-client allocation. The integration script exercises the real Worker runtime
-and WebSocket/hibernation APIs locally and against the deployed URL.
+500-client allocation, and legacy/fixed queue isolation. The integration script exercises the real Worker runtime
+and WebSocket/hibernation APIs locally. Use `--observe-only` for a live
+production smoke check that never enters the player queue.
 
 Public lobby browsing and delayed spectating remain separate integrations.
 The current native source implements the Quick Match tab, live counts and

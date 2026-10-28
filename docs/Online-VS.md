@@ -163,7 +163,7 @@ Local VS paths against regressions.
 
 ## Match startup and return to selection
 
-The 0.1.4 fixed build synchronizes at the first initialized native battle
+The 0.1.5 build synchronizes at the first initialized native battle
 frame, before the round intro. The original 0.1.4 advanced 600 neutral frames
 before synchronizing, which skipped the intro and part of the round timer.
 The startup regression checks all 27 native fighter IDs and 25 stages and

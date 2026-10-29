@@ -6,7 +6,7 @@ std::map<unsigned, MsColorPreview> load_ms_previews(const std::filesystem::path&
     auto fail = [] {
         throw std::runtime_error("Invalid MS preview cache. Prepare previews again.");
     };
-    if (std::filesystem::file_size(path) > 2 * 1024 * 1024)
+    if (std::filesystem::file_size(path) > 8 * 1024 * 1024)
         fail();
     std::ifstream file(path, std::ios::binary);
     auto byte = [&] {
@@ -21,11 +21,15 @@ std::map<unsigned, MsColorPreview> load_ms_previews(const std::filesystem::path&
             value |= byte() << (n * 8);
         return value;
     };
-    const std::array<unsigned char, 8> magic{'S', 'E', 'E', 'D', 'M', 'S', '1', 0};
-    for (auto c : magic)
-        if (byte() != c)
+    const char* magic = "SEEDMS";
+    for (unsigned n = 0; n < 6; ++n)
+        if (byte() != unsigned(magic[n]))
             fail();
-    if (u32() != 27)
+    const auto version = byte();
+    if ((version != '1' && version != '2') || byte() != 0 || u32() != 27)
+        fail();
+    const auto sprite_count = version == '2' ? u32() : 1;
+    if (sprite_count != (version == '2' ? kMsPreviewSpriteCount : 1))
         fail();
     const char* expected = "cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb";
     const char* digits = "0123456789abcdef";
@@ -36,12 +40,20 @@ std::map<unsigned, MsColorPreview> load_ms_previews(const std::filesystem::path&
     }
     std::map<unsigned, MsColorPreview> result;
     for (unsigned n = 0; n < 27; ++n) {
-        const auto id = u32(), w = u32(), h = u32();
-        if (id < 1 || id > 27 || result.contains(id) || !w || !h || w > 240 || h > 160)
+        const auto id = u32();
+        if (id < 1 || id > 27 || result.contains(id))
             fail();
         MsColorPreview preview;
-        preview.width = w;
-        preview.height = h;
+        auto read_sprite = [&] {
+            MsColorSprite sprite;
+            sprite.width = u32();
+            sprite.height = u32();
+            if (!sprite.width || !sprite.height || sprite.width > 240 || sprite.height > 160)
+                fail();
+            return sprite;
+        };
+        if (version == '1')
+            preview.sprites.push_back(read_sprite());
         for (auto& palette : preview.originals)
             for (auto& color : palette) {
                 const auto low = byte();
@@ -49,16 +61,21 @@ std::map<unsigned, MsColorPreview> load_ms_previews(const std::filesystem::path&
                 if (color > 0x7fff)
                     fail();
             }
-        preview.indices.resize(w * h);
-        unsigned visible = 0;
-        for (auto& index : preview.indices) {
-            index = std::uint8_t(byte());
-            if (index != 255 && (index >= kMsPaletteColors || index % 16 == 0))
+        for (unsigned pose = 0; pose < sprite_count; ++pose) {
+            if (version == '2')
+                preview.sprites.push_back(read_sprite());
+            auto& sprite = preview.sprites[pose];
+            sprite.indices.resize(sprite.width * sprite.height);
+            unsigned visible = 0;
+            for (auto& index : sprite.indices) {
+                index = std::uint8_t(byte());
+                if (index != 255 && (index >= kMsPaletteColors || index % 16 == 0))
+                    fail();
+                visible += index != 255;
+            }
+            if (visible <= 80)
                 fail();
-            visible += index != 255;
         }
-        if (visible <= 80)
-            fail();
         result.emplace(id, std::move(preview));
     }
     if (file.peek() != std::char_traits<char>::eof())
@@ -66,7 +83,7 @@ std::map<unsigned, MsColorPreview> load_ms_previews(const std::filesystem::path&
     return result;
 }
 std::vector<std::uint8_t>
-MsColorPreview::rgba(const std::array<std::uint16_t, kMsPaletteColors>& palette) const {
+MsColorSprite::rgba(const std::array<std::uint16_t, kMsPaletteColors>& palette) const {
     std::vector<std::uint8_t> pixels(indices.size() * 4);
     for (unsigned n = 0; n < indices.size(); ++n) {
         const auto index = indices[n];

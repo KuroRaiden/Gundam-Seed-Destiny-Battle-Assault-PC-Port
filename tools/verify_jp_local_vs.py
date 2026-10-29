@@ -18,8 +18,8 @@ import zlib
 
 
 class Client:
-    def __init__(self, port, process):
-        for _ in range(150):
+    def __init__(self, port, process, startup_timeout=15):
+        for _ in range(max(1, int(startup_timeout * 10))):
             if process.poll() is not None:
                 raise RuntimeError("Native process exited before connection")
             try:

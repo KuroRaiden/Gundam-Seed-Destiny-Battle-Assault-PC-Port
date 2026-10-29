@@ -38,7 +38,8 @@ struct App {
     sl::Settings settings;
     std::unique_ptr<sl::LauncherUpdates> updates;
     bool update_exit = false;
-    sl::GameProcess game;
+    sl::GameProcess game, preparation;
+    bool preparation_failed = false;
     sl::MsColorsUi colors;
     SDL_Renderer* renderer = nullptr;
     std::filesystem::path folder;
@@ -86,7 +87,11 @@ struct App {
     void begin_capture(unsigned player, unsigned bit, int slot) {
         capture = {static_cast<int>(player), bit, slot, SDL_GetTicks() + 180, false};
     }
+    inline static constexpr const char* seed_asset_names[]{
+        "destiny-selection.bin", "destiny-stages.bin", "us-training-menu.bin"};
     void launch() {
+        if (preparation.running())
+            return;
         if (colors.busy()) {
             message = "Wait for MS preview preparation to finish before launching.";
             return;
@@ -119,6 +124,20 @@ struct App {
                                        L"--window",
                                        L"--scale",
                                        std::to_wstring(settings.scale)};
+        const bool prepared = std::all_of(
+            std::begin(seed_asset_names), std::end(seed_asset_names), [&](const auto* name) {
+                return std::filesystem::is_regular_file(folder / "assets" / name);
+            });
+        if (!prepared) {
+            args.push_back(L"--prepare-game-assets");
+            preparation_failed = false;
+            error = !preparation.start(folder / L"GundamSeedRecomp.exe", args,
+                                       folder / L"first-launch.log", message);
+            if (!error)
+                message = "Preparing local game files for the first launch. The game will open "
+                          "automatically; please keep the launcher open.";
+            return;
+        }
         if (!join_code.empty()) {
             args.push_back(L"--join-code");
             args.push_back(sl::wide(join_code));
@@ -207,7 +226,7 @@ void play_page(App& app) {
     const bool combat = std::filesystem::is_regular_file(app.folder / L"SeedJpCombat.dll");
     const bool ready = host && combat && app.settings.files[0].verified &&
                        app.settings.files[1].verified && app.settings.files[2].verified;
-    ImGui::BeginDisabled(!ready || app.game.running());
+    ImGui::BeginDisabled(!ready || app.game.running() || app.preparation.running());
     primary_begin();
     if (ImGui::Button("Launch game", ImVec2(195, 40)))
         app.launch();
@@ -216,6 +235,9 @@ void play_page(App& app) {
     ImGui::SameLine();
     if (ImGui::Button("Game files", ImVec2(125, 40)))
         app.page = Page::Files;
+    ImGui::SameLine();
+    if (ImGui::Button("Join Discord", ImVec2(150, 40)))
+        sl::open_file(L"https://discord.gg/jX5D5WNsps");
     if (!host)
         ImGui::TextColored(kGold, "The game executable is missing from this folder.");
     else if (!combat)
@@ -227,9 +249,12 @@ void play_page(App& app) {
     else
         ImGui::TextColored(kGreen, "Both cartridges and BIOS verified");
     card_end();
-    card_begin("battle-display", 210);
+    card_begin("battle-display", 270);
     ImGui::TextUnformatted("Battle display");
-    ImGui::BeginDisabled(app.game.running());
+    ImGui::BeginDisabled(app.game.running() || app.preparation.running());
+    ImGui::SetNextItemWidth(350);
+    if (ImGui::SliderInt("Game window size", &app.settings.scale, 2, 6, "%dx"))
+        app.save();
     if (ImGui::Checkbox("Black sprite outlines", &app.settings.fighter_outlines)) {
         if (!app.settings.save(app.folder / L"launcher-settings.ini", app.message)) {
             app.settings.fighter_outlines = !app.settings.fighter_outlines;
@@ -257,11 +282,16 @@ void play_page(App& app) {
     ImGui::TextColored(kMuted, "0%% invisible / 100%% solid black. Applies when launching.");
     ImGui::TextColored(kMuted, "Saved automatically. Only changes your display online.");
     card_end();
+    if (app.preparation.running())
+        ImGui::ProgressBar(-float(ImGui::GetTime()), ImVec2(-1, 18), "Preparing first launch...");
     if (!app.message.empty()) {
-        ImGui::TextColored(app.error ? kRed : kMuted, "%s", app.message.c_str());
-        if (std::filesystem::is_regular_file(app.folder / L"last-game.log") &&
-            ImGui::SmallButton("Open last game log"))
-            sl::open_file(app.folder / L"last-game.log");
+        ImGui::PushStyleColor(ImGuiCol_Text, app.error ? kRed : kMuted);
+        ImGui::TextWrapped("%s", app.message.c_str());
+        ImGui::PopStyleColor();
+        const auto log =
+            app.folder / (app.preparation_failed ? L"first-launch.log" : L"last-game.log");
+        if (std::filesystem::is_regular_file(log) && ImGui::SmallButton("Open startup/game log"))
+            sl::open_file(log);
     }
 }
 
@@ -512,12 +542,6 @@ void about_page(App& app) {
     ImGui::BulletText("JP combat roster");
     ImGui::BulletText("Rollback netplay: NC vs GA test passed");
     card_end();
-    card_begin("display", 115);
-    ImGui::TextUnformatted("Baseline window size");
-    ImGui::SetNextItemWidth(350);
-    if (ImGui::SliderInt("Scale", &app.settings.scale, 2, 6, "%dx"))
-        app.save();
-    card_end();
     ImGui::TextColored(kMuted, "Dear ImGui + SDL3  /  Licenses included in this folder");
 }
 
@@ -550,7 +574,7 @@ void updates_page(App& app) {
             app.updates->download();
     }
     if (state.phase == sl::UpdatePhase::Ready) {
-        ImGui::BeginDisabled(app.game.running() || app.colors.busy());
+        ImGui::BeginDisabled(app.game.running() || app.preparation.running() || app.colors.busy());
         if (ImGui::Button("Install and restart", ImVec2(220, 38))) {
             app.error = false;
             if (!app.colors.save()) {
@@ -778,7 +802,20 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                     event.type == SDL_EVENT_GAMEPAD_REMOVED)
                     app.refresh_pads();
             }
+            if (const auto code = app.preparation.poll()) {
+                app.preparation_failed = *code != 0;
+                if (!app.preparation_failed)
+                    app.launch();
+                else {
+                    app.error = true;
+                    app.message = "First-launch preparation stopped (Windows exit code " +
+                                  std::to_string(*code) +
+                                  "). Open first-launch.log for the exact stage. "
+                                  "You can retry Launch game after checking the log.";
+                }
+            }
             if (const auto code = app.game.poll()) {
+                app.preparation_failed = false;
                 if (app.controls == app.saved_controls) {
                     app.controls.load(app.folder / L"controls.ini");
                     app.saved_controls = app.controls;

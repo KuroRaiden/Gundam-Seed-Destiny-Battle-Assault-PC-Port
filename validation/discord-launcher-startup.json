@@ -1,0 +1,56 @@
+{
+  "build": "0.1.6-dev",
+  "date": "2026-10-29",
+  "discord": {
+    "mode": "channel webhook",
+    "channel": "quick-match",
+    "ai_or_manual_queue": false,
+    "node_tests_passed": 31,
+    "local_worker_integration_passed": true,
+    "worker_dry_run_passed": true,
+    "real_discord_messages_sent": 0,
+    "live_configuration_pending": true,
+    "announcements": "Matchmaking plus selected region; Any only Matchmaking",
+    "live_count_edits_without_ping": true,
+    "closed_search_edits": true,
+    "avatar": "Original JP Lacus portrait exported privately; not included in source/package"
+  },
+  "launcher": {
+    "scale_on_play": true,
+    "discord_link_on_play": true,
+    "visual_captures_checked": true
+  },
+  "ms_previews": {
+    "suits": 27,
+    "sprites_per_suit": 4,
+    "total_sprites": 108,
+    "all_sprites_recolor_checked": true,
+    "legacy_cache_checked": true,
+    "profiles_unchanged": true
+  },
+  "startup": {
+    "issue": 1,
+    "reported_crash_reproduced": false,
+    "cold_warm": [
+      {
+        "run": "cold",
+        "exit_code": 0,
+        "native_state": 0,
+        "seconds": 134.329,
+        "assets_ready": true,
+        "cache_reused": false
+      },
+      {
+        "run": "warm",
+        "exit_code": 0,
+        "native_state": 0,
+        "seconds": 1.388,
+        "assets_ready": true,
+        "cache_reused": true
+      }
+    ],
+    "launcher_stays_visible_during_preparation": true,
+    "phase_log": "first-launch.log"
+  },
+  "computer_use": "Discord UI actions stopped after physical Escape; no webhook or permission created."
+}

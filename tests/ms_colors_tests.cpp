@@ -63,25 +63,36 @@ int main(int argc, char** argv) {
             require(previews.size() == 27, "Missing native preview variants");
             for (const auto& [id, preview] : previews) {
                 auto colors = preview.originals[0];
-                const auto before = preview.rgba(colors);
-                unsigned used = 0;
-                for (auto i : preview.indices)
-                    if (i != 255) {
-                        used = i;
-                        break;
-                    }
-                colors[used] ^= 0x7fff;
-                const auto after = preview.rgba(colors);
-                bool changed = false;
-                for (unsigned n = 0; n < preview.indices.size(); ++n)
-                    for (unsigned ch = 0; ch < 4; ++ch) {
-                        if (preview.indices[n] != used)
-                            require(before[n * 4 + ch] == after[n * 4 + ch],
-                                    "Preview recolored an unrelated swatch/background pixel");
-                        changed |= before[n * 4 + ch] != after[n * 4 + ch];
-                    }
-                require(changed, "Preview swatch edit had no visible effect");
+                require(preview.sprites.size() == seed::kMsPreviewSpriteCount,
+                        "Missing alternate preview sprites");
+                for (const auto& sprite : preview.sprites) {
+                    const auto before = sprite.rgba(colors);
+                    unsigned used = 0;
+                    for (auto i : sprite.indices)
+                        if (i != 255) {
+                            used = i;
+                            break;
+                        }
+                    colors[used] ^= 0x7fff;
+                    const auto after = sprite.rgba(colors);
+                    bool changed = false;
+                    for (unsigned n = 0; n < sprite.indices.size(); ++n)
+                        for (unsigned ch = 0; ch < 4; ++ch) {
+                            if (sprite.indices[n] != used)
+                                require(before[n * 4 + ch] == after[n * 4 + ch],
+                                        "Preview recolored an unrelated swatch/background pixel");
+                            changed |= before[n * 4 + ch] != after[n * 4 + ch];
+                        }
+                    require(changed, "Preview swatch edit had no visible effect");
+                    colors[used] ^= 0x7fff;
+                }
             }
+        }
+        if (argc > 2) {
+            const auto legacy = seed::load_ms_previews(std::filesystem::path(argv[2]));
+            require(legacy.size() == 27, "Legacy preview cache lost suits");
+            for (const auto& [id, preview] : legacy)
+                require(preview.sprites.size() == 1, "Legacy single-sprite cache failed to load");
         }
         std::puts("PASS: MS profile persistence/reset, canonical palette wire format, malformed "
                   "data rejection and indexed preview recoloring.");

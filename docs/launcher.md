@@ -94,3 +94,14 @@ available without a pre-existing art cache and generates that cache locally
 before starting the US menu. A source build script is not required for setup.
 
 Training uses an English pause menu with the US ROM font. F5 opens the frame meter, F6 toggles red hitboxes/green hurtboxes, and F2/F3 save/reload a practice situation. These tools are offline Training only; see [Training tools](Training-Tools.md).
+
+Game window size is on **Play → Battle display**, beside the outline controls.
+**Join Discord** opens the project's server invite from Play. First launch keeps
+the launcher visible while `first-launch.log` records local asset preparation;
+the native game starts automatically in a fresh process after preparation
+succeeds. A failed preparation retains its Windows exit code and the log link.
+The original issue #1 log alone does not establish a crash cause. A cold-cache
+test took 134 seconds on the test machine; the warm launch took 1.4 seconds.
+The `NOT_STATIC` fallback diagnostic remains available and is not treated as a
+fatal error. `tools/verify_first_launch.py` verifies cold/warm native startup
+and that warm launches reuse generated caches.

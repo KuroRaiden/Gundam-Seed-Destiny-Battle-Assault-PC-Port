@@ -14,7 +14,11 @@ palettes. The other slots offer two colors. Equal-color mirrors are allowed.
 In the launcher, open **MS Colors**. Verify the JP ROM and BIOS, then choose
 **Prepare previews** once. Select Player 1/2, the MS and original color slot.
 Click a swatch and edit its RGB values or open the picker. The live preview
-updates immediately. **Save colors** persists all changes; launching also saves
+updates immediately. **Previous / Next** cycles through four distinct native
+sprites per suit, showing movement, airborne and attack poses as available.
+Changing the preview sprite preserves all pending colors. Older one-sprite
+caches still load; **Prepare four sprites** upgrades the local cache while
+preserving saved profiles. **Save colors** persists all changes; launching also saves
 pending changes. **Reset to original** clears the current override; **Revert
 saved** restores all saved profiles. Native MS IDs identify the selector's
 suits, including hidden variants. Unused-in-idle swatches can affect attacks,
@@ -56,3 +60,8 @@ menu/selection/rollback/return; production UDP checksums matching at 240 frames;
 351 stress restores and 2,457 replayed frames with zero desyncs and 14 malformed
 snapshots rejected without live-state changes. The launcher layout was captured
 and inspected. Further UI automation was stopped when the user pressed Escape.
+
+The four-sprite cache uses `SEEDMS2` and carries 108 original indexed sprites.
+The reader also accepts the original `SEEDMS1` cache. Native RGB5 palettes and
+all saved/network profile formats are unchanged. All four sprites are rendered
+and isolated by the original PPU using the two-encoding palette check.

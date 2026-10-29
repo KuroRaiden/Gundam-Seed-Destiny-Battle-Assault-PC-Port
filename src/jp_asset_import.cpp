@@ -4,6 +4,7 @@
 #include <bcrypt.h>
 #include "jp_asset_import.h"
 #include "jp_combat_runtime.h"
+#include "ms_color_preview.h"
 #include "game_addresses.h"
 #include "runtime.h"
 #include "runtime_arm.h"
@@ -349,14 +350,80 @@ PreviewCapture* preview_capture = nullptr;
 unsigned encoded_preview_color(unsigned index, unsigned pass) {
     return pass ? ((index + 1) << 5) | 31 : (index + 1) | 0x4000;
 }
+struct IndexedPreviewSprite {
+    unsigned width, height;
+    Bytes indices;
+    bool operator==(const IndexedPreviewSprite&) const = default;
+};
+IndexedPreviewSprite capture_preview_sprite(gbarecomp::NativeFrameControl& machine) {
+    std::vector<gbarecomp::NativeFrameControl::AudioBlock> audio;
+    std::vector<std::uint8_t> state;
+    std::string error;
+    if (!machine.save(state, error))
+        throw std::runtime_error("MS pose snapshot: " + error);
+    std::array<Bytes, 2> rendered;
+    for (unsigned pass = 0; pass < 2; ++pass) {
+        if (pass)
+            if (!machine.load(state, error))
+                throw std::runtime_error("MS preview restore: " + error);
+        for (unsigned i = 0; i < seed::kMsPaletteColors; ++i) {
+            const auto color = encoded_preview_color(i, pass);
+            bus_write_u16(jp::kFighterPaletteBuffers + i * 2, color);
+            bus_write_u16(common::kPaletteBegin + 512 + i * 2, color);
+        }
+        seed::set_jp_frame_inputs(0, 0);
+        require(machine.advance(1023), "MS preview render stopped");
+        machine.drain_audio(audio);
+        rendered[pass].assign(machine.pixels(), machine.pixels() + width * height * 3);
+    }
+    Bytes indices(width * height, 255);
+    unsigned left = width, top = height, right = 0, bottom = 0, count = 0;
+    for (unsigned y = 0; y < height; ++y)
+        for (unsigned x = 0; x < width; ++x) {
+            const auto at = (y * width + x) * 3;
+            unsigned decoded[2]{};
+            for (unsigned pass = 0; pass < 2; ++pass) {
+                const auto& rgb = rendered[pass];
+                decoded[pass] =
+                    (rgb[at] >> 3) | ((rgb[at + 1] >> 3) << 5) | ((rgb[at + 2] >> 3) << 10);
+            }
+            for (unsigned i = 0; i < seed::kMsPaletteColors; ++i)
+                if (i % 16 && decoded[0] == encoded_preview_color(i, 0) &&
+                    decoded[1] == encoded_preview_color(i, 1)) {
+                    indices[y * width + x] = std::uint8_t(i);
+                    left = std::min(left, x);
+                    top = std::min(top, y);
+                    right = std::max(right, x);
+                    bottom = std::max(bottom, y);
+                    ++count;
+                    break;
+                }
+        }
+    require(count > 80, "Could not isolate the native MS preview");
+    IndexedPreviewSprite sprite{right - left + 1, bottom - top + 1, {}};
+    for (unsigned y = top; y <= bottom; ++y)
+        sprite.indices.insert(sprite.indices.end(), indices.begin() + y * width + left,
+                              indices.begin() + y * width + right + 1);
+    return sprite;
+}
 int capture_ms_previews(gbarecomp::NativeFrameControl& machine) {
     machine.seed_clock(946684800);
-    Bytes pack{'S', 'E', 'E', 'D', 'M', 'S', '1', 0};
+    Bytes pack{'S', 'E', 'E', 'D', 'M', 'S', '2', 0};
     put32(pack, 27);
+    put32(pack, seed::kMsPreviewSpriteCount);
     const auto donor_hash = hash(preview_capture->donor->rom, BCRYPT_SHA256_ALG_HANDLE, 32);
     for (unsigned i = 0; i < donor_hash.size(); i += 2)
         pack.push_back(std::uint8_t(std::stoul(donor_hash.substr(i, 2), nullptr, 16)));
     std::vector<gbarecomp::NativeFrameControl::AudioBlock> audio;
+    struct Pose {
+        std::uint16_t input;
+        unsigned frames;
+    };
+    // Actual game poses: idle, forward movement, airborne, and attacks.
+    // Some suits share early animations, so try later/action alternatives too.
+    constexpr Pose candidates[]{{0, 0},    {16, 10}, {80, 10}, {1, 8},   {1, 16},
+                                {2, 8},    {2, 16},  {16, 20}, {64, 18}, {32, 10},
+                                {128, 10}, {1, 24},  {2, 24},  {256, 12}};
     for (unsigned fighter = 1; fighter <= 27; ++fighter) {
         if (fighter != 1) {
             seed::JpCombatRequest request;
@@ -370,52 +437,28 @@ int capture_ms_previews(gbarecomp::NativeFrameControl& machine) {
             require(machine.advance(1023), "MS preview initialization stopped");
             machine.drain_audio(audio);
         }
-        std::vector<std::uint8_t> state;
+        std::vector<std::uint8_t> base;
         std::string error;
-        if (!machine.save(state, error))
+        if (!machine.save(base, error))
             throw std::runtime_error("MS preview snapshot: " + error);
-        std::array<Bytes, 2> rendered;
-        for (unsigned pass = 0; pass < 2; ++pass) {
-            if (pass)
-                if (!machine.load(state, error))
-                    throw std::runtime_error("MS preview restore: " + error);
-            for (unsigned i = 0; i < seed::kMsPaletteColors; ++i) {
-                const auto color = encoded_preview_color(i, pass);
-                bus_write_u16(jp::kFighterPaletteBuffers + i * 2, color);
-                bus_write_u16(common::kPaletteBegin + 512 + i * 2, color);
+        std::vector<IndexedPreviewSprite> sprites;
+        for (const auto pose : candidates) {
+            if (!machine.load(base, error))
+                throw std::runtime_error("MS preview restore: " + error);
+            for (unsigned frame = 0; frame < pose.frames; ++frame) {
+                seed::set_jp_frame_inputs(pose.input, 0);
+                require(machine.advance(1023 ^ pose.input), "MS pose initialization stopped");
+                machine.drain_audio(audio);
             }
-            seed::set_jp_frame_inputs(0, 0);
-            require(machine.advance(1023), "MS preview render stopped");
-            machine.drain_audio(audio);
-            rendered[pass].assign(machine.pixels(), machine.pixels() + width * height * 3);
+            auto sprite = capture_preview_sprite(machine);
+            if (std::find(sprites.begin(), sprites.end(), sprite) == sprites.end())
+                sprites.push_back(std::move(sprite));
+            if (sprites.size() == seed::kMsPreviewSpriteCount)
+                break;
         }
-        Bytes indices(width * height, 255);
-        unsigned left = width, top = height, right = 0, bottom = 0, count = 0;
-        for (unsigned y = 0; y < height; ++y)
-            for (unsigned x = 0; x < width; ++x) {
-                const auto at = (y * width + x) * 3;
-                unsigned decoded[2]{};
-                for (unsigned pass = 0; pass < 2; ++pass) {
-                    const auto& rgb = rendered[pass];
-                    decoded[pass] =
-                        (rgb[at] >> 3) | ((rgb[at + 1] >> 3) << 5) | ((rgb[at + 2] >> 3) << 10);
-                }
-                for (unsigned i = 0; i < seed::kMsPaletteColors; ++i)
-                    if (i % 16 && decoded[0] == encoded_preview_color(i, 0) &&
-                        decoded[1] == encoded_preview_color(i, 1)) {
-                        indices[y * width + x] = std::uint8_t(i);
-                        left = std::min(left, x);
-                        top = std::min(top, y);
-                        right = std::max(right, x);
-                        bottom = std::max(bottom, y);
-                        ++count;
-                        break;
-                    }
-            }
-        require(count > 80, "Could not isolate the native MS preview");
+        require(sprites.size() == seed::kMsPreviewSpriteCount,
+                "Could not isolate four distinct native MS sprites");
         put32(pack, fighter);
-        put32(pack, right - left + 1);
-        put32(pack, bottom - top + 1);
         for (unsigned palette = 0; palette < 2; ++palette) {
             const auto pointer = preview_capture->donor->rom32(
                 jp::kFighterDescriptorTable + fighter * jp::kFighterDescriptorStride + 8 +
@@ -424,12 +467,14 @@ int capture_ms_previews(gbarecomp::NativeFrameControl& machine) {
                 put16(pack, u16(preview_capture->donor->rom, pointer - common::kRomBegin + i * 2) &
                                 0x7fff);
         }
-        for (unsigned y = top; y <= bottom; ++y)
-            pack.insert(pack.end(), indices.begin() + y * width + left,
-                        indices.begin() + y * width + right + 1);
-        if (!machine.load(state, error))
+        for (const auto& sprite : sprites) {
+            put32(pack, sprite.width);
+            put32(pack, sprite.height);
+            pack.insert(pack.end(), sprite.indices.begin(), sprite.indices.end());
+        }
+        if (!machine.load(base, error))
             throw std::runtime_error("MS preview restore: " + error);
-        std::fprintf(stderr, "MS preview %u/27: %u indexed pixels\n", fighter, count);
+        std::fprintf(stderr, "MS preview %u/27: four distinct sprites\n", fighter);
         std::fflush(stderr);
     }
     const auto pending =
@@ -533,11 +578,11 @@ int capture_stage_previews(gbarecomp::NativeFrameControl& machine) {
         const auto* rgb = machine.pixels();
         for (unsigned pixel = 0; pixel < width * height; ++pixel)
             put16(pack, (rgb[pixel * 3] >> 3) | ((rgb[pixel * 3 + 1] >> 3) << 5) |
-                        ((rgb[pixel * 3 + 2] >> 3) << 10));
+                            ((rgb[pixel * 3 + 2] >> 3) << 10));
         bus_write_u16(common::kIoBegin, display);
     }
-    const auto pending = stage_capture->output.wstring() + L".pending-" +
-                         std::to_wstring(GetCurrentProcessId());
+    const auto pending =
+        stage_capture->output.wstring() + L".pending-" + std::to_wstring(GetCurrentProcessId());
     {
         std::ofstream file(pending, std::ios::binary);
         file.write(reinterpret_cast<const char*>(pack.data()), std::streamsize(pack.size()));
@@ -587,8 +632,8 @@ extern "C" __declspec(dllexport) int SeedImportJpStagePreviews(const char* rom, 
         seed::configure_jp_combat(options, request);
         options.native_frame_driver = capture_stage_previews;
         const auto save_text = save.string();
-        std::vector<std::string> values{"GundamSeedRecomp.exe", "--rom", rom, "--bios", bios,
-                                        "--bios-hle", "--save", save_text};
+        std::vector<std::string> values{"GundamSeedRecomp.exe", "--rom",  rom,      "--bios", bios,
+                                        "--bios-hle",           "--save", save_text};
         std::vector<char*> args;
         for (auto& value : values)
             args.push_back(value.data());

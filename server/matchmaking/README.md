@@ -84,3 +84,15 @@ private invitation handoff and disconnect/requeue handling. Native Windows clien
 Two full US-menu instances paired through this backend, selected JP fighters
 and stages, completed two synchronized matches in the same room and returned
 to the menu. Private Host/Join remains independent of this service.
+
+## Discord queue announcements
+
+The optional channel-webhook integration posts only for real in-game searches.
+It tags Matchmaking and the selected region role, updates one active message
+per compatible regional queue, and closes alerts when searches end. No AI or
+manual matchmaking commands are included. The native game carries no Discord
+credentials. See [setup, Lacus avatar and delivery limits](../../docs/Discord-Quick-Match.md).
+
+Run `node --test core.test.mjs discord.test.mjs` to verify queue and webhook
+behavior without sending real messages. Missing webhook configuration leaves
+matchmaking operational and notifications disabled.

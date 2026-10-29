@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { DiscordQueueAnnouncer } from "./discord.mjs";
 import { LobbyCore, PROTOCOL, COMPATIBILITY, SUPPORTED_BUILDS, REGIONS } from "./core.mjs";
 function json(value, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
@@ -19,6 +20,8 @@ export class Matchmaker extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.ctx = ctx;
+    this.discord = new DiscordQueueAnnouncer({ storage: ctx.storage,
+      queue: () => this.core(false).waiting("any",null).map(peer => peer.data), env });
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
   peers() {
@@ -38,7 +41,7 @@ export class Matchmaker extends DurableObject {
     }, 200)));
   }
   async schedule(core) {
-    if (core.needsAlarm()) {
+    if (core.needsAlarm() || await this.discord.needsAlarm()) {
       const current = await this.ctx.storage.getAlarm();
       if (current === null || current > Date.now() + 15000)
         await this.ctx.storage.setAlarm(Date.now() + 15000);
@@ -83,6 +86,9 @@ export class Matchmaker extends DurableObject {
   }
   async webSocketError(socket) { await this.webSocketClose(socket); }
   async alarm() {
-    const core = this.core(); core.sweep(); core.broadcastCounts(); await this.schedule(core);
+    const core = this.core(); core.sweep(); core.broadcastCounts();
+    // Notification delivery must never block queue messages or P2P gameplay.
+    try { await this.discord.tick(); } catch { /* Retry on the next scheduled queue alarm. */ }
+    await this.schedule(this.core());
   }
 }

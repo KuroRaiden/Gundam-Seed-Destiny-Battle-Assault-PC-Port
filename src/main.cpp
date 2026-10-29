@@ -38,11 +38,16 @@ int main(int argc, char** argv) {
     options.builtin_rom_sha1 = "8287d3d336d94a85c5cb22da0fd84918199197e1";
     options.diagnostic_replay_default = false;
     std::string us_rom, jp_rom, bios, save, join_code, import_output;
-    bool import_colors = false, import_stages = false;
+    bool import_colors = false, import_stages = false, prepare_only = false;
     int jp_debug_port = 0;
     std::vector<char*> args{argv[0]};
     for (int i = 1; i < argc; ++i) {
         const std::string flag = argv[i];
+        if (flag == "--prepare-game-assets") {
+            prepare_only = true;
+            continue;
+        }
+
         if (flag == "--import-jp-color-previews" && i + 1 < argc) {
             import_output = argv[++i];
             import_colors = true;
@@ -81,6 +86,7 @@ int main(int argc, char** argv) {
         save = (std::filesystem::absolute(argv[0]).parent_path() / "local-vs-jp.sav").string();
     else
         save += ".jp-local.sav";
+    const char* startup_phase = "startup";
     try {
         const auto base = std::filesystem::absolute(argv[0]).parent_path();
         const auto art = base / "assets" / "destiny-selection.bin";
@@ -89,13 +95,28 @@ int main(int argc, char** argv) {
                           import_stages);
             return 0;
         }
-        if (!std::filesystem::is_regular_file(art))
+        if (!std::filesystem::is_regular_file(art)) {
+            startup_phase = "JP character selection";
+            std::fprintf(stderr, "startup: preparing %s assets locally...\n", startup_phase);
+            std::fflush(stderr);
             import_jp_art(base, jp_rom, bios, art);
+        }
         const auto stages = base / "assets" / "destiny-stages.bin";
-        if (!std::filesystem::is_regular_file(stages))
+        if (!std::filesystem::is_regular_file(stages)) {
+            startup_phase = "JP stage previews";
+            std::fprintf(stderr, "startup: preparing %s locally...\n", startup_phase);
+            std::fflush(stderr);
             import_jp_art(base, jp_rom, bios, stages, false, true);
+        }
+        startup_phase = "US Training font";
         seed::UsTrainingArt::prepare(std::filesystem::u8path(us_rom),
                                      base / "assets" / "us-training-menu.bin");
+        if (prepare_only) {
+            std::fprintf(stderr, "startup: local game assets prepared successfully.\n");
+            return 0;
+        }
+        startup_phase = "game startup";
+
         if (!join_code.empty())
             seed::queue_game_invite(join_code);
         seed::configure_local_vs(options,
@@ -103,7 +124,7 @@ int main(int argc, char** argv) {
                                      "destiny-selection.bin",
                                  jp_rom, bios, save, jp_debug_port);
     } catch (const std::exception& error) {
-        std::fprintf(stderr, "%s\n", error.what());
+        std::fprintf(stderr, "startup_failure: %s: %s\n", startup_phase, error.what());
         return 2;
     }
     return gbarecomp::run_game(int(args.size()), args.data(), options);

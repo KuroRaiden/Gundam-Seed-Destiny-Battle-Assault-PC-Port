@@ -1,0 +1,70 @@
+# Lacus Quick Match announcements
+
+The existing matchmaking Worker sends genuine waiting-queue announcements to
+`#quick-match` through a channel-scoped incoming webhook. No Discord application,
+bot token, AI model, Gateway connection, privileged intent, slash command, or
+separate matchmaking queue is required.
+
+The first alert waits 15 seconds so instant matches and cancelled searches do
+not ping the server. It mentions **Matchmaking** and the region explicitly chosen
+in the game: **NA**, **SA**, **EU**, **AS**, **AF**, or **OC**. Any region mentions
+only Matchmaking. There is one active announcement per selected region and game
+compatibility group. Counts update by editing that message without re-pinging;
+when the search ends, the message is marked closed. Notifications are limited
+to one new alert per 30 seconds globally and three minutes per region/build
+and per source-IP hash. Normal queue alarms update counts about every 15 seconds.
+
+The alert never publishes IP addresses, game names chosen by players, invitation
+codes, or match keys. Incompatible game builds are counted separately. Discord
+cannot hold up gameplay or allocate a second opponent; notification HTTP work
+runs only in the auxiliary alarm handler, outside the game and queue messages.
+
+## Connect the channel
+
+1. In the requested server, edit **#quick-match → Integrations → Webhooks**.
+   Create an incoming webhook named **Lacus - Quick Match**, assigned to that
+   channel. Creation requires the server's Manage Webhooks permission.
+2. Copy its private webhook URL. Keep it out of chat, source files, issue
+   comments, release files and screenshots.
+3. Copy the IDs of the Matchmaking and six region roles. Role IDs are not
+   credentials. Each role must be mentionable for webhook role pings to notify
+   members; individual members' notification preferences still apply.
+4. Generate the avatar locally with `tools/export_discord_avatar.py --rom <your
+   supported JP ROM> --out <E-work-folder>/lacus-quick-match.png`. This decodes
+   the original Lacus portrait (JP resource group 20, entries 88–90). The PNG is
+   private generated art and must never be committed or bundled in a portable.
+5. Run `tools/Set-DiscordQueueWebhook.ps1` in PowerShell 7 with the installed
+   Node/Wrangler paths if needed. It prompts privately for the webhook URL,
+   verifies the requested channel, applies the Lacus avatar, prompts for role
+   IDs, stores configuration through Wrangler's protected stdin, and deploys
+   the Worker. No test role ping is sent by the setup script.
+
+The helper defaults to this project's #quick-match channel ID. A fork can pass
+`-ExpectedChannelId`, `-AvatarPath`, `-NodePath` and `-WranglerPath` explicitly.
+Existing Workers Scripts write authorization is needed to store these secrets
+and deploy; no additional Discord account access is granted to Cloudflare.
+
+Worker secrets: `DISCORD_WEBHOOK_URL`, `DISCORD_MATCHMAKING_ROLE_ID`,
+`DISCORD_REGION_ROLE_IDS` (JSON map keyed `na`, `sa`, `eu`, `as`, `af`, `oc`),
+and `DISCORD_ALERTS_ENABLED=true`. Missing or invalid configuration disables
+announcements without affecting matchmaking. Set the enable flag to `false`
+to stop future alerts; revoke the webhook in Discord to invalidate its URL.
+
+## Delivery and verification
+
+Discord rate limits are honored. PATCH operations can be retried using their
+known message IDs. Discord does not document an idempotency key for webhook
+POSTs: after an ambiguous timeout or process restart, that search's ping is
+suppressed instead of being posted twice. A notification may be missed in that
+case; the real in-game queue remains accurate and playable.
+
+The Node tests mock Discord; they never post to the server. They cover all seven
+region cases, live count edits, closed searches, safe mentions, cooldowns,
+reconstruction, cancellation races, rate limits and uncertain-delivery handling.
+The local workerd integration checks that original queue matching, invitations
+and compatibility isolation still work. A live Discord smoke test is required
+after the private webhook and roles are configured.
+
+References: [Discord webhooks](https://docs.discord.com/developers/resources/webhook),
+[allowed role mentions](https://docs.discord.com/developers/resources/message#allowed-mentions-object),
+[Discord rate limits](https://docs.discord.com/developers/topics/rate-limits).

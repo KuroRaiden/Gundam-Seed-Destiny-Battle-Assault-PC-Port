@@ -35,6 +35,15 @@ void MsColorsUi::tick() {
                 "Preview preparation failed. Check ms-preview-import.log and your game files.";
     }
 }
+void MsColorsUi::prepare(const std::string& jp_rom, const std::string& bios) {
+    const auto output = folder_ / "assets" / "ms-color-previews.bin";
+    if (import_.start(folder_ / "GundamSeedRecomp.exe",
+                      {L"--import-jp-color-previews", output.wstring(), L"--jp-rom", wide(jp_rom),
+                       L"--bios", wide(bios)},
+                      folder_ / "ms-preview-import.log", status_))
+        status_ = "Preparing four sprites for each of the 27 suits. You can use the other "
+                  "launcher pages while this runs.";
+}
 void MsColorsUi::choose() {
     if (previews_.empty())
         return;
@@ -77,15 +86,8 @@ void MsColorsUi::draw(SDL_Renderer* renderer, bool verified, const std::string& 
         ImGui::TextWrapped("Prepare the battle-sprite previews from your own Japanese ROM and "
                            "BIOS. This only needs to run once.");
         ImGui::BeginDisabled(!verified || busy());
-        if (ImGui::Button("Prepare previews", ImVec2(210, 42))) {
-            const auto output = folder_ / "assets" / "ms-color-previews.bin";
-            if (import_.start(folder_ / "GundamSeedRecomp.exe",
-                              {L"--import-jp-color-previews", output.wstring(), L"--jp-rom",
-                               wide(jp_rom), L"--bios", wide(bios)},
-                              folder_ / "ms-preview-import.log", status_))
-                status_ = "Preparing 27 suit previews... You can use the other launcher pages "
-                          "while this runs.";
-        }
+        if (ImGui::Button("Prepare previews", ImVec2(210, 42)))
+            prepare(jp_rom, bios);
         ImGui::EndDisabled();
         if (!verified)
             ImGui::TextWrapped("Verify your Japanese ROM and BIOS in Game files first.");
@@ -116,20 +118,38 @@ void MsColorsUi::draw(SDL_Renderer* renderer, bool verified, const std::string& 
     if (select)
         choose();
     const auto& preview = previews_.at(fighter_);
+    const int count = int(preview.sprites.size());
+    sprite_ = std::clamp(sprite_, 0, count - 1);
+    const auto& sprite = preview.sprites[sprite_];
+
     if (repaint_) {
         release_texture();
         texture_ = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC,
-                                     preview.width, preview.height);
+                                     sprite.width, sprite.height);
         if (texture_) {
-            const auto pixels = preview.rgba(colors_);
-            SDL_UpdateTexture(texture_, nullptr, pixels.data(), preview.width * 4);
+            const auto pixels = sprite.rgba(colors_);
+            SDL_UpdateTexture(texture_, nullptr, pixels.data(), sprite.width * 4);
             SDL_SetTextureBlendMode(texture_, SDL_BLENDMODE_BLEND);
             SDL_SetTextureScaleMode(texture_, SDL_SCALEMODE_NEAREST);
         }
         repaint_ = false;
     }
-    ImGui::BeginChild("MS preview", ImVec2(345, 490), ImGuiChildFlags_Borders);
+    ImGui::BeginChild("MS preview", ImVec2(345, 540), ImGuiChildFlags_Borders);
     ImGui::TextUnformatted("LIVE PREVIEW");
+    ImGui::BeginDisabled(count < 2);
+    if (ImGui::SmallButton("< Previous")) {
+        sprite_ = (sprite_ + count - 1) % count;
+        repaint_ = true;
+    }
+    ImGui::SameLine();
+    ImGui::Text("%d / %d", sprite_ + 1, count);
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Next >")) {
+        sprite_ = (sprite_ + 1) % count;
+        repaint_ = true;
+    }
+    ImGui::EndDisabled();
+
     const auto origin = ImGui::GetCursorScreenPos();
     const ImVec2 area{300, 285};
     auto* draw = ImGui::GetWindowDrawList();
@@ -140,8 +160,8 @@ void MsColorsUi::draw(SDL_Renderer* renderer, bool verified, const std::string& 
                 ((x / 15 + y / 15) & 1) ? IM_COL32(27, 35, 49, 255) : IM_COL32(20, 27, 39, 255));
     if (texture_) {
         const float zoom =
-            std::max(1.0f, std::floor(std::min(area.x / preview.width, area.y / preview.height)));
-        const ImVec2 size{preview.width * zoom, preview.height * zoom};
+            std::max(1.0f, std::floor(std::min(area.x / sprite.width, area.y / sprite.height)));
+        const ImVec2 size{sprite.width * zoom, sprite.height * zoom};
         const ImVec2 pos{origin.x + (area.x - size.x) / 2, origin.y + (area.y - size.y) / 2};
         draw->AddImage((ImTextureID)(intptr_t)texture_, pos, {pos.x + size.x, pos.y + size.y});
     }
@@ -163,7 +183,7 @@ void MsColorsUi::draw(SDL_Renderer* renderer, bool verified, const std::string& 
     ImGui::TextWrapped("Click a swatch to edit its RGB values or open the color picker.");
     ImGui::EndChild();
     ImGui::SameLine();
-    ImGui::BeginChild("MS swatches", ImVec2(0, 490), ImGuiChildFlags_Borders);
+    ImGui::BeginChild("MS swatches", ImVec2(0, 540), ImGuiChildFlags_Borders);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
     const char* groups[]{"Main colors", "Details / effects 1", "Details / effects 2"};
     for (unsigned bank = 0; bank < 3; ++bank) {
@@ -184,8 +204,8 @@ void MsColorsUi::draw(SDL_Renderer* renderer, bool verified, const std::string& 
                 ImGui::PopStyleColor();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Swatch %u%s", index,
-                                  std::find(preview.indices.begin(), preview.indices.end(),
-                                            index) == preview.indices.end()
+                                  std::find(sprite.indices.begin(), sprite.indices.end(), index) ==
+                                          sprite.indices.end()
                                       ? " (used in other poses/effects)"
                                       : "");
             ImGui::PopID();
@@ -212,6 +232,14 @@ void MsColorsUi::draw(SDL_Renderer* renderer, bool verified, const std::string& 
     if (profiles_ != saved_)
         ImGui::TextColored({1, 0.8f, 0.35f, 1},
                            "Unsaved color changes. Launching also saves them.");
+    if (count < int(kMsPreviewSpriteCount)) {
+        ImGui::TextWrapped("This older cache contains one sprite per suit. Prepare four sprites "
+                           "to inspect more poses. Your saved colors are preserved.");
+        ImGui::BeginDisabled(!verified || busy());
+        if (ImGui::Button("Prepare four sprites", {220, 38}))
+            prepare(jp_rom, bios);
+        ImGui::EndDisabled();
+    }
     if (!status_.empty())
         ImGui::TextWrapped("%s", status_.c_str());
 }

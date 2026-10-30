@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { DiscordQueueAnnouncer } from "./discord.mjs";
+import { DiscordQueueAnnouncer, discordHealth } from "./discord.mjs";
 import { LobbyCore, PROTOCOL, COMPATIBILITY, SUPPORTED_BUILDS, REGIONS } from "./core.mjs";
 function json(value, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
@@ -10,8 +10,9 @@ export default {
     if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
     if (url.pathname === "/" || url.pathname === "/health")
       return json({ service: "seedpc-matchmaking", status: "ok", protocol: PROTOCOL,
-                    compatibility: COMPATIBILITY, supported_builds: [...SUPPORTED_BUILDS], gameplay_relay: false });
-    if (!["/v1/connect", "/v1/status"].includes(url.pathname)) return json({ error: "not_found" }, 404);
+                    compatibility: COMPATIBILITY, supported_builds: [...SUPPORTED_BUILDS], gameplay_relay: false,
+                    discord_alerts: discordHealth(env) });
+    if (!["/v1/connect", "/v1/status", "/health/discord"].includes(url.pathname)) return json({ error: "not_found" }, 404);
     const object = env.MATCHMAKER.get(env.MATCHMAKER.idFromName("public-lobby-v1"));
     return object.fetch(request);
   }
@@ -49,6 +50,7 @@ export class Matchmaker extends DurableObject {
   }
   async fetch(request) {
     const url = new URL(request.url);
+    if(url.pathname==="/health/discord")return json(await this.discord.diagnostics());
     const core = this.core(); core.sweep();
     if (url.pathname === "/v1/status") {
       const region = url.searchParams.get("region") ?? "any";

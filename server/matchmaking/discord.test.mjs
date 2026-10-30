@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { COMPATIBILITY } from "./core.mjs";
-import { DiscordQueueAnnouncer, DISCORD_STATE_KEY, discordConfig } from "./discord.mjs";
+import { DiscordQueueAnnouncer, DISCORD_STATE_KEY, discordConfig, discordHealth } from "./discord.mjs";
 const regions = ["na","sa","eu","as","af","oc"];
 const roleIds = Object.fromEntries(regions.map((region,index)=>[region,`20000000000000000${index}`]));
 const env = { DISCORD_ALERTS_ENABLED:"true", DISCORD_WEBHOOK_URL:"https://discord.com/api/webhooks/300000000000000001/private-test-webhook-token-1234567890", DISCORD_MATCHMAKING_ROLE_ID:"100000000000000001",
@@ -27,12 +27,50 @@ for (const region of ["any",...regions]) test(`only Matchmaking and selected ${r
   assert.deepEqual(payload.allowed_mentions.users,[]);
   assert(f.calls[0].url.endsWith("?wait=true"));
   assert.equal(f.calls[0].options.headers.Authorization,undefined);
+  assert.equal(f.calls[0].options.redirect,"manual");
 });
 test("disabled or invalid configuration never performs Discord requests",async()=>{
   assert.equal(discordConfig({}),null);
   assert.throws(()=>discordConfig({...env,DISCORD_REGION_ROLE_IDS:"{}"}));
   const f=fixture();const bot=new DiscordQueueAnnouncer({storage:f.storage,queue:()=>f.queued,env:{},request:()=>{throw Error("should not send");}});
   await bot.tick();assert.equal(await bot.needsAlarm(),false);
+});
+
+test("configuration health identifies invalid settings without exposing credentials",()=>{
+  assert.deepEqual(discordHealth({}),{status:"disabled"});
+  assert.deepEqual(discordHealth(env),{status:"ready"});
+  for (const [key,value,reason] of [
+    ["DISCORD_WEBHOOK_URL","private-malformed-webhook","discord_webhook_invalid"],
+    ["DISCORD_MATCHMAKING_ROLE_ID","bad-role","discord_matchmaking_role_invalid"],
+    ["DISCORD_REGION_ROLE_IDS","{}","discord_region_roles_invalid"]]) {
+    const health=discordHealth({...env,[key]:value});
+    assert.deepEqual(health,{status:"configuration_error",reason});
+    assert.equal(JSON.stringify(health).includes(value),false);
+    assert.equal(JSON.stringify(health).includes(env.DISCORD_WEBHOOK_URL),false);
+  }
+});
+
+test("readiness probes are cached and never post or expose webhook metadata",async()=>{
+  const f=fixture();let calls=0;
+  const bot=new DiscordQueueAnnouncer({storage:f.storage,queue:()=>[],env,now:()=>20000,
+    request:async(url,options)=>{
+      calls++;assert.equal(options.method,"GET");assert.match(options.headers["User-Agent"],/^DiscordBot /);
+      return Response.json({id:"private-webhook-id",channel_id:"private-channel",token:"private-token"});
+    }});
+  const result=await bot.diagnostics();assert.equal(result.webhook.status,"reachable");
+  assert.equal(result.delivery.status,"not_attempted");await bot.diagnostics();assert.equal(calls,1);
+  assert.equal(JSON.stringify(result).includes("private"),false);
+});
+
+test("delivery diagnostics retain safe HTTP codes without response bodies or credentials",async()=>{
+  const f=fixture();f.response(()=>Response.json({code:50035,message:env.DISCORD_WEBHOOK_URL},{status:400}));
+  const bot=f.create();await bot.tick();
+  // Seed a cached probe so this check performs no extra network request.
+  await f.storage.put("discord-webhook-probe-v1",{status:"reachable",checked_at:15001});
+  const result=await bot.diagnostics();
+  assert.equal(result.delivery.http_status,400);assert.equal(result.delivery.discord_code,50035);
+  assert.equal(JSON.stringify(result).includes(env.DISCORD_WEBHOOK_URL),false);
+  assert.equal(f.calls.length,1);
 });
 test("instant matches, cancelled searches and short waits never ping",async()=>{
   const f=fixture();f.clock(14000);await f.create().tick();assert.equal(f.calls.length,0);

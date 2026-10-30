@@ -66,3 +66,4 @@ __pycache__/
 /server/matchmaking/node_modules/
 /server/matchmaking/.wrangler/
 /server/matchmaking/.dev.vars
+/.wrangler/

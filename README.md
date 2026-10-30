@@ -13,10 +13,12 @@ character select and battle-system injection** supplies the expanded combat.
 
 - **Local VS:** two players, two controllers/keyboards, one screen and one game instance.
 - **Quick Match:** casual pairing with a live waiting-player count and region choice in the game's **VS Mode**. Private Host/Join codes remain available; connected players keep their room for rematches.
+- **Discord announcements:** Lacus posts waiting Quick Match searches with the selected region and announces GitHub releases. [Join the server](https://discord.gg/jX5D5WNsps).
 - **Black sprite outline:** a simple one-pixel black border around battle fighters. Toggle **Black sprite outlines** and adjust **Outline opacity** (0-100%) on the launcher's **Play** page; saved preferences affect only your display online.
 - **Stage select:** 25 native JP stages plus Random, with previews in Local VS, Online VS and Training.
 - **Japanese roster and combat:** JP mobile suits, alternate colors and hidden variants behind the US menus.
-- **Launcher palette editor:** edit MS colors with a live preview; custom palettes also sync online.
+- **Launcher palette editor:** edit MS colors while cycling through four battle-sprite poses; custom palettes also sync online.
+- **Play page:** display scaling and the Discord link are beside the launch controls. First-launch asset preparation stays visible in the launcher.
 - **Online VS:** rollback, automatic NAT hole punching, join codes/links and unlimited rematches in the same room.
 - **Training:** JP practice mode with the US-font English pause menu, **F5 frame meter**, **F6 hitbox/hurtbox viewer**, and **F2 save / F3 load** for practice situations.
 - **Launcher updates:** version display and GitHub release checks, with verified in-place updates that preserve player settings and saves.

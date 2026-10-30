@@ -8,11 +8,14 @@ import struct
 from PIL import Image
 from import_jp_assets import resource_offsets, decode_le
 
+PORTRAITS={"classic":76,"pink-dress":80,"space-suit":84,"uniform":88}
+
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rom",type=Path,required=True)
     parser.add_argument("--out",type=Path,required=True)
+    parser.add_argument("--portrait",choices=PORTRAITS,default="uniform")
     args=parser.parse_args()
     rom=args.rom.read_bytes()
     if hashlib.sha256(rom).hexdigest()!="cc310814ce3a134a3d2975bbe0186603a298a5ee15e1795dedb25f07787851eb":
@@ -21,17 +24,21 @@ def main():
     def resource(index):
         begin,end=offsets[index:index+2]
         return decode_le(rom,begin)[0] if rom[begin:begin+2]==b"Le" else rom[begin:end]
-    tiles,tilemap,palette=resource(88),resource(89),resource(90)
+    first=PORTRAITS[args.portrait]
+    tiles,tilemap,palette=resource(first),resource(first+1),resource(first+2)
     colors=struct.unpack("<32H",palette)
     columns,rows=struct.unpack_from("<II",tilemap)
-    if not 1<=columns<=64 or not 1<=rows<=64:raise ValueError("Invalid Lacus tilemap")
+    if not 1<=columns<=64 or not 1<=rows<=64 or len(tilemap)!=16+columns*rows*2:
+        raise ValueError("Invalid Lacus tilemap")
     portrait=Image.new("RGBA",(columns*8,rows*8))
     for y in range(rows*8):
         for x in range(columns*8):
-            entry=struct.unpack_from("<H",tilemap,8+((y//8)*columns+x//8)*2)[0]
+            entry=struct.unpack_from("<H",tilemap,16+((y//8)*columns+x//8)*2)[0]
             tile=entry&1023
-            # These two native map entries are transparent padding.
-            if tile <= 1:continue
+            # This shop map uses one-based tile IDs; ID 1 is the blank tile.
+            if tile == 0:continue
+            tile-=1
+            if (tile+1)*64>len(tiles):raise ValueError("Lacus tile exceeds its resource")
             tx=7-x%8 if entry&1024 else x%8
             ty=7-y%8 if entry&2048 else y%8
             index=tiles[tile*64+ty*8+tx]
@@ -39,9 +46,8 @@ def main():
             if index>=len(colors):raise ValueError("Invalid Lacus palette index")
             color=colors[index]
             portrait.putpixel((x,y),tuple(((color>>s)&31)*255//31 for s in (0,5,10))+(255,))
-    # Export the original face/shoulders as a readable square avatar. The
-    # full shop tilemap also carries detached arm/hair pieces outside this area.
-    portrait=portrait.crop((columns*8*45//100,0,columns*8,rows*8*2//3))
+    # Native maps have a 16-byte header. Starting at byte 8 shifted four tiles
+    # into the next row and split the hair/shoulders into detached fragments.
     box=portrait.getbbox()
     if box is None:raise ValueError("No Lacus portrait pixels decoded")
     portrait=portrait.crop(box)

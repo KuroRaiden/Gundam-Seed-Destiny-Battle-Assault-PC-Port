@@ -31,7 +31,10 @@ runs only in the auxiliary alarm handler, outside the game and queue messages.
    members; individual members' notification preferences still apply.
 4. Generate the avatar locally with `tools/export_discord_avatar.py --rom <your
    supported JP ROM> --out <E-work-folder>/lacus-quick-match.png`. This decodes
-   the original Lacus portrait (JP resource group 20, entries 88–90). The PNG is
+   the original Lacus portrait (JP resource group 20, entries 88–90 by default).
+   `--portrait classic`, `pink-dress`, `space-suit` or `uniform` selects another
+   original shop portrait. Maps have a 16-byte header and one-based tile IDs.
+   The PNG is
    private generated art and must never be committed or bundled in a portable.
 5. Run `tools/Set-DiscordQueueWebhook.ps1` in PowerShell 7 with the installed
    Node/Wrangler paths if needed. It prompts privately for the webhook URL,
@@ -64,6 +67,39 @@ reconstruction, cancellation races, rate limits and uncertain-delivery handling.
 The local workerd integration checks that original queue matching, invitations
 and compatibility isolation still work. A live Discord smoke test is required
 after the private webhook and roles are configured.
+
+Run `node tools/verify_discord_worker.mjs <Wrangler-tooling-directory>` to check
+the native Workers fetch path with outbound requests intercepted locally. This
+checks the readiness probe, initial announcement and closure edit without
+posting to Discord. Workers requires a wrapped global `fetch` when it is stored
+on a class, and supports `redirect: "manual"` rather than `"error"`. Redirects
+are returned without following them, keeping the webhook token on Discord.
+
+`GET /health` reports whether Discord configuration is ready, disabled, or
+invalid. `GET /health/discord` also checks webhook reachability and reports the
+last delivery's fixed status, method and HTTP/Discord error codes. Neither
+endpoint returns credentials, message contents, webhook metadata, player names,
+IP addresses or invitation codes. Readiness probes are read-only and cached
+for one minute; they do not post a message or ping roles. A `not_attempted`
+delivery means no queue announcement has reached the HTTP transport yet.
+
+## GitHub release announcements
+
+Release notices use a separate incoming webhook in `#announcments`, with the
+astronaut shop portrait selected for **Lacus - Launcher Updates**. The queue
+webhook retains the profile picture selected by the server owner.
+
+The repository's GitHub webhook sends **Releases** events as `application/json`
+to the release webhook URL with `/github` appended. SSL verification and Active
+are enabled. The private posting URL lives in GitHub's webhook configuration;
+it must never be committed or included in a portable build. Discord's built-in
+GitHub-compatible endpoint formats release announcements. This connection does
+not need another service or a recurring polling job.
+
+Manage this under **Repository Settings → Webhooks** and inspect **Recent
+Deliveries** after publishing a release. The release event family includes
+release creation, editing, publication, unpublishing and deletion; Discord
+decides which supported actions to display.
 
 References: [Discord webhooks](https://docs.discord.com/developers/resources/webhook),
 [allowed role mentions](https://docs.discord.com/developers/resources/message#allowed-mentions-object),

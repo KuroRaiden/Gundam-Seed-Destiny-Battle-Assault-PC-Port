@@ -61,3 +61,21 @@ Example host check (use a scratch output folder):
 $env:SDL_AUDIO_DRIVER='dummy'
 ..\..\work\build\seed-sdl3\Release\seed_sdl3_host_tests.exe app/assets/destiny-selection.bin '../../work/sdl3-validation/jp-render.png'
 ```
+
+## Fullscreen selector alignment
+
+The SDL3 current-output query reports the letterboxed content size while
+logical presentation is enabled. Treating that as the physical drawable lost
+the side/top offset, revealing the stock US selector behind the JP compositor.
+The host now queries the physical output and SDL's authoritative logical
+presentation rectangle, retaining half-pixel offsets for odd dimensions.
+
+Both overlay backends project rectangle corners independently. The software
+backend snaps shared edges instead of truncating each run's width/height,
+preventing gaps between opaque JP pixel runs at fractional scales.
+
+seed_sdl3_host_tests checks the actual rendered pixels against the local donor
+selector, scans the entire output for exposed guest pixels and painted bars,
+and tests wide/tall/odd windows, borderless/exclusive fullscreen, F1 restoration,
+stage select and returning to a window. The original 1280x720 reproduction
+failed before the correction with a missing 100-pixel horizontal offset.

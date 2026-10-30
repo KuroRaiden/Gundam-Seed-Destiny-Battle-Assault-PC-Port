@@ -5,6 +5,7 @@
 #endif
 #include "brand_icons.h"
 #include "host_window.h"
+#include "combat_host.h"
 #include "host_overlay.h"
 #include "jp_selection.h"
 #include "jp_selection_overlay.h"
@@ -25,6 +26,8 @@ void require(bool value, const char* message) {
 const std::vector<std::uint16_t>* pixels = nullptr;
 std::filesystem::path capture;
 unsigned captures = 0;
+std::string display_case = "windowed";
+SDL_FRect expected_rectangle{};
 void render(gbarecomp::HostOverlay* out) {
     if (pixels)
         seed::draw_jp_selection(out, *pixels);
@@ -36,13 +39,29 @@ void render(gbarecomp::HostOverlay* out) {
     auto* surface = SDL_RenderReadPixels(renderer, nullptr);
     require(surface != nullptr, "Renderer capture failed");
     const auto layout = out->game_rect();
+    int physical_w = 0, physical_h = 0;
+    require(SDL_GetRenderOutputSize(renderer, &physical_w, &physical_h),
+            "Output size query failed");
+    std::printf("Case %s: physical=%dx%d, overlay drawable=%dx%d rect=%d,%d %dx%d, SDL "
+                "rect=%.1f,%.1f %.1fx%.1f\n",
+                display_case.c_str(), physical_w, physical_h, out->drawable_width(),
+                out->drawable_height(), layout.x, layout.y, layout.width, layout.height,
+                expected_rectangle.x, expected_rectangle.y, expected_rectangle.w,
+                expected_rectangle.h);
+    require(out->drawable_width() == physical_w && out->drawable_height() == physical_h,
+            "Overlay drawable differs from the physical output (letterbox offset lost)");
+    require(layout.x == int(std::floor(expected_rectangle.x)) &&
+                layout.y == int(std::floor(expected_rectangle.y)) &&
+                layout.width == int(expected_rectangle.w) &&
+                layout.height == int(expected_rectangle.h),
+            "Overlay is not aligned to SDL's native game rectangle");
     unsigned checked = 0;
     for (int y = 0; y < 160; y += 3)
         for (int x = 0; x < 240; x += 3) {
             const auto p = pixels ? (*pixels)[y * 240 + x] : 0;
             Uint8 r, g, b, a;
-            const int px = layout.x + int((x + .5) * layout.width / 240);
-            const int py = layout.y + int((y + .5) * layout.height / 160);
+            const int px = int(expected_rectangle.x + (x + .5) * expected_rectangle.w / 240);
+            const int py = int(expected_rectangle.y + (y + .5) * expected_rectangle.h / 160);
             require(SDL_ReadSurfacePixel(surface, px, py, &r, &g, &b, &a),
                     "Capture pixel read failed");
             require(pixels ? r == (p & 31) * 255 / 31 && g == ((p >> 5) & 31) * 255 / 31 &&
@@ -51,8 +70,31 @@ void render(gbarecomp::HostOverlay* out) {
                     "Renderer differs from expected framebuffer");
             ++checked;
         }
+    // The RGB(20,20,20) guest image is deliberately distinguishable from every
+    // RGB555 donor pixel. Scan the entire output, including the last row/column,
+    // so an uncovered edge cannot hide between the sparse color samples.
+    if (pixels) {
+        for (int y = 0; y < surface->h; ++y)
+            for (int x = 0; x < surface->w; ++x) {
+                Uint8 r, g, b, a;
+                require(SDL_ReadSurfacePixel(surface, x, y, &r, &g, &b, &a), "Edge read failed");
+                const bool inside = x + .5f >= expected_rectangle.x &&
+                                    y + .5f >= expected_rectangle.y &&
+                                    x + .5f < expected_rectangle.x + expected_rectangle.w &&
+                                    y + .5f < expected_rectangle.y + expected_rectangle.h;
+                require(!inside || r != 20 || g != 20 || b != 20,
+                        "US framebuffer leaked through the JP selector");
+                require(inside || (r == 7 && g == 11 && b == 20),
+                        "JP selector painted into a letterbox bar");
+            }
+    }
     if (!capture.empty())
-        require(SDL_SavePNG(surface, capture.string().c_str()), "Capture save failed");
+        require(SDL_SavePNG(surface,
+                            (capture.parent_path() / (capture.stem().string() + "-" + display_case +
+                                                      capture.extension().string()))
+                                .string()
+                                .c_str()),
+                "Capture save failed");
     SDL_DestroySurface(surface);
     ++captures;
     std::printf("Renderer verified: %u sampled %s pixels, %dx%d output.\n", checked,
@@ -67,6 +109,10 @@ int main(int argc, char** argv) {
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
         seed::JpSelectionArt art;
         art.load(argv[1]);
+        const auto stage_pack = std::filesystem::path(argv[1]).parent_path() / "destiny-stages.bin";
+        const bool stages = std::filesystem::is_regular_file(stage_pack);
+        if (stages)
+            art.load_stages(stage_pack);
         seed::LocalVsSelection selection;
         selection.jp_layout = true;
         selection.seats = {{{13, 0, false}, {22, 7, false}}};
@@ -146,10 +192,52 @@ int main(int argc, char** argv) {
         std::vector<std::uint8_t> framebuffer(240 * 160 * 3, 20);
         const auto* jp_pixels = pixels;
         pixels = nullptr;
+        auto native_surface = seed::suspend_menu_host();
+        seed::resume_menu_host();
+        require(SDL_GetRenderLogicalPresentationRect(native_surface.renderer, &expected_rectangle),
+                "Logical game rectangle query failed");
         window.present(framebuffer.data());
         pixels = jp_pixels;
         window.present(framebuffer.data());
         require(captures == 2, "Host overlay was not presented");
+        auto check_display = [&](const char* name, int width, int height, int fullscreen) {
+            display_case = name;
+            window.set_fullscreen(fullscreen);
+            if (!fullscreen)
+                require(SDL_SetWindowSize(native_surface.window, width, height),
+                        "Window resize failed");
+            require(SDL_SyncWindow(native_surface.window), "Window transition did not settle");
+            window.pump();
+            require(
+                SDL_GetRenderLogicalPresentationRect(native_surface.renderer, &expected_rectangle),
+                "Logical rectangle query failed");
+            window.present(framebuffer.data());
+        };
+        check_display("wide", 1280, 720, 0);
+        check_display("tall", 720, 1000, 0);
+        check_display("fractional", 1279, 719, 0);
+        check_display("fullscreen", 0, 0, 1);
+        // Opening a host UI temporarily disables SDL logical presentation.
+        // Its restoration must keep the selector aligned on the next frame.
+        for (unsigned i = 0; i < 2; ++i) {
+            SDL_Event key{};
+            key.type = SDL_EVENT_KEY_DOWN;
+            key.key.scancode = SDL_SCANCODE_F1;
+            key.key.key = SDLK_F1;
+            require(SDL_PushEvent(&key), "Movelist key injection failed");
+            window.pump();
+            window.present(framebuffer.data());
+        }
+        check_display("fullscreen-after-movelist", 0, 0, 1);
+        check_display("fullscreen-exclusive", 0, 0, 2);
+        check_display("windowed-again", 720, 480, 0);
+        if (stages) {
+            selection.stage_active = true;
+            selection.stage_cursor = 17;
+            pixels = &art.compose(selection);
+            check_display("fullscreen-stage", 0, 0, 1);
+            check_display("windowed-stage", 720, 480, 0);
+        }
         window.set_host_overlay(nullptr);
         window.set_linear_filter(true);
         require(window.linear_filter(), "Linear filter toggle failed");
@@ -190,7 +278,9 @@ int main(int argc, char** argv) {
         require(window.pump().quit, "SDL3 quit event was ignored");
         window.close();
         SDL_Quit();
-        std::puts("PASS: SDL3 JP rendering, audio startup/pause/resume/feed, independent virtual "
+        std::puts("PASS: JP selector/stage alignment, wide/tall/fractional windows, fullscreen "
+                  "transitions, "
+                  "movelist restoration, audio startup/pause/resume/feed, independent virtual "
                   "gamepads, hot-unplug and quit.");
         return 0;
     } catch (const std::exception& error) {

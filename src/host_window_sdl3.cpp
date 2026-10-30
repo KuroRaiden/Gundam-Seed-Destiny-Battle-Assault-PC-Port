@@ -462,6 +462,7 @@ struct Backend {
     int last_drawable_w = 0;
     int last_drawable_h = 0;
     PresentationLayout last_layout{};
+    SDL_FRect last_game_rect{}; // Exact SDL destination, including half-pixel letterbox offsets.
     void (*host_overlay)(HostOverlay*) = nullptr;
     bool anchor_top = false;      // portrait: image at the top edge
     bool insets_from_env = false; // GBARECOMP_SAFE_INSETS overrides platform
@@ -925,14 +926,15 @@ class OverlayBase : public HostOverlay {
             *dy = y;
             return;
         }
-        logical_point_to_presentation(b_->last_layout, b_->base_w, b_->base_h, x, y, dx, dy);
+        *dx = b_->last_game_rect.x + x * b_->last_game_rect.w / b_->base_w;
+        *dy = b_->last_game_rect.y + y * b_->last_game_rect.h / b_->base_h;
     }
 
   protected:
     float scale(OverlaySpace space) const {
         if (space == OverlaySpace::Drawable || b_->base_w <= 0)
             return 1.0f;
-        return static_cast<float>(b_->last_layout.width) / static_cast<float>(b_->base_w);
+        return b_->last_game_rect.w / static_cast<float>(b_->base_w);
     }
     const Backend* b_;
     std::uint32_t now_;
@@ -962,12 +964,17 @@ class SdlOverlay final : public OverlayBase {
     }
     void fill_rect(float x, float y, float w, float h, float /*rounding*/, OverlayColor c,
                    OverlaySpace s) override {
-        float ax, ay;
+        float ax, ay, bx, by;
         to_drawable(x, y, s, &ax, &ay);
-        const float k = scale(s);
+        to_drawable(x + w, y + h, s, &bx, &by);
         SDL_SetRenderDrawBlendMode(r_, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(r_, c.r, c.g, c.b, c.a);
-        const SDL_FRect rect{ax, ay, w * k, h * k};
+        // Snap shared edges, not widths. The software backend truncates each
+        // rectangle independently; fractional scales otherwise leave seams
+        // between the selector's opaque pixel runs.
+        const float left = std::ceil(ax - .5f), top = std::ceil(ay - .5f);
+        const float right = std::ceil(bx - .5f), bottom = std::ceil(by - .5f);
+        const SDL_FRect rect{left, top, right - left, bottom - top};
         SDL_RenderFillRect(r_, &rect);
     }
     void stroke_rect(float x, float y, float w, float h, float /*rounding*/, float thickness,
@@ -1078,13 +1085,13 @@ class ImGuiOverlay final : public OverlayBase {
                    OverlaySpace s) override {
         const float k = scale(s);
         const ImVec2 a = pt(x, y, s);
-        dl_->AddRectFilled(a, ImVec2(a.x + w * k, a.y + h * k), col(c), rounding * k);
+        dl_->AddRectFilled(a, pt(x + w, y + h, s), col(c), rounding * k);
     }
     void stroke_rect(float x, float y, float w, float h, float rounding, float thickness,
                      OverlayColor c, OverlaySpace s) override {
         const float k = scale(s);
         const ImVec2 a = pt(x, y, s);
-        dl_->AddRect(a, ImVec2(a.x + w * k, a.y + h * k), col(c), rounding * k, ImDrawFlags_None,
+        dl_->AddRect(a, pt(x + w, y + h, s), col(c), rounding * k, ImDrawFlags_None,
                      std::max(1.0f, thickness * k));
     }
     void fill_circle(float cx, float cy, float radius, OverlayColor c, OverlaySpace s) override {
@@ -1634,25 +1641,15 @@ PresentationLayout current_presentation_layout(Backend* b, int* out_w, int* out_
 #else
     PresentationLayout layout{};
     if (!b->expanded_view && !b->resize_driven_view) {
-        // Mirror SDL_SetRenderLogicalPresentation's letterbox so touch maps
-        // exactly.
-        if (!SDL_GetCurrentRenderOutputSize(b->renderer, &drawable_w, &drawable_h))
-            SDL_GetWindowSize(b->window, &drawable_w, &drawable_h);
-        if (drawable_w > 0 && drawable_h > 0) {
-            const float want = static_cast<float>(b->base_w) / b->base_h;
-            const float real = static_cast<float>(drawable_w) / drawable_h;
-            if (std::fabs(want - real) < 0.0001f) {
-                layout = {0, 0, drawable_w, drawable_h, 0};
-            } else if (want > real) {
-                const float scale = static_cast<float>(drawable_w) / b->base_w;
-                const int h = static_cast<int>(std::floor(b->base_h * scale));
-                layout = {0, (drawable_h - h) / 2, drawable_w, h, 0};
-            } else {
-                const float scale = static_cast<float>(drawable_h) / b->base_h;
-                const int w = static_cast<int>(std::floor(b->base_w * scale));
-                layout = {(drawable_w - w) / 2, 0, w, drawable_h, 0};
-            }
-        }
+        // SDL_GetCurrentRenderOutputSize reports the letterboxed content size,
+        // not the physical window. Using it here loses the surrounding bars and
+        // shifts host overlays over the guest framebuffer in fullscreen.
+        if (!SDL_GetRenderOutputSize(b->renderer, &drawable_w, &drawable_h))
+            SDL_GetWindowSizeInPixels(b->window, &drawable_w, &drawable_h);
+        SDL_FRect native_rect{};
+        if (SDL_GetRenderLogicalPresentationRect(b->renderer, &native_rect))
+            layout = {int(std::floor(native_rect.x)), int(std::floor(native_rect.y)),
+                      int(native_rect.w), int(native_rect.h), 0};
     } else {
         // Preserve the established renderer-output path for fixed-width
         // extended views (including MMZ). Resize-driven view uses the same
@@ -1683,6 +1680,11 @@ PresentationLayout current_presentation_layout(Backend* b, int* out_w, int* out_
         layout.height < drawable_h) {
         layout.y = std::min(b->safe_insets.top, drawable_h - layout.height);
     }
+    b->last_game_rect = {float(layout.x), float(layout.y), float(layout.width), float(layout.height)};
+#if !defined(__ANDROID__)
+    if (!b->expanded_view && !b->resize_driven_view)
+        SDL_GetRenderLogicalPresentationRect(b->renderer, &b->last_game_rect);
+#endif
     *out_w = drawable_w;
     *out_h = drawable_h;
     return layout;

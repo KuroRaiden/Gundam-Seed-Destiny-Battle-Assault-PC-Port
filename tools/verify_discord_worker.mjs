@@ -19,7 +19,7 @@ import {ReleaseAnnouncer,githubReleaseWebhook} from './server/matchmaking/github
 export default {async fetch(){
   const values=new Map();
   const storage={get:async key=>structuredClone(values.get(key)),
-    put:async(key,value)=>values.set(key,structuredClone(value))};
+    put:async(key,value)=>values.set(key,structuredClone(value)),delete:async key=>values.delete(key)};
   let queued=[{id:'test-player',since:0,ip:'test-ip-hash',build:COMPATIBILITY,region:'na'}];
   const env={DISCORD_ALERTS_ENABLED:'true',
     DISCORD_WEBHOOK_URL:'https://discord.com/api/webhooks/300000000000000001/private-test-webhook-token-1234567890',
@@ -45,7 +45,21 @@ export default {async fetch(){
   const releaseResult=await githubReleaseWebhook(new Request('https://example.com/v1/github/releases',
     {method:'POST',body:releasePayload,headers:{'X-GitHub-Event':'release','X-Hub-Signature-256':'sha256='+signature}}),
     releaseEnv,notice=>poster.publish(notice));
-  return Response.json({probe,final:await bot.diagnostics(),release:await releaseResult.json()});
+  const hotfix=JSON.parse(releasePayload);hotfix.action='edited';hotfix.release.name='0.1.6 fixed';
+  const zip='GundamSeedDestinyBattleAssaultPC-Portable-Windows-x64-0.1.6-fixed.zip';
+  hotfix.release.assets=[zip,zip+'.sha256'].map(name=>({name,state:'uploaded',size:123,
+    digest:'sha256:'+'b'.repeat(64),browser_download_url:
+      'https://github.com/KuroRaiden/Gundam-Seed-Destiny-Battle-Assault-PC-Port/releases/download/v0.1.6/'+name}));
+  const hotfixBody=JSON.stringify(hotfix);
+  const hotfixSignature=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',signingKey,
+    new TextEncoder().encode(hotfixBody))),value=>value.toString(16).padStart(2,'0')).join('');
+  const deliverHotfix=()=>githubReleaseWebhook(new Request('https://example.com/v1/github/releases',
+    {method:'POST',body:hotfixBody,headers:{'X-GitHub-Event':'release',
+      'X-Hub-Signature-256':'sha256='+hotfixSignature}}),releaseEnv,
+    notice=>new ReleaseAnnouncer({storage,env:releaseEnv}).publish(notice));
+  const hotfixResult=await deliverHotfix();const repeatedHotfix=await deliverHotfix();
+  return Response.json({probe,final:await bot.diagnostics(),release:await releaseResult.json(),
+    hotfix:await hotfixResult.json(),repeatedHotfix:await repeatedHotfix.json()});
 }};`},bundle:true,format:"esm",platform:"browser",write:false}).outputFiles[0].text;
 const requests=[];
 const options={modules:true,script,compatibilityDate:"2026-10-27",rootPath:process.cwd(),
@@ -64,14 +78,19 @@ try{
   assert.equal(result.probe.webhook.status,"reachable");
   assert.equal(result.final.delivery.status,"delivered");
   assert.equal(result.release.status,"sent");
-  assert.deepEqual(requests.map(request=>request.method),["GET","POST","PATCH","POST"]);
+  assert.equal(result.hotfix.status,"sent");
+  assert.equal(result.repeatedHotfix.message_id,result.hotfix.message_id);
+  assert.deepEqual(requests.map(request=>request.method),["GET","POST","PATCH","POST","POST"]);
   for(const request of requests)assert.match(request.userAgent,/^DiscordBot /);
   assert.equal(requests[1].body.allowed_mentions.roles.length,2);
   assert.deepEqual(requests[2].body.allowed_mentions,{parse:[]});
   assert.equal(requests[3].body.username,undefined);
   assert.equal(requests[3].body.avatar_url,undefined);
+  assert.equal(requests[4].body.embeds[0].title,"Release: 0.1.6 fixed");
+  assert.equal(requests[4].body.username,undefined);assert.equal(requests[4].body.avatar_url,undefined);
   console.log(JSON.stringify({passed:["Workers native fetch receiver","readiness probe",
     "NA queue announcement","cancelled queue closes message","no repeated role mention",
-    "GitHub HMAC verification","release post preserves selected Lacus identity"],
+    "GitHub HMAC verification","release post preserves selected Lacus identity",
+    "completed hotfix announcement","hotfix reconstruction duplicate protection"],
     realDiscordRequests:0}));
 }finally{await mf.dispose();}

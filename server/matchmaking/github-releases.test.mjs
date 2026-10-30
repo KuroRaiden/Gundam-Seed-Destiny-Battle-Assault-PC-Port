@@ -25,6 +25,16 @@ function fixture(){
     calls.push({url,options,body:JSON.parse(options.body)});return responder();}});
   return {storage,calls,create,response:fn=>responder=fn};
 }
+function fixedPayload(version="0.1.6-fixed"){
+  const zip=`GundamSeedDestinyBattleAssaultPC-Portable-Windows-x64-${version}.zip`;
+  return {...structuredClone(payload),action:"edited",release:{...payload.release,
+    name:version.replace("-"," "),assets:[zip,zip+".sha256"].map(name=>({name,state:"uploaded",
+      size:123,digest:"sha256:"+"b".repeat(64),
+      browser_download_url:`https://github.com/KuroRaiden/Gundam-Seed-Destiny-Battle-Assault-PC-Port/releases/download/${release.tag}/${name}`}))}};
+}
+async function deliver(body,bot){
+  return githubReleaseWebhook(await request(body),env,notice=>bot.publish(notice));
+}
 test("valid published event is authenticated and reduced to release fields",async()=>{
   let notice;const response=await githubReleaseWebhook(await request(),env,async item=>{
     notice=item;return {http_status:200,status:"sent"};});
@@ -72,4 +82,66 @@ test("uncertain delivery and interrupted delivery do not duplicate a notice",asy
 });
 test("pre-release notices are labelled",()=>{
   assert.match(releaseAnnouncement({...release,prerelease:true}).embeds[0].title,/^Pre-release:/);
+});
+
+test("completed edited hotfix is announced after the original release",async()=>{
+  const f=fixture(),bot=f.create();await deliver(payload,bot);
+  const response=await deliver(fixedPayload(),bot);
+  assert.equal((await response.json()).status,"sent");assert.equal(f.calls.length,2);
+  assert.equal(f.calls[1].body.embeds[0].title,"Release: 0.1.6 fixed");
+});
+
+test("repeated and concurrent hotfix edits survive reconstruction without duplicate posts",async()=>{
+  const f=fixture(),bot=f.create(),body=fixedPayload();
+  await Promise.all([deliver(body,bot),deliver(body,bot)]);
+  body.release.body="Updated instructions";await deliver(body,f.create());
+  assert.equal(f.calls.length,1);
+  assert.equal((await f.storage.get("github-release:123:0.1.6-fixed")).status,"sent");
+});
+
+test("each completed fixed revision is announced once",async()=>{
+  const f=fixture();await deliver(fixedPayload(),f.create());
+  await deliver(fixedPayload("0.1.6-fixed2"),f.create());
+  await deliver(fixedPayload("0.1.6-fixed2"),f.create());
+  assert.equal(f.calls.length,2);
+});
+
+test("publishing and editing the same completed hotfix share a delivery key",async()=>{
+  const f=fixture(),body=fixedPayload();
+  await deliver({...body,action:"published"},f.create());await deliver(body,f.create());
+  assert.equal(f.calls.length,1);
+});
+
+test("incomplete, temporary, mismatched or unverified hotfix files are ignored",async()=>{
+  const mutations=[
+    body=>body.release.assets.pop(),
+    body=>body.release.assets.push({...body.release.assets[0],name:"old.zip"}),
+    body=>body.release.assets[0].name+=".replacement-123",
+    body=>body.release.assets[1].name="other.zip.sha256",
+    body=>body.release.assets[0].state="new",
+    body=>body.release.assets[1].size=0,
+    body=>delete body.release.assets[0].digest,
+    body=>body.release.assets[1].browser_download_url="https://evil.example/checksum",
+    body=>body.release.name="0.1.6",
+    body=>body.release.tag_name="v0.1.5",
+    body=>body.release.draft=true,
+  ];
+  for(const mutate of mutations){
+    const body=fixedPayload();mutate(body);
+    assert.equal((await githubReleaseWebhook(await request(body),env,()=>assert.fail())).status,204);
+  }
+});
+
+test("ordinary release edits and unsupported actions stay silent",async()=>{
+  const f=fixture();await deliver(payload,f.create());
+  await deliver({...payload,action:"edited",release:{...payload.release,body:"Corrected typo"}},f.create());
+  assert.equal((await deliver({...fixedPayload(),action:"released"},f.create())).status,204);
+  assert.equal(f.calls.length,1);
+});
+
+test("hotfix delivery uncertainty also prevents duplicate announcements",async()=>{
+  const f=fixture();f.response(()=>{throw Error("timeout after sending");});
+  const response=await deliver(fixedPayload(),f.create());
+  assert.equal(response.status,202);
+  await deliver(fixedPayload(),f.create());assert.equal(f.calls.length,1);
 });

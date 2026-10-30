@@ -23,6 +23,32 @@ async function bodyBytes(request){
   const bytes=new Uint8Array(size);let at=0;
   for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length;}return bytes;
 }
+function completedFixedBuild(release){
+  // Asset replacements happen in stages. Announce only after the old assets
+  // are removed, both final files are uploaded, and the release is named.
+  const assets=release.assets;
+  if(!Array.isArray(assets) || assets.length!==2)return null;
+  const prefix="GundamSeedDestinyBattleAssaultPC-Portable-Windows-x64-";
+  const zip=assets.find(asset=>typeof asset?.name==="string" && asset.name.startsWith(prefix) &&
+    asset.name.endsWith(".zip"));
+  if(!zip)return null;
+  const version=zip.name.slice(prefix.length,-4);
+  if(!/^[0-9]+\.[0-9]+\.[0-9]+-fixed(?:[1-9][0-9]*)?$/.test(version) ||
+    version.split("-fixed")[0]!==release.tag_name.replace(/^v/,"") ||
+    String(release.name??"").trim().toLowerCase().replace(/\s+/g,"-")!==version)return null;
+  const checksum=assets.find(asset=>asset?.name===zip.name+".sha256");
+  const download=`https://github.com/${REPOSITORY}/releases/download/${encodeURIComponent(release.tag_name)}/`;
+  for(const asset of [zip,checksum]){
+    if(!asset || asset.state!=="uploaded" || !Number.isSafeInteger(asset.size) || asset.size<=0 ||
+      !/^sha256:[a-f0-9]{64}$/.test(asset.digest??"") ||
+      asset.browser_download_url!==download+asset.name)return null;
+  }
+  return version;
+}
+function announcementKey(release){
+  // Retain the original keys for ordinary releases already announced.
+  return `github-release:${release.id}${release.revision?":"+release.revision:""}`;
+}
 export async function githubReleaseWebhook(request,env,publish){
   if(request.method!=="POST")return new Response(null,{status:405});
   if(!releaseBridgeReady(env))return new Response("Release notifications unavailable",{status:503});
@@ -40,15 +66,19 @@ export async function githubReleaseWebhook(request,env,publish){
   catch{return new Response(null,{status:400});}
   if(payload.repository?.full_name?.toLowerCase()!==REPOSITORY.toLowerCase())
     return new Response(null,{status:403});
-  if(payload.action!=="published" || payload.release?.draft)return new Response(null,{status:204});
+  if(!["published","edited"].includes(payload.action) || payload.release?.draft)
+    return new Response(null,{status:204});
   const release=payload.release;
   if(!Number.isSafeInteger(release?.id) || release.id<=0 ||
       typeof release.html_url!=="string" || !release.html_url.startsWith(RELEASE_URL) ||
       typeof release.tag_name!=="string" || !release.tag_name || release.tag_name.length>100)
     return new Response(null,{status:400});
+  const revision=completedFixedBuild(release);
+  if(payload.action==="edited" && !revision)return new Response(null,{status:204});
   const notice={id:release.id,url:release.html_url,tag:release.tag_name,
     name:String(release.name||release.tag_name).slice(0,200),
     notes:String(release.body??"").slice(0,1800),prerelease:release.prerelease===true};
+  if(revision)notice.revision=revision;
   const result=await publish(notice);
   return Response.json(result,{status:result.http_status,headers:{"Cache-Control":"no-store"}});
 }
@@ -64,14 +94,15 @@ export class ReleaseAnnouncer{
     this.inFlight=new Map();
   }
   publish(release){
-    if(this.inFlight.has(release.id))return this.inFlight.get(release.id);
-    const job=this.publishOnce(release).finally(()=>this.inFlight.delete(release.id));
-    this.inFlight.set(release.id,job);return job;
+    const key=announcementKey(release);
+    if(this.inFlight.has(key))return this.inFlight.get(key);
+    const job=this.publishOnce(release).finally(()=>this.inFlight.delete(key));
+    this.inFlight.set(key,job);return job;
   }
   async publishOnce(release){
     const url=webhookUrl(this.env.DISCORD_RELEASE_WEBHOOK_URL);
     if(!url)return {status:"configuration_error",http_status:503};
-    const key=`github-release:${release.id}`,previous=await this.storage.get(key);
+    const key=announcementKey(release),previous=await this.storage.get(key);
     if(previous)return {status:previous.status,message_id:previous.message_id,
       http_status:previous.status==="sent"?200:202};
     // Persist before HTTP. A restart or ambiguous POST must not repeat a notice.

@@ -97,7 +97,7 @@ in GitHub's webhook configuration and the Worker's
 in the Worker's `DISCORD_RELEASE_WEBHOOK_URL` secret. Neither credential belongs
 in source or portable builds.
 
-The Worker verifies GitHub's HMAC-SHA256 signature and repository, accepts only
+The Worker verifies GitHub's HMAC-SHA256 signature and repository, accepts
 published releases, then posts an ordinary Discord webhook message. This keeps
 the chosen Lacus name and avatar: Discord's `/github` compatibility endpoint
 overrides both with GitHub branding. Pre-releases are labelled. Notifications
@@ -105,6 +105,16 @@ use a separate durable instance, deduplicate by release ID, and send no role
 mentions. A pending or uncertain POST is not automatically repeated after a
 restart. Rejected requests can be redelivered from GitHub's delivery page.
 There is no recurring polling job.
+
+Replacing a release with a completed `-fixed` or numbered `-fixed2` build also
+announces the update on GitHub's `edited` event. Only the two final portable ZIP
+and matching `.zip.sha256` assets may remain; both must be uploaded, have GitHub
+SHA-256 digests and canonical download links, and match the release tag and
+display name (for example, `v0.1.7` / `0.1.7 fixed`). Temporary upload names,
+incomplete replacements and ordinary note edits stay silent. Fixed builds use
+an additional version key, so each correction posts once even when its original
+release was already announced. Finish the asset replacement before editing the
+release title and notes to trigger the announcement.
 
 Manage this under **Repository Settings → Webhooks** and inspect **Recent
 Deliveries** after publishing a release. Signed ping requests test the

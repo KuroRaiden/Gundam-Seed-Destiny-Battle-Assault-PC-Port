@@ -44,7 +44,13 @@ function Get-RuntimeNames {
         'concrt140.dll', 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll',
         'msvcp140_atomic_wait.dll', 'msvcp140_codecvt_ids.dll', 'vccorlib140.dll',
         'vcruntime140.dll', 'vcruntime140_1.dll', 'vcruntime140_threads.dll',
-        'gamefiles/Game_and_Bios_Here.file')
+        'gamefiles/Game_and_Bios_Here.file',
+        'config/launcher-settings.ini', 'config/portable-manifest.json', 'config/Update-Portable.ps1',
+        'resource/Haro.ico', 'resource/LauncherShip.ico', 'resource/controllerdb.txt',
+        'resource/input-prompts/switch_dpad_up.png', 'resource/input-prompts/switch_dpad_down.png',
+        'resource/input-prompts/switch_dpad_left.png', 'resource/input-prompts/switch_dpad_right.png',
+        'resource/input-prompts/switch_button_a.png', 'resource/input-prompts/switch_button_b.png',
+        'resource/input-prompts/switch_button_l.png', 'resource/input-prompts/switch_button_r.png')
 }
 function Assert-ArchiveName([string]$Name) {
     if (-not $Name -or $Name.Contains('\') -or $Name.StartsWith('/') -or
@@ -79,14 +85,14 @@ function Expand-VerifiedPortable([string]$ZipPath, [string]$Destination, [string
                 throw 'Unexpected portable root or version.'
             }
             if ($entry.FullName.EndsWith('/')) {
-                if ($parts.Count -gt 2 -or ($parts.Count -eq 2 -and $parts[1] -cnotin @('licenses','gamefiles'))) {
+                if ($parts.Count -gt 3 -or ($parts.Count -ge 2 -and $parts[1] -cnotin @('licenses','gamefiles','config','resource','Logs')) -or ($parts.Count -eq 3 -and ($parts[1] -cne 'resource' -or $parts[2] -cnotin @('licenses','input-prompts')))) {
                     throw 'Unexpected archive directory.'
                 }
                 continue
             }
             if ($parts.Count -lt 2) { throw 'Archive has no portable root.' }
             $relative = [string]::Join('/', $parts[1..($parts.Count - 1)])
-            $license = $relative -cmatch '^licenses/[^/]+\.txt$'
+            $license = $relative -cmatch '^(?:resource/)?licenses/[^/]+\.txt$'
             if ($relative -cnotin (Get-RuntimeNames) -and -not $license) {
                 throw ('Package includes a non-runtime file: ' + $relative)
             }
@@ -95,7 +101,10 @@ function Expand-VerifiedPortable([string]$ZipPath, [string]$Destination, [string
             if ($total -gt 536870912) { throw 'Unpacked portable is too large.' }
             $files[$relative] = $entry
         }
-        if (-not $files.ContainsKey('portable-manifest.json')) { throw 'Portable manifest is missing.' }
+        $organized = $files.ContainsKey('config/portable-manifest.json')
+        $manifestName = if ($organized) { 'config/portable-manifest.json' } else { 'portable-manifest.json' }
+        if (-not $files.ContainsKey($manifestName)) { throw 'Portable manifest is missing.' }
+        if ($organized -and $files.ContainsKey('portable-manifest.json')) { throw 'Mixed portable layouts.' }
         [IO.Directory]::CreateDirectory($Destination) | Out-Null
         foreach ($relative in $files.Keys) {
             $entry = $files[$relative]
@@ -114,19 +123,24 @@ function Expand-VerifiedPortable([string]$ZipPath, [string]$Destination, [string
                 if ($copied -ne $entry.Length) { throw 'Incomplete archive member.' }
             } finally { $output.Dispose(); $source.Dispose() }
         }
-        $manifest = [IO.File]::ReadAllText((Join-Path $Destination 'portable-manifest.json')) | ConvertFrom-Json
+        $manifest = [IO.File]::ReadAllText((Join-Path $Destination $manifestName)) | ConvertFrom-Json
         foreach ($key in @('roms_included','bios_included','personal_data_included','game_asset_caches_included')) {
             if ($manifest.$key -isnot [bool] -or $manifest.$key) { throw 'Package is not runtime-only.' }
         }
         if ($manifest.version -cne $Version -or $manifest.source_commit -cnotmatch '^[a-f0-9]{40}$' -or
             $manifest.platform -cne 'windows-x64' -or
-            $manifest.distribution_format -cnotin @('seedpc-runtime-only-v3','seedpc-runtime-only-v4')) {
+            $manifest.distribution_format -cnotin @('seedpc-runtime-only-v3','seedpc-runtime-only-v4','seedpc-runtime-only-v5')) {
             throw 'Unsupported portable manifest or version.'
+        }
+        if ($organized -ne ($manifest.distribution_format -eq 'seedpc-runtime-only-v5')) { throw 'Portable layout does not match format.' }
+        foreach ($name in $files.Keys) {
+            if ($organized -and $name -in @('launcher-settings.ini','portable-manifest.json','Update-Portable.ps1','controllerdb.txt','Haro.ico','LauncherShip.ico')) { throw 'Legacy file in organized portable.' }
+            if (-not $organized -and ($name.StartsWith('config/') -or $name.StartsWith('resource/'))) { throw 'Organized file in legacy portable.' }
         }
         $members = @($manifest.files.PSObject.Properties)
         if ($members.Count -ne $files.Count - 1) { throw 'Manifest has missing or extra files.' }
         foreach ($member in $members) {
-            if (-not $files.ContainsKey($member.Name) -or $member.Name -eq 'portable-manifest.json') {
+            if (-not $files.ContainsKey($member.Name) -or $member.Name -eq $manifestName) {
                 throw 'Manifest refers to an unexpected file.'
             }
             $path = Join-Path $Destination $member.Name
@@ -136,8 +150,10 @@ function Expand-VerifiedPortable([string]$ZipPath, [string]$Destination, [string
                 throw ('Runtime file verification failed: ' + $member.Name)
             }
         }
-        foreach ($name in @('GundamSeedRecomp.exe','GundamSeedLauncher.exe','SeedJpCombat.dll',
-                             'SDL3.dll','controllerdb.txt','launcher-settings.ini')) {
+        $required = @('GundamSeedRecomp.exe','GundamSeedLauncher.exe','SeedJpCombat.dll','SDL3.dll')
+        $required += if ($organized) { @('resource/controllerdb.txt','config/launcher-settings.ini','config/Update-Portable.ps1') } else { @('controllerdb.txt','launcher-settings.ini') }
+        if ($organized) { $required += @((Get-RuntimeNames) | Where-Object { $_.StartsWith('resource/input-prompts/') }) }
+        foreach ($name in $required) {
             if (-not $files.ContainsKey($name)) { throw ('Required runtime file is missing: ' + $name) }
         }
         if ($manifest.distribution_format -eq 'seedpc-runtime-only-v4' -and
@@ -175,9 +191,9 @@ function Invoke-PortableUpdate {
     $rootPath = [IO.Path]::GetFullPath($RootPath).TrimEnd('\')
     $zipPath = Assert-PlainPath $rootPath $ZipPath
     $job = [IO.Path]::GetDirectoryName($zipPath)
-    $updates = Join-Path $rootPath '.updates'
+    $updates = [IO.Path]::GetDirectoryName($job)
     $parsedGuid = [guid]::Empty
-    if ([IO.Path]::GetDirectoryName($job) -ne $updates -or
+    if ($updates -notin @((Join-Path $rootPath '.updates'),(Join-Path $rootPath 'config/updates')) -or
         -not [guid]::TryParse([IO.Path]::GetFileName($job), [ref]$parsedGuid)) {
         throw 'Update must be staged in a unique job inside this portable folder.'
     }
@@ -206,8 +222,9 @@ function Invoke-PortableUpdate {
         }
         foreach ($name in $files) {
             $target = Assert-PlainPath $rootPath (Join-Path $rootPath $name)
-            if ($name -in @('launcher-settings.ini','gamefiles/Game_and_Bios_Here.file') -and
+            if ($name -in @('launcher-settings.ini','config/launcher-settings.ini','gamefiles/Game_and_Bios_Here.file') -and
                 (Test-Path -LiteralPath $target)) { continue }
+            if ($name -eq 'config/launcher-settings.ini' -and [IO.File]::Exists((Join-Path $rootPath 'launcher-settings.ini'))) { continue }
             if ((Test-Path -LiteralPath $target) -and -not [IO.File]::Exists($target)) {
                 throw ('A directory blocks an application file: ' + $name)
             }
@@ -231,7 +248,7 @@ function Invoke-PortableUpdate {
         $backupReady = $true
         $journal = @{ status='applying'; version=$Version; root=$rootPath; plan=$plan }
         Write-UpdateJson $journalPath $journal
-        $ordered = @($plan | Sort-Object @{Expression={ $_.name -eq 'portable-manifest.json' }}, name)
+        $ordered = @($plan | Sort-Object @{Expression={ $_.name.EndsWith('portable-manifest.json') }}, name)
         foreach ($item in $ordered) {
             $target = Assert-PlainPath $rootPath (Join-Path $rootPath $item.name)
             [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($target)) | Out-Null

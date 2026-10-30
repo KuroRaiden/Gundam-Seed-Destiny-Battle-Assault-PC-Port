@@ -1,3 +1,4 @@
+#include "move_list.h"
 #include "game_addresses.h"
 #include "local_vs_runtime.h"
 #include "local_vs.h"
@@ -619,6 +620,14 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
 }
 void overlay(gbarecomp::HostOverlay* out) {
     using namespace gbarecomp;
+    if (selector_active) {
+        const auto first = jp_combat_choice(selection.seats[0].fighter, selection.seats[0].color);
+        const auto second = jp_combat_choice(selection.seats[1].fighter, selection.seats[1].color);
+        set_movelist_fighters({first.fighter, second.fighter}, true,
+                              battle_mode == MenuBattleMode::Online ? online_room.seat() : 0);
+    } else {
+        set_movelist_fighters({1, 2}, false);
+    }
     const auto state = bus_read_u32(us_address::kGameState);
     if (selector_active && state == us_address::kStateCharacterSelect) {
         const auto& pixels = jp_art.compose(selection);
@@ -632,7 +641,7 @@ void configure_local_vs(gbarecomp::RunOptions& options, const std::filesystem::p
     jp_art.load(art_path);
     jp_art.load_stages(art_path.parent_path() / "destiny-stages.bin");
     std::string palette_error;
-    if (!ms_colors.load(art_path.parent_path().parent_path() / "ms-colors.ini", palette_error))
+    if (!ms_colors.load(art_path.parent_path().parent_path() / "config/ms-colors.ini", palette_error))
         std::fprintf(stderr, "%s\n", palette_error.c_str());
     jp_rom_path = jp_rom;
     bios_path = bios;

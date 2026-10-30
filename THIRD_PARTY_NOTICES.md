@@ -39,3 +39,11 @@ Original game software, ROMs, BIOS images, names and artwork retain their owners
 rights. These software licenses do not license those assets. Players supply
 their own verified inputs. Only the two specifically requested branding icons
 are included; other game art caches are generated locally.
+
+The F1 movelist uses Kenney Input Prompts 1.5A (CC0-1.0). The supplied notice
+is in [resources/input-prompts/Kenney-Input-Prompts.txt](resources/input-prompts/Kenney-Input-Prompts.txt).
+The portable includes it under `resource/licenses/`.
+
+Functional command and availability facts are referenced from
+[kira_yamato_88's GameFAQs guide, v1.68](https://gamefaqs.gamespot.com/gba/924564-gundam-seed-destiny/faqs/34177).
+No move descriptions, strategy text, ratings, or guide narrative are reproduced.

@@ -63,6 +63,23 @@ int wmain(int argc, wchar_t** argv) {
             require(!selected.verified, "Missing default input was accepted");
         }
         require(defaults.fighter_outlines, "Missing settings should retain outlines");
+        std::filesystem::create_directories(scratch / "config");
+        sl::Settings organized;
+        organized.load(scratch / "config/launcher-settings.ini");
+        for (const auto& selected : organized.files)
+            require(std::filesystem::path(sl::wide(selected.path)).parent_path() ==
+                        std::filesystem::absolute(scratch) / "gamefiles",
+                    "Organized settings shifted game paths into config/gamefiles");
+        std::string organized_error;
+        require(organized.save(scratch / "config/launcher-settings.ini", organized_error),
+                "Organized settings could not save");
+        sl::Settings organized_reloaded;
+        organized_reloaded.load(scratch / "config/launcher-settings.ini");
+        for (const auto& selected : organized_reloaded.files)
+            require(std::filesystem::path(sl::wide(selected.path)).parent_path() ==
+                        std::filesystem::absolute(scratch) / "gamefiles",
+                    "Organized settings changed relative paths after saving");
+
         const auto legacy_path = scratch / L"legacy-settings.ini";
         {
             std::ofstream legacy(legacy_path);

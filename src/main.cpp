@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include "runtime.h"
+#include "portable_paths.h"
 #include "jp_asset_import.h"
 #include "us_training_art.h"
 #include "local_vs_runtime.h"
@@ -89,6 +90,7 @@ int main(int argc, char** argv) {
     const char* startup_phase = "startup";
     try {
         const auto base = std::filesystem::absolute(argv[0]).parent_path();
+        seed::prepare_portable_folders(base);
         const auto art = base / "assets" / "destiny-selection.bin";
         if (!import_output.empty()) {
             import_jp_art(base, jp_rom, bios, std::filesystem::u8path(import_output), import_colors,

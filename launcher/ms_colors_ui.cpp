@@ -14,7 +14,7 @@ void MsColorsUi::release_texture() {
 }
 void MsColorsUi::initialize(const std::filesystem::path& folder) {
     folder_ = folder;
-    profiles_.load(folder_ / "ms-colors.ini", status_);
+    profiles_.load(folder_ / "config/ms-colors.ini", status_);
     saved_ = profiles_;
 }
 void MsColorsUi::read_cache() {
@@ -40,7 +40,7 @@ void MsColorsUi::prepare(const std::string& jp_rom, const std::string& bios) {
     if (import_.start(folder_ / "GundamSeedRecomp.exe",
                       {L"--import-jp-color-previews", output.wstring(), L"--jp-rom", wide(jp_rom),
                        L"--bios", wide(bios)},
-                      folder_ / "ms-preview-import.log", status_))
+                      folder_ / "Logs/ms-preview-import.log", status_))
         status_ = "Preparing four sprites for each of the 27 suits. You can use the other "
                   "launcher pages while this runs.";
 }
@@ -63,7 +63,7 @@ void MsColorsUi::changed() {
 bool MsColorsUi::save() {
     if (profiles_ == saved_)
         return true;
-    if (!profiles_.save(folder_ / "ms-colors.ini", status_))
+    if (!profiles_.save(folder_ / "config/ms-colors.ini", status_))
         return false;
     saved_ = profiles_;
     status_ = "MS colors saved. They apply the next time you launch the game.";

@@ -18,6 +18,12 @@ add_subdirectory("${DEPS_DIR}/SDL3" "${CMAKE_BINARY_DIR}/sdl3" EXCLUDE_FROM_ALL)
 set(GBARECOMP_HOST_WINDOW_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/src/host_window_sdl3.cpp")
 set(GBARECOMP_COMPILER_CACHE OFF CACHE STRING "" FORCE)
 set(GBARECOMP_SELFHEAL_RECOMPILE_DEFAULT OFF CACHE BOOL "Enable runtime compilation of missing guest functions")
+add_library(seed_movelist STATIC src/move_list.cpp)
+target_include_directories(seed_movelist PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+add_executable(seed_movelist_tests tests/move_list_tests.cpp)
+target_link_libraries(seed_movelist_tests PRIVATE seed_movelist)
+add_executable(seed_portable_paths_tests tests/portable_paths_tests.cpp)
+target_include_directories(seed_portable_paths_tests PRIVATE src)
 add_library(seed_codes STATIC src/invite_code.cpp)
 target_include_directories(seed_codes PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(seed_codes PUBLIC SDL3::SDL3)
@@ -85,6 +91,8 @@ target_link_libraries(seed_input_oracle PRIVATE seed_input gbarecomp_armv4t)
 add_executable(seed_jp_asset_oracle tests/jp_asset_oracle.cpp)
 add_executable(seed_debug_stop_tests tests/debug_stop_tests.cpp)
 target_link_gbarecomp_runtime_stack(seed_debug_stop_tests seed_cartridge)
+add_executable(seed_movelist_ui_tests tests/move_list_ui_tests.cpp)
+target_link_gbarecomp_runtime_stack(seed_movelist_ui_tests seed_cartridge)
 add_executable(seed_training_meter_ui_tests tests/training_meter_ui_tests.cpp)
 target_link_gbarecomp_runtime_stack(seed_training_meter_ui_tests seed_cartridge)
 add_executable(seed_in_game_remap_tests tests/in_game_remap_tests.cpp)
@@ -178,8 +186,8 @@ if(WIN32)
     "${IMGUI_DIR}/backends/imgui_impl_sdlrenderer3.cpp")
   target_include_directories(seed_imgui PUBLIC "${IMGUI_DIR}" "${IMGUI_DIR}/backends" "${IMGUI_DIR}/misc/cpp")
   target_link_libraries(seed_imgui PUBLIC SDL3::SDL3)
-  add_library(seed_remap_ui STATIC src/in_game_remap.cpp src/online_lobby.cpp src/training_meter_overlay.cpp)
-  target_link_libraries(seed_remap_ui PUBLIC seed_controls seed_imgui seed_links seed_profile seed_training_meter)
+  add_library(seed_remap_ui STATIC src/in_game_remap.cpp src/online_lobby.cpp src/training_meter_overlay.cpp src/move_list_overlay.cpp)
+  target_link_libraries(seed_remap_ui PUBLIC seed_controls seed_imgui seed_links seed_profile seed_training_meter seed_movelist)
   if(TARGET gbarecomp_runtime)
     target_link_libraries(gbarecomp_runtime PUBLIC seed_remap_ui)
   endif()
@@ -203,38 +211,41 @@ if(WIN32)
   target_sources(GundamSeedLauncher PRIVATE src/app.manifest)
   set(SEED_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app" CACHE PATH "Packaged runtime destination")
   add_custom_command(TARGET GundamSeedLauncher POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/licenses"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/resource/licenses" "${SEED_APP_DIR}/config" "$<TARGET_FILE_DIR:GundamSeedLauncher>/config"
     COMMAND ${CMAKE_COMMAND} "-DAPP=$<TARGET_FILE:GundamSeedLauncher>" "-DVERSION=${SEED_LAUNCHER_VERSION}" "-DDESTINATION=${SEED_APP_DIR}" -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/launcher-build-receipt.cmake"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/launcher/Update-Portable.ps1" "${SEED_APP_DIR}/Update-Portable.ps1"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/launcher/Update-Portable.ps1" "$<TARGET_FILE_DIR:GundamSeedLauncher>/Update-Portable.ps1"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/launcher/Update-Portable.ps1" "${SEED_APP_DIR}/config/Update-Portable.ps1"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/launcher/Update-Portable.ps1" "$<TARGET_FILE_DIR:GundamSeedLauncher>/config/Update-Portable.ps1"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:GundamSeedLauncher>" "${SEED_APP_DIR}/GundamSeedLauncher.exe"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${IMGUI_DIR}/LICENSE.txt" "${SEED_APP_DIR}/licenses/Dear-ImGui.txt"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/SDL3/LICENSE.txt" "${SEED_APP_DIR}/licenses/SDL3.txt"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb.txt" "${SEED_APP_DIR}/controllerdb.txt"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb-LICENSE.txt" "${SEED_APP_DIR}/licenses/SDL-GameControllerDB.txt")
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${IMGUI_DIR}/LICENSE.txt" "${SEED_APP_DIR}/resource/licenses/Dear-ImGui.txt"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/SDL3/LICENSE.txt" "${SEED_APP_DIR}/resource/licenses/SDL3.txt"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb.txt" "${SEED_APP_DIR}/resource/controllerdb.txt"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb-LICENSE.txt" "${SEED_APP_DIR}/resource/licenses/SDL-GameControllerDB.txt")
   if(TARGET GundamSeedRecomp)
     add_custom_command(TARGET GundamSeedRecomp POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/licenses"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/resource/licenses" "${SEED_APP_DIR}/config" "$<TARGET_FILE_DIR:GundamSeedLauncher>/config"
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:GundamSeedRecomp>" "${SEED_APP_DIR}/GundamSeedRecomp.exe"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/gbarecomp/LICENSE" "${SEED_APP_DIR}/licenses/GBARecomp.txt"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/gbarecomp/external/arm-recomp-core/LICENSE" "${SEED_APP_DIR}/licenses/arm-recomp-core.txt"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb.txt" "${SEED_APP_DIR}/controllerdb.txt"
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb-LICENSE.txt" "${SEED_APP_DIR}/licenses/SDL-GameControllerDB.txt")
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/gbarecomp/LICENSE" "${SEED_APP_DIR}/resource/licenses/GBARecomp.txt"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/gbarecomp/external/arm-recomp-core/LICENSE" "${SEED_APP_DIR}/resource/licenses/arm-recomp-core.txt"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb.txt" "${SEED_APP_DIR}/resource/controllerdb.txt"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb-LICENSE.txt" "${SEED_APP_DIR}/resource/licenses/SDL-GameControllerDB.txt")
   endif()
   add_executable(seed_launcher_tests tests/launcher_tests.cpp)
   target_link_libraries(seed_launcher_tests PRIVATE seed_launcher_platform)
 endif()
 
-foreach(SEED_RUNTIME_TARGET seed_quick_match_tests seed_training_tools_native seed_fighter_outline_native seed_stage_room_tests seed_stage_selection_tests seed_training_meter_ui_tests seed_jp_ui_reference GundamSeedRecomp GundamSeedLauncher seed_sdl3_host_tests seed_jp_combat_driver seed_jp_startup_tests seed_jp_rollback_tests seed_jp_netplay_peer seed_jp_online_module_peer seed_controls_tests seed_join_code_tests seed_invite_window_tests seed_nat_probe seed_nat_traversal_tests seed_in_game_remap_tests seed_online_lobby_tests seed_online_room_tests seed_online_rematch_tests seed_bios_fast_set_tests SeedJpCombat)
+foreach(SEED_RUNTIME_TARGET seed_movelist_ui_tests seed_movelist_tests seed_portable_paths_tests seed_quick_match_tests seed_training_tools_native seed_fighter_outline_native seed_stage_room_tests seed_stage_selection_tests seed_training_meter_ui_tests seed_jp_ui_reference GundamSeedRecomp GundamSeedLauncher seed_sdl3_host_tests seed_jp_combat_driver seed_jp_startup_tests seed_jp_rollback_tests seed_jp_netplay_peer seed_jp_online_module_peer seed_controls_tests seed_join_code_tests seed_invite_window_tests seed_nat_probe seed_nat_traversal_tests seed_in_game_remap_tests seed_online_lobby_tests seed_online_room_tests seed_online_rematch_tests seed_bios_fast_set_tests SeedJpCombat)
   if(TARGET ${SEED_RUNTIME_TARGET})
     add_custom_command(TARGET ${SEED_RUNTIME_TARGET} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb.txt" "$<TARGET_FILE_DIR:${SEED_RUNTIME_TARGET}>/controllerdb.txt")
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb.txt" "$<TARGET_FILE_DIR:${SEED_RUNTIME_TARGET}>/resource/controllerdb.txt")
     add_custom_command(TARGET ${SEED_RUNTIME_TARGET} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:${SEED_RUNTIME_TARGET}>/SDL3.dll")
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:${SEED_RUNTIME_TARGET}>/SDL3.dll"
+      COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/resources/input-prompts" "$<TARGET_FILE_DIR:${SEED_RUNTIME_TARGET}>/resource/input-prompts")
   endif()
 endforeach()
 if(TARGET GundamSeedLauncher)
   add_custom_command(TARGET GundamSeedLauncher POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/resources/input-prompts" "${SEED_APP_DIR}/resource/input-prompts"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resources/input-prompts/Kenney-Input-Prompts.txt" "${SEED_APP_DIR}/resource/licenses/Kenney-Input-Prompts.txt"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SDL3::SDL3>" "${SEED_APP_DIR}/SDL3.dll")
 endif()
 if(TARGET SeedJpCombat)
@@ -242,10 +253,10 @@ if(TARGET SeedJpCombat)
     COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SeedJpCombat>" "${SEED_APP_DIR}/SeedJpCombat.dll"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SDL3::SDL3>" "${SEED_APP_DIR}/SDL3.dll"
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/licenses"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/GekkoNet/LICENSE" "${SEED_APP_DIR}/licenses/GekkoNet.txt"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/autopunch/LICENSE" "${SEED_APP_DIR}/licenses/AutoPunch.txt"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/GekkoNet/GekkoLib/thirdparty/zpp/LICENSE" "${SEED_APP_DIR}/licenses/GekkoNet-zpp.txt")
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/resource/licenses" "${SEED_APP_DIR}/config" "$<TARGET_FILE_DIR:GundamSeedLauncher>/config"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/GekkoNet/LICENSE" "${SEED_APP_DIR}/resource/licenses/GekkoNet.txt"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/autopunch/LICENSE" "${SEED_APP_DIR}/resource/licenses/AutoPunch.txt"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/GekkoNet/GekkoLib/thirdparty/zpp/LICENSE" "${SEED_APP_DIR}/resource/licenses/GekkoNet-zpp.txt")
 endif()
 
 # Original difficulty ship for the launcher and Haro for the game.
@@ -259,8 +270,8 @@ if(WIN32)
       endif()
       target_include_directories(${SEED_BRAND_TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/resources")
       add_custom_command(TARGET ${SEED_BRAND_TARGET} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resources/branding/Haro.ico" "${SEED_APP_DIR}/Haro.ico"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resources/branding/LauncherShip.ico" "${SEED_APP_DIR}/LauncherShip.ico")
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resources/branding/Haro.ico" "${SEED_APP_DIR}/resource/Haro.ico"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/resources/branding/LauncherShip.ico" "${SEED_APP_DIR}/resource/LauncherShip.ico")
     endif()
   endforeach()
 endif()
@@ -270,7 +281,7 @@ endif()
 if(TARGET GundamSeedLauncher)
   file(GLOB SEED_LICENSE_NOTICES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/licenses/*.txt")
   add_custom_command(TARGET GundamSeedLauncher POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/gamefiles" "${SEED_APP_DIR}/licenses"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/gamefiles" "${SEED_APP_DIR}/resource/licenses"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/Game_and_Bios_Here.file" "${SEED_APP_DIR}/gamefiles/Game_and_Bios_Here.file"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SEED_LICENSE_NOTICES} "${SEED_APP_DIR}/licenses")
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SEED_LICENSE_NOTICES} "${SEED_APP_DIR}/resource/licenses")
 endif()

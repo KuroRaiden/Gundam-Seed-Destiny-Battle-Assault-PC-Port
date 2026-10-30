@@ -304,7 +304,7 @@ struct LauncherUpdates::Impl {
     std::atomic_bool cancelled = false;
     GameProcess installer;
     explicit Impl(std::filesystem::path directory) : root(std::move(directory)) {
-        const auto report = root / L".updates/last-result.json";
+        const auto report = root / L"config/updates/last-result.json";
         if (std::filesystem::is_regular_file(report) &&
             std::filesystem::file_size(report) < 65536) {
             std::ifstream file(report);
@@ -387,13 +387,13 @@ void LauncherUpdates::download() {
             require(SUCCEEDED(CoCreateGuid(&guid)), "Cannot create update staging folder.");
             wchar_t name[40]{};
             StringFromGUID2(guid, name, 40);
-            const auto staging = task.root / L".updates";
+            const auto staging = task.root / L"config/updates";
             std::filesystem::create_directories(staging);
             require(!(GetFileAttributesW(staging.c_str()) & FILE_ATTRIBUTE_REPARSE_POINT),
                     "Update staging cannot be a link or junction.");
             task.job = staging / name;
             require(std::filesystem::create_directory(task.job), "Update staging already exists.");
-            std::filesystem::copy_file(task.root / L"Update-Portable.ps1",
+            std::filesystem::copy_file(task.root / L"config/Update-Portable.ps1",
                                        task.job / L"apply-update.ps1");
             const auto archive = task.job / L"release.zip";
             download_update_archive(release, archive, task.cancelled, [&](float progress) {
@@ -405,12 +405,12 @@ void LauncherUpdates::download() {
             args.push_back(L"-ValidateOnly");
             GameProcess validation;
             std::string error;
-            require(validation.start(powershell(), args, task.job / L"validation.log", error),
+            require(validation.start(powershell(), args, task.root / L"Logs" / (task.job.filename().wstring() + L"-validation.log"), error),
                     error);
             std::optional<unsigned long> code;
             while (!(code = validation.poll()))
                 Sleep(40);
-            require(*code == 0, "The package could not be verified. See .updates validation.log.");
+            require(*code == 0, "The package could not be verified. See the Logs folder.");
             task.message(UpdatePhase::Ready,
                          "Update verified. Install and restart when you are ready.");
         } catch (const std::exception& error) {
@@ -429,7 +429,7 @@ bool LauncherUpdates::install(std::string& error) {
                 "Close the game and other launchers in this folder before installing.");
         auto args = installer_arguments(task.root, task.job, value.release);
         args.insert(args.end(), {L"-ParentId", std::to_wstring(GetCurrentProcessId())});
-        return task.installer.start(powershell(), args, task.job / L"install.log", error);
+        return task.installer.start(powershell(), args, task.root / L"Logs" / (task.job.filename().wstring() + L"-install.log"), error);
     } catch (const std::exception& failure) {
         error = failure.what();
         return false;

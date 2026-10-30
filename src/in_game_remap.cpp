@@ -89,7 +89,7 @@ bool InGameRemap::capture_event(const SDL_Event& event) {
         return true;
     auto& profile = edited_.players[capture_.player];
     if (capture_.slot < 0 && event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat &&
-        event.key.scancode != SDL_SCANCODE_F4) {
+        event.key.scancode != SDL_SCANCODE_F4 && event.key.scancode != SDL_SCANCODE_F1) {
         profile.keyboard[capture_.bit] = event.key.scancode;
         capture_ = {};
     } else if (capture_.slot >= 0) {
@@ -227,7 +227,7 @@ void InGameRemap::draw_capture() {
                                             [](auto v) { return std::abs(int(v)) > 12000; }) &&
                                (capture_.slot < 0 || pad);
         }
-        ImGui::TextDisabled("Esc cancels. F4 is reserved for this overlay.");
+        ImGui::TextDisabled("Esc cancels. F1 and F4 are reserved.");
         if (ImGui::Button("Cancel")) {
             capture_ = {};
             ImGui::CloseCurrentPopup();

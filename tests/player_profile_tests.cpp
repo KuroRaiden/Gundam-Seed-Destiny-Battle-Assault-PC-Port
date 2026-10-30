@@ -31,7 +31,8 @@ int main() {
         check(seed::save_player_name(folder, "Athrun", error) &&
                   seed::load_player_name(folder) == "Athrun",
               "atomic profile replacement");
-        std::filesystem::remove(folder / "player-name.txt");
+        std::filesystem::remove(folder / "config/player-name.txt");
+        std::filesystem::remove(folder / "config");
         std::filesystem::remove(folder);
         check(seed::online_match_title({"Kira", "Athrun"}, 2, 7, 83.4f) ==
                   "Kira vs Athrun | Delay 2f | Rollback 7f | Ping 83ms",

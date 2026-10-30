@@ -48,6 +48,14 @@ APPROVED_BRAND_ICONS = json.loads(
     (Path(__file__).resolve().parents[1] / "config/brand-icons.json").read_text(encoding="utf-8")
 )["icons"]
 
+GLYPH_HASHES = json.loads((ROOT / "config/input-prompts.json").read_text())["files"]
+GLYPH_FILES = {"resource/input-prompts/" + name for name in GLYPH_HASHES}
+V5_RUNTIME_FILES = {"GundamSeedRecomp.exe", "GundamSeedLauncher.exe", "SeedJpCombat.dll",
+                    "SDL3.dll", "resource/controllerdb.txt", "config/launcher-settings.ini",
+                    "START HERE.txt", "config/portable-manifest.json"}
+V5_UPDATER_FILES = {"config/Update-Portable.ps1"}
+V5_BRAND_FILES = {"resource/" + name for name in BRAND_ICON_FILES}
+
 
 def audit_archive(path, forbidden_inputs=()):
     forbidden = [Path(value).read_bytes() for value in forbidden_inputs]
@@ -73,10 +81,11 @@ def audit_archive(path, forbidden_inputs=()):
             if relative in members:
                 raise ValueError("Duplicate archive member")
             license_file = (
-                len(name.parts) == 3 and name.parts[1] == "licenses" and name.suffix == ".txt"
+                ((len(name.parts) == 3 and name.parts[1] == "licenses") or
+                 (len(name.parts) == 4 and name.parts[1:3] == ("resource","licenses"))) and name.suffix == ".txt"
             )
             if (
-                relative not in RUNTIME_FILES | UPDATER_FILES | CRT_FILES | BRAND_ICON_FILES | {GAMEFILES_MARKER}
+                relative not in RUNTIME_FILES | UPDATER_FILES | CRT_FILES | BRAND_ICON_FILES | V5_RUNTIME_FILES | V5_UPDATER_FILES | V5_BRAND_FILES | GLYPH_FILES | {GAMEFILES_MARKER}
                 and not license_file
             ):
                 raise ValueError("Forbidden release file: " + relative)
@@ -99,20 +108,43 @@ def audit_archive(path, forbidden_inputs=()):
             members[relative] = data
         if archive.testzip() is not None:
             raise ValueError("Corrupt release ZIP")
+    actual_members = members
+    organized = "config/portable-manifest.json" in members
+    if organized:
+        allowed = V5_RUNTIME_FILES | V5_UPDATER_FILES | V5_BRAND_FILES | GLYPH_FILES | CRT_FILES | {GAMEFILES_MARKER}
+        if not (V5_RUNTIME_FILES | GLYPH_FILES).issubset(members):
+            raise ValueError("Incomplete organized runtime package")
+        if any(name not in allowed and not (name.startswith("resource/licenses/") and name.count("/") == 2 and name.endswith(".txt")) for name in members):
+            raise ValueError("Unexpected file in organized runtime package")
+        for name, value in GLYPH_HASHES.items():
+            if hashlib.sha256(members["resource/input-prompts/" + name]).hexdigest() != value:
+                raise ValueError("Unapproved input glyph")
+        def canonical(name):
+            if name in V5_RUNTIME_FILES | V5_UPDATER_FILES | V5_BRAND_FILES:
+                return name.split("/",1)[-1] if "/" in name else name
+            if name.startswith("resource/licenses/"):
+                return name.removeprefix("resource/")
+            return name
+        members = {canonical(name):data for name,data in members.items()}
+    if not organized and any(name.startswith(("resource/","config/")) for name in members):
+        raise ValueError("Organized files in legacy package")
     if not RUNTIME_FILES.issubset(members):
         raise ValueError("Incomplete runtime package")
     manifest = json.loads(members["portable-manifest.json"])
     distribution = manifest.get("distribution_format")
-    gamefiles = distribution in ("seedpc-runtime-only-v3", "seedpc-runtime-only-v4")
+    gamefiles = distribution in ("seedpc-runtime-only-v3", "seedpc-runtime-only-v4", "seedpc-runtime-only-v5")
     if distribution not in (
         "seedpc-runtime-only-v1",
         "seedpc-runtime-only-v2",
         "seedpc-runtime-only-v3",
         "seedpc-runtime-only-v4",
+        "seedpc-runtime-only-v5",
     ) or any(manifest.get(key) is not False for key in EXCLUSIONS):
         raise ValueError("Package is not marked as runtime-only")
+    if organized != (distribution == "seedpc-runtime-only-v5"):
+        raise ValueError("Portable layout and format disagree")
     updater = UPDATER_FILES.intersection(members)
-    if (distribution == "seedpc-runtime-only-v4") != bool(updater):
+    if (distribution in ("seedpc-runtime-only-v4", "seedpc-runtime-only-v5")) != bool(updater):
         raise ValueError("Updater capability and portable format disagree")
     if updater and manifest.get("update_preserves_settings") is not True:
         raise ValueError("Missing settings-preserving update policy")
@@ -147,12 +179,12 @@ def audit_archive(path, forbidden_inputs=()):
     if manifest.get("asset_generation") != "local_from_user_rom":
         raise ValueError("Missing local asset generation policy")
     expected = manifest["files"]
-    if set(expected) != set(members) - {"portable-manifest.json"}:
+    if set(expected) != set(actual_members) - {"config/portable-manifest.json" if organized else "portable-manifest.json"}:
         raise ValueError("Unexpected files outside manifest")
     for name, value in expected.items():
         if (
-            value["bytes"] != len(members[name])
-            or value["sha256"] != hashlib.sha256(members[name]).hexdigest()
+            value["bytes"] != len(actual_members[name])
+            or value["sha256"] != hashlib.sha256(actual_members[name]).hexdigest()
         ):
             raise ValueError("Manifest mismatch: " + name)
     if members["launcher-settings.ini"].decode("utf-8").replace("\r\n", "\n") != (
@@ -161,6 +193,7 @@ def audit_archive(path, forbidden_inputs=()):
         raise ValueError("Personal game paths or settings included")
     return {
         "runtime_only": True,
+        "organized_folders": organized,
         "files": len(members),
         "roms_included": False,
         "bios_included": False,

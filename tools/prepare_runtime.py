@@ -17,6 +17,7 @@ PATCHES = (
     "runtime-native-frame-driver.patch",
     "runtime-object-presentation.patch",
     "runtime-training-checkpoints.patch",
+    "runtime-portable-folders.patch",
 )
 
 

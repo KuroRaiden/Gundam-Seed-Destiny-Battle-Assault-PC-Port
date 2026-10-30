@@ -19,8 +19,10 @@ def main():
     folder=args.out.resolve()
     if folder.exists():raise RuntimeError("Use a fresh E: test directory")
     folder.mkdir(parents=True)
-    for name in ("GundamSeedRecomp.exe","SeedJpCombat.dll","SDL3.dll","controllerdb.txt"):
+    for name in ("GundamSeedRecomp.exe","SeedJpCombat.dll","SDL3.dll"):
         shutil.copy2(args.exe.resolve().parent/name,folder/name)
+    shutil.copytree(args.exe.resolve().parent/"resource",folder/"resource")
+    (folder/"Logs").mkdir()
     env=dict(os.environ,GBARECOMP_SELFHEAL_RECOMPILE="0",SDL_VIDEODRIVER="dummy",SDL_RENDER_DRIVER="software")
     command=[str(folder/"GundamSeedRecomp.exe"),"--rom",str(args.rom.resolve()),"--jp-rom",str(args.jp_rom.resolve()),
         "--bios",str(args.bios.resolve()),"--bios-hle","--save",str(folder/"test.sav")]
@@ -29,11 +31,11 @@ def main():
         before={name:(folder/"assets"/name).stat().st_mtime_ns for name in ASSETS if (folder/"assets"/name).exists()}
         began=time.monotonic()
         if run=="cold" and not args.baseline:
-            with (folder/"first-launch.log").open("w",encoding="utf-8") as log:
+            with (folder/"Logs/first-launch.log").open("w",encoding="utf-8") as log:
                 result=subprocess.run(command+["--prepare-game-assets"],cwd=folder,env=env,stdout=log,stderr=log,timeout=180)
             assert result.returncode==0, f"Preparation failed: {result.returncode}"
             assert all((folder/"assets"/name).is_file() for name in ASSETS)
-        with (folder/(run+".log")).open("w",encoding="utf-8") as log:
+        with (folder/"Logs"/(run+".log")).open("w",encoding="utf-8") as log:
             process=subprocess.Popen(command+["--tcp",str(args.port)],cwd=folder,env=env,stdout=log,stderr=log)
             client=None
             try:

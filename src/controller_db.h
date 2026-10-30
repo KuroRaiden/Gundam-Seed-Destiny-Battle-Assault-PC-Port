@@ -14,7 +14,7 @@ struct ControllerDbResult {
 // Call after SDL_INIT_GAMEPAD and before opening controllers. Resolve beside
 // the executable, so shortcuts and unrelated working directories behave alike.
 inline ControllerDbResult load_controller_db(const std::filesystem::path& folder) {
-    const auto file = folder / "controllerdb.txt";
+    const auto file = folder / "resource/controllerdb.txt";
     const auto utf8 = file.u8string();
     const std::string path(reinterpret_cast<const char*>(utf8.data()), utf8.size());
     std::error_code error;

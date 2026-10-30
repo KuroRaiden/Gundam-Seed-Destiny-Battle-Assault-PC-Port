@@ -67,21 +67,32 @@ checks each runtime file against the portable manifest. **Install and restart**
 waits for the launcher to exit, replaces the application files in this folder,
 and reopens the launcher. Close the game and other launchers in that folder first.
 
-Updates preserve `launcher-settings.ini`, controls, names, MS color profiles,
+Updates preserve `config/launcher-settings.ini`, controls, names, MS color profiles,
 saves, Training states, game files and locally generated art caches. Fresh-install
 settings in the download do not replace an existing settings file. Only explicitly
 allowed application files, bundled libraries, documentation and license notices
 are updated; other local files are left in place. Normal replacement failures
-restore the previous application files from `.updates/<job>/backup`. The backup
+restore the previous application files from `config/updates/<job>/backup`. The backup
 and installer log remain available there, including after an interrupted update.
 
-Existing 0.1.3 builds need a one-time manual installation of a build containing
-this updater. The new launcher is currently **0.1.4 matchmaking**, ahead of the published
-0.1.3 fixed release, so it will offer the next compatible stable release once
-published. Checks use the public GitHub API without credentials and can be
-rate-limited; there are no periodic background checks.
+Starting with 0.1.7, the portable uses config/ for settings, scripts and metadata;
+resource/ for icons, D-pad/button glyphs, controllerdb and licenses; and Logs/
+for runtime/import/update logs. START HERE.txt stays at the root. Existing game
+art caches stay under assets/. Root settings migrate without changing relative
+game paths. Conflicting versions are preserved under the corresponding folder's
+migration-backups/. A log held open by another process moves on a later launch.
+
+When upgrading from 0.1.6 or earlier, manually extract the ZIP over the old
+portable once. Its built-in updater cannot validate the new directory layout.
+The 0.1.7 updater supports the organized format for future upgrades. Checks use
+the public GitHub API without credentials and can be rate-limited; there are no
+periodic background checks.
 
 Development uses `config/version.txt` for update comparisons and
 `config/release-name.txt` for the human-readable launcher label. The build writes
-`launcher-build.json` alongside the executable; the portable packager verifies
+`config/launcher-build.json` beside the build; the portable packager verifies
 that receipt so the displayed version and package version cannot disagree.
+
+The organized portable format is seedpc-runtime-only-v5 (schema 6). It includes
+the original CC0 Kenney D-pad and A/B/L/R glyphs, pinned by content hash. No game
+sprites, extracted portraits, ROMs or BIOS images are bundled with those resources.

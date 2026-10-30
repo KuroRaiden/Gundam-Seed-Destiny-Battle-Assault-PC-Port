@@ -21,14 +21,14 @@ def digest(data):
 
 def snapshot(root):
     return {p.relative_to(root).as_posix(): digest(p.read_bytes()) for p in root.rglob('*')
-            if p.is_file() and '.updates' not in p.relative_to(root).parts}
+            if p.is_file() and not any(part in ('.updates','updates') for part in p.relative_to(root).parts)}
 
 
 def quote(value):
     return "'" + str(value).replace("'", "''") + "'"
 
 
-def make_case(work, name, mutation=None):
+def make_case(work, name, mutation=None, organized=False, legacy_install=False):
     folder = work / name / "portable 日本語's folder"
     folder.mkdir(parents=True)
     personal = {'launcher-settings.ini': b'fighter_outlines "0"\nus "external selected cartridge"\n',
@@ -42,6 +42,8 @@ def make_case(work, name, mutation=None):
     old = {'GundamSeedLauncher.exe': b'MZ old launcher', 'GundamSeedRecomp.exe': b'MZ old game',
            'SeedJpCombat.dll': b'MZ old combat', 'SDL3.dll': b'MZ old SDL',
            'controllerdb.txt': b'old controller database', 'portable-manifest.json': b'{"version":"0.1.2"}'}
+    if organized and not legacy_install:
+        personal = {('config/' + k if k.endswith('.ini') or k == 'player-name.txt' else k):v for k,v in personal.items()}
     for relative, data in (personal | old).items():
         target = folder / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -56,10 +58,18 @@ def make_case(work, name, mutation=None):
                 'platform': 'windows-x64', 'roms_included': False, 'bios_included': False,
                 'personal_data_included': False, 'game_asset_caches_included': False,
                 'files': {key: {'bytes': len(value), 'sha256': digest(value)} for key, value in files.items()}}
+    if organized:
+        relocate = {'controllerdb.txt':'resource/controllerdb.txt','launcher-settings.ini':'config/launcher-settings.ini',
+                    'Update-Portable.ps1':'config/Update-Portable.ps1','licenses/Example.txt':'resource/licenses/Example.txt'}
+        files = {relocate.get(k,k):v for k,v in files.items()}
+        for name in ('switch_dpad_up','switch_dpad_down','switch_dpad_left','switch_dpad_right','switch_button_a','switch_button_b','switch_button_l','switch_button_r'):
+            files['resource/input-prompts/'+name+'.png'] = (ROOT / 'resources/input-prompts' / (name+'.png')).read_bytes()
+        manifest['schema']=6; manifest['distribution_format']='seedpc-runtime-only-v5'
+        manifest['files']={k:{'bytes':len(v),'sha256':digest(v)} for k,v in files.items()}
     if mutation:
         mutation(files, manifest)
-    files['portable-manifest.json'] = json.dumps(manifest).encode()
-    job = folder / '.updates' / str(uuid.uuid4())
+    files['config/portable-manifest.json' if organized else 'portable-manifest.json'] = json.dumps(manifest).encode()
+    job = folder / ('config/updates' if organized else '.updates') / str(uuid.uuid4())
     job.mkdir(parents=True)
     archive = job / 'release.zip'
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as package:
@@ -106,6 +116,9 @@ def main():
     results = []
     cases = [
         ('success', None, {}),
+        ('success-organized', None, {'organized':True}),
+        ('success-legacy-to-organized', None, {'organized':True,'legacy_install':True}),
+        ('organized-rollback', None, {'organized':True,'fault':'copy-failure'}),
         ('validate-only', None, {'validate': True}),
         ('bad-zip-hash', None, {'bad_hash': True}),
         ('unsafe-path', lambda files, m: files.update({'../controls.ini': b'bad'}), {}),
@@ -117,22 +130,23 @@ def main():
         ('failed-copy-rollback', None, {'fault': 'copy-failure'}),
     ]
     for name, mutation, options in cases:
-        root, job, archive, personal, files = make_case(work, name, mutation)
+        organized=options.pop('organized',False); legacy_install=options.pop('legacy_install',False)
+        root, job, archive, personal, files = make_case(work, name, mutation, organized, legacy_install)
         before = snapshot(root)
         code = invoke(root, job, archive, **options)
-        should_succeed = name in ('success', 'validate-only')
+        should_succeed = name.startswith('success') or name == 'validate-only'
         assert (code == 0) == should_succeed, (name, code, str(job / 'test-output.log'))
         after = snapshot(root)
-        if name == 'success':
+        if name.startswith('success'):
             for relative, data in personal.items():
                 assert after[relative] == digest(data), ('personal file changed', relative)
-            for relative in ('GundamSeedLauncher.exe','GundamSeedRecomp.exe','SeedJpCombat.dll','SDL3.dll',
-                             'controllerdb.txt','portable-manifest.json','Update-Portable.ps1'):
+            replaced = ('GundamSeedLauncher.exe','GundamSeedRecomp.exe','SeedJpCombat.dll','SDL3.dll') + (('resource/controllerdb.txt','config/portable-manifest.json','config/Update-Portable.ps1') if organized else ('controllerdb.txt','portable-manifest.json','Update-Portable.ps1'))
+            for relative in replaced:
                 assert after[relative] == digest(files[relative]), ('runtime not replaced', relative)
             assert json.loads((job / 'journal.json').read_text())['status'] == 'completed'
         else:
             assert after == before, (name, 'installation or personal files changed')
-            if name == 'failed-copy-rollback':
+            if name in ('failed-copy-rollback','organized-rollback'):
                 assert json.loads((job / 'journal.json').read_text())['status'] == 'rolled-back'
         results.append({'case': name, 'exit_code': code, 'personal_files_preserved': True})
         print('PASS:', name, flush=True)

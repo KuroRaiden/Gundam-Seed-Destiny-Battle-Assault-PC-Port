@@ -33,7 +33,8 @@ def main():
         (app / "gamefiles/private.gba").write_bytes(b"PRIVATE-LOCAL-ROM")
         (app / "gamefiles/gba_bios.bin").write_bytes(b"PRIVATE-LOCAL-BIOS")
         (app / "gamefiles/Game_and_Bios_Here.file").write_bytes(b"PRIVATE-LOCAL-NOTE")
-        (app / "licenses").mkdir()
+        (app / "resource/licenses").mkdir(parents=True)
+        (app / "config").mkdir()
         for name in (
             "GundamSeedRecomp.exe",
             "GundamSeedLauncher.exe",
@@ -41,13 +42,13 @@ def main():
             "SDL3.dll",
         ):
             (app / name).write_bytes(b"MZ-test-runtime")
-        (app / "launcher-build.json").write_text(json.dumps({
+        (app / "config/launcher-build.json").write_text(json.dumps({
             "version": "1.2.3",
             "sha256": hashlib.sha256((app / "GundamSeedLauncher.exe").read_bytes()).hexdigest(),
         }), encoding="utf-8")
-        (app / "Update-Portable.ps1").write_bytes((ROOT / "launcher/Update-Portable.ps1").read_bytes())
-        (app / "controllerdb.txt").write_text("controller mappings\n")
-        (app / "licenses/dependency.txt").write_text("Upstream license\n")
+        (app / "config/Update-Portable.ps1").write_bytes((ROOT / "launcher/Update-Portable.ps1").read_bytes())
+        (app / "resource/controllerdb.txt").write_text("controller mappings\n")
+        (app / "resource/licenses/dependency.txt").write_text("Upstream license\n")
         for name in ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll"):
             (crt / name).write_bytes(b"MZ-test-crt")
         for name in (
@@ -96,7 +97,7 @@ def main():
         with zipfile.ZipFile(archive) as package:
             contents = {item.filename: package.read(item) for item in package.infolist()}
         assert not any(b"PRIVATE-" in data for data in contents.values())
-        assert contents[out.name + "/launcher-settings.ini"].decode() == PORTABLE_SETTINGS
+        assert contents[out.name + "/config/launcher-settings.ini"].decode() == PORTABLE_SETTINGS
         assert contents[out.name + "/" + GAMEFILES_MARKER] == GAMEFILES_MARKER_TEXT
         assert report["gamefiles_placeholder"] and report["relative_gamefiles_defaults"]
         assert all(not Path(name).suffix.lower() in (".gba", ".bin", ".sav") for name in contents)
@@ -123,11 +124,11 @@ def main():
         # Rewriting the manifest must not permit private paths or a replacement
         # for the fixed placeholder. The folder remains data-free in downloads.
         for relative, payload in (
-            ("launcher-settings.ini", b'us "C:/private/rom.gba"\n'),
+            ("config/launcher-settings.ini", b'us "C:/private/rom.gba"\n'),
             (GAMEFILES_MARKER, b"PRIVATE-LOCAL-NOTE"),
         ):
             modified = dict(contents)
-            manifest_key = out.name + "/portable-manifest.json"
+            manifest_key = out.name + "/config/portable-manifest.json"
             modified[out.name + "/" + relative] = payload
             manifest = json.loads(modified[manifest_key])
             manifest["files"][relative] = {
@@ -147,7 +148,7 @@ def main():
         # Only the two original, explicitly requested branding icons may be
         # added to a runtime-only package; this does not permit other art/caches.
         for name in ("Haro.ico", "LauncherShip.ico"):
-            (app / name).write_bytes((ROOT / "resources/branding" / name).read_bytes())
+            (app / "resource" / name).write_bytes((ROOT / "resources/branding" / name).read_bytes())
         branded = root / "portable-branded"
         result = subprocess.run(
             [
@@ -178,7 +179,7 @@ def main():
         )
         branded_contents[icon_key] += b"PRIVATE-LEAK"
         manifest = json.loads(branded_contents[manifest_key])
-        manifest["files"]["Haro.ico"] = {
+        manifest["files"]["resource/Haro.ico"] = {
             "bytes": len(branded_contents[icon_key]),
             "sha256": hashlib.sha256(branded_contents[icon_key]).hexdigest(),
         }

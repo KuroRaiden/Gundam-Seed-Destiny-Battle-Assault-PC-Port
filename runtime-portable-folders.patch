@@ -1,0 +1,89 @@
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -20,6 +20,7 @@
+ // step_once() becomes a real `runtime_dispatch` driver.
+ 
+ #include "runtime.h"
++#include "portable_paths.h"
+ #include "frame_control.h"
+ #include "native_frame_state.h"
+ #include "suspend_guard.h"
+@@ -1352,6 +1353,9 @@
+ extern "C" unsigned g_ws_view_width  = 240;
+ 
+ int run_game(int argc, char** argv, const RunOptions& opts) {
++    const auto portable_root = std::filesystem::absolute(argv[0]).parent_path();
++    std::filesystem::create_directories(portable_root / "config");
++    std::filesystem::create_directories(portable_root / "Logs");
+     // Game runners install this before entering run_game(). Clear it on every
+     // return path so a later game launched in the same process cannot call a
+     // stale game-specific copied-code dispatcher.
+@@ -1479,7 +1483,7 @@
+         spec.dialog_filter  = "GBA BIOS (*.bin;*.BIN)\0*.bin;*.BIN\0"
+                               "All Files (*.*)\0*.*\0";
+         spec.dialog_title   = "Select your GBA BIOS dump (gba_bios.bin)";
+-        spec.cache_filename = "bios.cfg";
++        spec.cache_filename = "config/bios.cfg";
+         spec.expected_size  = gba::GbaBios::kSize;
+         spec.expected_sha1  = args.bios_sha1.empty()
+                                 ? gba::GbaBios::kExpectedSha1
+@@ -1512,7 +1516,7 @@
+         spec.dialog_filter  = "GBA ROM (*.gba;*.GBA)\0*.gba;*.GBA\0"
+                               "All Files (*.*)\0*.*\0";
+         spec.dialog_title   = "Select the game ROM (.gba)";
+-        spec.cache_filename = "rom.cfg";
++        spec.cache_filename = "config/rom.cfg";
+         spec.expected_size  = 0;  // GBA ROMs vary in size; SHA-1 covers it
+         spec.expected_sha1  = args.rom_sha1.c_str();
+         spec.expected_crc32 = args.rom_crc32;
+@@ -2206,8 +2210,8 @@
+         const char* frag = std::getenv("GBARECOMP_MISS_FRAG");
+         const char* cov = std::getenv("GBARECOMP_COVERAGE_JSON");
+         self_heal_frag_path =
+-            frag ? frag : "recomp_master_misses_" + tag + ".toml.frag";
+-        self_heal_cov_path = cov ? cov : "recomp_coverage_" + tag + ".json";
++            frag ? frag : (portable_root / "config" / ("recomp_master_misses_" + tag + ".toml.frag")).string();
++        self_heal_cov_path = cov ? cov : (portable_root / "config" / ("recomp_coverage_" + tag + ".json")).string();
+     }
+     gbarecomp::self_heal_set_persist_paths(self_heal_frag_path.c_str(),
+                                            self_heal_cov_path.c_str());
+@@ -4305,7 +4309,7 @@
+             diag_config.history_bytes = static_cast<std::size_t>(n) * 1024u * 1024u;
+     }
+     diag_config.sidecars = {
+-        {(diag_exe_dir / "config.ini").string(), ".config.ini"},
++        {(diag_exe_dir / "config/config.ini").string(), ".config.ini"},
+         {args.config, ".game.toml"},
+         {(diag_exe_dir / "mods" / "state.toml").string(), ".mods.toml"},
+         {args.save_path, ".sav"},
+@@ -4462,7 +4466,7 @@
+         gbarecomp::overlay_set_adoption_mode(gbarecomp::OverlayAdoptionMode::Replay);
+     } else {
+         bool want = diagnostic_replay_setting(
+-            (diag_exe_dir / "config.ini").string(), opts.diagnostic_replay_default);
++            (diag_exe_dir / "config/config.ini").string(), opts.diagnostic_replay_default);
+ #if defined(GBARECOMP_ENABLE_MODS)
+         if (mods_ready && gba_mod_diagnostic_replay_enabled() >= 0)
+             want = gba_mod_diagnostic_replay_enabled() != 0;
+--- a/src/runtime/runtime_arm_default_aborts.cpp
++++ b/src/runtime/runtime_arm_default_aborts.cpp
+@@ -111,7 +111,7 @@
+ #endif
+     const std::size_t slash = path.find_last_of("/\\");
+     if (slash == std::string::npos) return {};
+-    return path.substr(0, slash + 1) + "crash.log";
++    return path.substr(0, slash + 1) + "Logs/crash.log";
+ }
+ 
+ void crash_log_write(const char* message) {
+--- a/src/runtime/runtime_bus_bridge.cpp
++++ b/src/runtime/runtime_bus_bridge.cpp
+@@ -330,7 +330,7 @@
+                  static_cast<unsigned long long>(g_runtime_cycles),
+                  static_cast<unsigned long long>(g_runtime_vblank_starts),
+                  regs, objbuf, m4a.c_str());
+-    if (FILE* f = std::fopen("hang_dump.log", "w")) {
++    if (FILE* f = std::fopen("Logs/hang_dump.log", "w")) {
+         std::fprintf(f,
+                      "reason=%s\npc=0x%08X\ncpsr=0x%08X\ncycles=%llu\n"
+                      "vblank_starts=%llu\nregs=%s\n%s\nm4a=%s\n",

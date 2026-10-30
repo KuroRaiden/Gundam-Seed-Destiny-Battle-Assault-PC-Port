@@ -4,11 +4,11 @@ The launcher uses Dear ImGui and SDL3. Select and verify the US cartridge,
 Japanese cartridge and extracted BIOS on **Game files**, then launch from
 **Play**. Supported sizes and hashes are checked again before launching.
 The launcher hides during play and returns with exit/error reporting and a
-shortcut to `last-game.log`.
+shortcut to `Logs/last-game.log`.
 
 **Play** has one **Launch game** button. Game mode selection stays in the
 game's main menu; the launcher has no Local VS/Online VS cards or Online page.
-Game files, Controllers and the display setting under Project status remain
+Game files, Controllers and the display setting under Play remain
 available.
 
 ## Remapping
@@ -20,11 +20,11 @@ Save, revert and per-player reset are available, with a live logical input
 check. Each player can disable the keyboard or select either gamepad slot.
 Assigning an occupied gamepad slot swaps the other player's slot.
 
-Bindings persist atomically in `app/controls.ini` and load on game launch.
+Bindings persist atomically in `config/controls.ini` and load on game launch.
 Changes apply to US menu controls, both local selectors and JP battle inputs.
 Press **F4** during play to remap immediately without restarting.
 Connection order determines gamepad slots; unplugging one seat preserves the
-other. Both programs load the bundled `controllerdb.txt` before opening pads.
+other. Both programs load the bundled `resource/controllerdb.txt` before opening pads.
 
 Local VS opens shared local VS with JP combat and all 24 original grid
 choices. Training Mode uses the same roster with the native JP practice engine.
@@ -105,3 +105,16 @@ test took 134 seconds on the test machine; the warm launch took 1.4 seconds.
 The `NOT_STATIC` fallback diagnostic remains available and is not treated as a
 fatal error. `tools/verify_first_launch.py` verifies cold/warm native startup
 and that warm launches reuse generated caches.
+
+## Movelist and turbo (0.1.7)
+
+F1 opens the [JP movelist](Movelist.md) using Kenney D-pad and game-button
+glyphs. Like F4, it pauses offline simulation/audio and holds local input
+neutral while online matches continue. F1 and F4 are reserved during remapping.
+Turbo is exclusively keyboard Tab; old controller fast-forward settings are
+ignored, so RT/R2 remains available as an ordinary remappable input.
+
+Settings and scripts live under config/; logs under Logs/; icons,
+controllerdb and licenses under resource/. Relative game paths still resolve
+from the portable root. Old root settings migrate at startup; conflicting
+versions are retained in config/migration-backups/.

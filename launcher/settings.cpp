@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "portable_paths.h"
 #include "platform.h"
 #include "fighter_outline_setting.h"
 #include <algorithm>
@@ -88,7 +89,7 @@ void Settings::load(const std::filesystem::path& path) {
     for (unsigned index = 0; index < files.size(); ++index) {
         if (files[index].path.empty())
             files[index].path = kPortableGamePaths[index];
-        files[index].verify(path.parent_path());
+        files[index].verify(seed::settings_root(path));
     }
 }
 bool Settings::save(const std::filesystem::path& path, std::string& error) const {
@@ -98,9 +99,9 @@ bool Settings::save(const std::filesystem::path& path, std::string& error) const
         error = "Cannot save settings in the launcher folder.";
         return false;
     }
-    output << "us " << std::quoted(stored_path(files[0].path, path.parent_path())) << '\n'
-           << "japanese " << std::quoted(stored_path(files[1].path, path.parent_path())) << '\n'
-           << "bios " << std::quoted(stored_path(files[2].path, path.parent_path())) << '\n'
+    output << "us " << std::quoted(stored_path(files[0].path, seed::settings_root(path))) << '\n'
+           << "japanese " << std::quoted(stored_path(files[1].path, seed::settings_root(path))) << '\n'
+           << "bios " << std::quoted(stored_path(files[2].path, seed::settings_root(path))) << '\n'
            << "scale " << std::quoted(std::to_string(scale)) << '\n'
            << seed::kFighterOutlineSetting << ' ' << std::quoted(fighter_outlines ? "1" : "0")
            << '\n'

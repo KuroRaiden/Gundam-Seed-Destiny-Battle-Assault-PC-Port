@@ -1,4 +1,5 @@
 #include "jp_combat_runtime.h"
+#include "move_list.h"
 #include "game_addresses.h"
 #include "jp_frame_probe.h"
 #include "fighter_outline.h"
@@ -304,6 +305,11 @@ int handle_debug_command(const char* request, void (*write)(void*, const char*, 
                 std::to_string(
                     bus_read_u8(jp_address::kBattleContext + jp_address::kBattleStageOffset) & 31) +
                 ",\"requested_stage\":" + std::to_string(match_request.stage) + "}";
+    extended.pop_back();
+    const auto move_fighters = movelist_fighters();
+    extended += ",\"movelist_fighters\":[" + std::to_string(move_fighters[0]) + "," +
+                std::to_string(move_fighters[1]) + "],\"movelist_default\":" +
+                std::to_string(movelist_default_fighter()) + "}";
     write(context, extended.data(), extended.size());
     return 1;
 }
@@ -368,9 +374,11 @@ void configure_jp_combat(gbarecomp::RunOptions& options, const JpCombatRequest& 
     if (!valid_jp_stage(request.stage))
         throw std::runtime_error("Invalid JP stage");
     match_request = request;
+    set_movelist_fighters({request.fighters[0], request.fighters[1]}, true,
+                          request.surface.online ? request.connection.seat : 0);
     const auto* base = SDL_GetBasePath();
     const auto outlines =
-        base ? load_fighter_outline_settings(std::filesystem::path(base) / "launcher-settings.ini")
+        base ? load_fighter_outline_settings(std::filesystem::path(base) / "config/launcher-settings.ini")
              : FighterOutlineSettings{};
     set_fighter_outlines_enabled(outlines.enabled);
     set_fighter_outline_opacity(unsigned(outlines.opacity));

@@ -22,6 +22,8 @@ character select and battle-system injection** supplies the expanded combat.
 - **Online VS:** rollback, automatic NAT hole punching, join codes/links and unlimited rematches in the same room.
 - **Training:** JP practice mode with the US-font English pause menu, **F5 frame meter**, **F6 hitbox/hurtbox viewer**, and **F2 save / F3 load** for practice situations.
 - **Launcher updates:** version display and GitHub release checks, with verified in-place updates that preserve player settings and saves.
+- **Movelist:** **F1** opens all 27 JP roster entries with D-pad and A/B/L/R glyphs, air availability and Berserker types. Offline play pauses; online play continues.
+- **Turbo:** hold keyboard **Tab**. Controller triggers remain available for ordinary button remapping.
 - **Controls:** launcher remapping and **F4** in-game remapping. **Start** cycles colors on character select.
 
 The main menu's **VS Mode** opens online play. **Local VS** occupies the former
@@ -39,6 +41,11 @@ filenames. The launcher prefills relative paths there; **Browse** supports other
 names and locations. Verify the files before launching. ROMs and BIOS are not
 included in downloads.
 
+Starting with 0.1.7, settings/scripts live in **config**, icons and controller
+resources in **resource**, and logs in **Logs**. Existing settings migrate
+automatically. Upgrading from 0.1.6 or older requires manually extracting the
+new ZIP over the existing portable; the old updater cannot read the new layout.
+
 ## Tools and libraries
 
 | Tool | Use | License |
@@ -50,6 +57,7 @@ included in downloads.
 | [GekkoNet](https://github.com/HeatXD/GekkoNet) | Rollback networking | BSD 2-Clause |
 | [AutoPunch](https://github.com/delthas/autopunch) | Compatible NAT rendezvous/hole-punching protocol | MIT |
 | [SDL_GameControllerDB](https://github.com/mdqinc/SDL_GameControllerDB) | Bundled controller mappings | zlib |
+| [Kenney Input Prompts](https://kenney.nl/assets/input-prompts) | D-pad and button glyphs | CC0-1.0 |
 
 Research and testing use [IDA Pro](https://hex-rays.com/ida-pro),
 [Clumsy](https://github.com/jagt/clumsy), [CMake](https://cmake.org/),
@@ -71,5 +79,5 @@ bridge; a fully static recompile remains unfinished.
 
 [Portable setup](docs/Portable.md) · [Local VS](docs/Local-VS.md) ·
 [Online VS](docs/Online-VS.md) · [Stage select](docs/Stage-Select.md) · [Palette editor](docs/MS-colors.md) ·
-[Training tools](docs/Training-Tools.md) · [Frame meter](docs/Training-Frame-Meter.md) · [Source guide](docs/Source-Guide.md) ·
+[Movelist](docs/Movelist.md) · [Training tools](docs/Training-Tools.md) · [Frame meter](docs/Training-Frame-Meter.md) · [Source guide](docs/Source-Guide.md) ·
 [Build notes](docs/Build.md)

@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include "player_profile.h"
+#include "portable_paths.h"
 #include <cstdio>
 #include <fstream>
 #include <iterator>
@@ -31,14 +32,15 @@ bool valid_player_name(const std::string& value) {
            normalize_player_name(value) == value;
 }
 std::string load_player_name(const std::filesystem::path& folder) {
-    std::ifstream file(folder / "player-name.txt", std::ios::binary);
+    std::ifstream file(config_file(folder,"player-name.txt"), std::ios::binary);
     char b[256]{};
     file.read(b, sizeof(b));
     return normalize_player_name(std::string(b, std::size_t(file.gcount())));
 }
 bool save_player_name(const std::filesystem::path& folder, const std::string& name,
                       std::string& error) {
-    const auto target = folder / "player-name.txt", temp = folder / "player-name.txt.tmp";
+    std::filesystem::create_directories(folder / "config");
+    const auto target = config_file(folder,"player-name.txt"), temp = config_file(folder,"player-name.txt.tmp");
     {
         std::ofstream file(temp, std::ios::binary | std::ios::trunc);
         file << normalize_player_name(name);

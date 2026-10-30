@@ -12,6 +12,8 @@
 #include "invite_window.h"
 #include "online_lobby.h"
 #include "training_meter_overlay.h"
+#include "move_list_overlay.h"
+#include "portable_paths.h"
 #include "training_tools.h"
 #include <stdexcept>
 
@@ -398,6 +400,7 @@ struct Backend {
     seed::LiveControls* inputs = &owned_inputs;
     seed::InGameRemap remap;
     seed::TrainingMeterOverlay training_meter;
+    seed::MoveListOverlay movelist;
     seed::OnlineLobby online_lobby;
     bool online_session = false, remap_audio_paused = false, remap_audio_was_paused = true;
     SDL_Window* window = nullptr;
@@ -2119,6 +2122,7 @@ bool HostWindow::open(int scale, int base_w, int base_h, const char* title, cons
     impl_ = b;
     b->remap.initialize(b->window, b->renderer, b->inputs);
     b->training_meter.initialize(b->window, b->renderer);
+    b->movelist.initialize(b->window, b->renderer, b->inputs);
     b->online_lobby.initialize(b->window, b->renderer, b->inputs);
     if (!b->borrowed)
         seed::attach_invite_window(SDL_GetPointerProperty(
@@ -2451,6 +2455,7 @@ void HostWindow::close() {
 #endif
     destroy_sharp_texture(b);
     b->training_meter.shutdown();
+    b->movelist.shutdown();
     b->remap.shutdown();
     b->online_lobby.shutdown();
     if (b->texture)
@@ -2743,6 +2748,7 @@ void HostWindow::present(const uint8_t* rgb888, unsigned sampled_w, unsigned sam
 #endif
     render_host_layers(b);
     b->training_meter.draw(b->online_session);
+    b->movelist.draw(b->online_session);
     b->remap.draw(b->online_session);
     b->online_lobby.draw();
     // MC-WS-002: time the present itself (vsync blocks here — or doesn't)
@@ -2781,7 +2787,7 @@ void HostWindow::load_input_config(const char* dir, bool assist_tools_default,
     auto* b = static_cast<Backend*>(impl_);
     b->assist_tools = assist_tools_default;
     b->assist_fast_forward_multiplier = std::clamp(fast_forward_multiplier_default, 2, 10);
-    const std::string base = std::string(dir) + "/";
+    const std::string base = (std::filesystem::path(dir) / "config").string() + "/";
 
     // keybinds.ini [player1] (recomp-ui generic format, scancode names).
     ini_scan_section((base + "keybinds.ini").c_str(), "player1",
@@ -3033,7 +3039,7 @@ void HostWindow::set_touch_config_dir(const char* dir) {
     if (!open_ || !impl_ || !dir)
         return;
     auto* b = static_cast<Backend*>(impl_);
-    b->touch_config_dir = dir;
+    b->touch_config_dir = (std::filesystem::path(dir) / "config").string();
     ini_scan_section((b->touch_config_dir + "/config.ini").c_str(), "Touch",
                      [b](const char* key, const char* val) {
                          if (SDL_strcasecmp(key, "pad_visible") == 0) {
@@ -3243,6 +3249,8 @@ HostWindow::Events HostWindow::pump() {
     b->inputs->begin_frame();
     while (SDL_PollEvent(&e)) {
         if (b->online_lobby.event(e))
+            continue;
+        if (!b->remap.is_open() && b->movelist.event(e))
             continue;
         if (b->remap.event(e, b->online_session))
             continue;
@@ -3521,8 +3529,8 @@ HostWindow::Events HostWindow::pump() {
         keys &= static_cast<uint16_t>(~touch_buttons);
     }
     ev.keyinput = keys;
-    ev.remap_pause = b->remap.pauses_game(b->online_session);
-    if (b->remap.is_open() || b->online_lobby.is_open())
+    ev.remap_pause = b->remap.pauses_game(b->online_session) || b->movelist.pauses_game(b->online_session);
+    if (b->remap.is_open() || b->movelist.is_open() || b->online_lobby.is_open())
         ev.keyinput = 0x03FF;
     if (ev.remap_pause && !b->remap_audio_paused) {
         b->remap_audio_was_paused =
@@ -3580,25 +3588,9 @@ HostWindow::Events HostWindow::pump() {
     }
 #endif
 
-    // Turbo is level-triggered: held = uncap the frame limiter. The historical
-    // [KeyMap] Turbo binding (default Tab) remains as a compatibility shortcut;
-    // the launcher-editable Assist binding is additive.
-    ev.fast_forward = false;
-    {
-        const HotkeyBind& hb = b->hotkeys[HK_TURBO];
-        if (hb.key != SDLK_UNKNOWN) {
-            SDL_Scancode sc = SDL_GetScancodeFromKey(hb.key, nullptr);
-            if (sc != SDL_SCANCODE_UNKNOWN && ks[sc] && hotkey_mods_ok(hb, SDL_GetModState()))
-                ev.fast_forward = true;
-        }
-    }
-    // Always report the configured physical controls. The runtime owns the
-    // Assist gate, which lets its in-game menu enable or disable these actions
-    // immediately without HostWindow carrying a stale copy of that live state.
-    const SDL_Scancode fast_sc = b->assist_key[1];
-    if ((fast_sc > SDL_SCANCODE_UNKNOWN && fast_sc < SDL_SCANCODE_COUNT && ks[fast_sc]) ||
-        assist_pad_down(b->controller, b->assist_pad[1]))
-        ev.fast_forward = true;
+    // Turbo is exclusively physical keyboard Tab, including migrated configs.
+    // Controller triggers remain available for ordinary game-button remapping.
+    ev.fast_forward = ks[SDL_SCANCODE_TAB] && SDL_GetKeyboardFocus() == b->window;
 
     const SDL_Scancode rewind_sc = b->assist_key[0];
     const bool rewind_down =
@@ -3612,7 +3604,7 @@ HostWindow::Events HostWindow::pump() {
     if (!rewind_down)
         b->assist_rewind_repeat_at = 0;
     b->assist_rewind_was_down = rewind_down;
-    if (b->remap.is_open() || b->online_lobby.is_open()) {
+    if (b->remap.is_open() || b->movelist.is_open() || b->online_lobby.is_open()) {
         ev.fast_forward = false;
         ev.rewind = false;
         ev.mouse_gyro_active = false;

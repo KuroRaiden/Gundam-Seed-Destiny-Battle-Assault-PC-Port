@@ -11,6 +11,7 @@
 #include "imgui_stdlib.h"
 #include "platform.h"
 #include "settings.h"
+#include "portable_paths.h"
 #include "update.h"
 #include "ms_colors_ui.h"
 #include "../src/controller_db.h"
@@ -61,7 +62,7 @@ struct App {
     seed::ControllerDbResult controller_db;
 
     void save() {
-        if (!settings.save(folder / L"launcher-settings.ini", message))
+        if (!settings.save(folder / L"config/launcher-settings.ini", message))
             error = true;
     }
     void verify_all() {
@@ -75,7 +76,7 @@ struct App {
         devices.refresh();
     }
     bool save_controls() {
-        if (!controls.save(folder / L"controls.ini", message)) {
+        if (!controls.save(folder / L"config/controls.ini", message)) {
             error = true;
             return false;
         }
@@ -132,7 +133,7 @@ struct App {
             args.push_back(L"--prepare-game-assets");
             preparation_failed = false;
             error = !preparation.start(folder / L"GundamSeedRecomp.exe", args,
-                                       folder / L"first-launch.log", message);
+                                       folder / L"Logs/first-launch.log", message);
             if (!error)
                 message = "Preparing local game files for the first launch. The game will open "
                           "automatically; please keep the launcher open.";
@@ -142,7 +143,7 @@ struct App {
             args.push_back(L"--join-code");
             args.push_back(sl::wide(join_code));
         }
-        if (!game.start(folder / L"GundamSeedRecomp.exe", args, folder / L"last-game.log",
+        if (!game.start(folder / L"GundamSeedRecomp.exe", args, folder / L"Logs/last-game.log",
                         message)) {
             error = true;
             return;
@@ -219,7 +220,7 @@ void play_page(App& app) {
     card_begin("baseline", 200);
     ImGui::TextUnformatted("Start playing");
     ImGui::TextWrapped(
-        "Choose your game mode in the game. Press F4 during play to remap controls.");
+        "Choose your game mode in the game. F1: movelist. F4: controls. Hold Tab: turbo.");
     const bool host = std::filesystem::is_regular_file(app.folder / L"GundamSeedRecomp.exe");
     const bool art =
         std::filesystem::is_regular_file(app.folder / L"assets" / L"destiny-selection.bin");
@@ -256,7 +257,7 @@ void play_page(App& app) {
     if (ImGui::SliderInt("Game window size", &app.settings.scale, 2, 6, "%dx"))
         app.save();
     if (ImGui::Checkbox("Black sprite outlines", &app.settings.fighter_outlines)) {
-        if (!app.settings.save(app.folder / L"launcher-settings.ini", app.message)) {
+        if (!app.settings.save(app.folder / L"config/launcher-settings.ini", app.message)) {
             app.settings.fighter_outlines = !app.settings.fighter_outlines;
             app.error = true;
         } else {
@@ -269,7 +270,7 @@ void play_page(App& app) {
     const int previous_opacity = app.settings.fighter_outline_opacity;
     if (ImGui::SliderInt("Outline opacity", &app.settings.fighter_outline_opacity, 0, 100,
                          "%d%%")) {
-        if (!app.settings.save(app.folder / L"launcher-settings.ini", app.message)) {
+        if (!app.settings.save(app.folder / L"config/launcher-settings.ini", app.message)) {
             app.settings.fighter_outline_opacity = previous_opacity;
             app.error = true;
         } else {
@@ -289,7 +290,7 @@ void play_page(App& app) {
         ImGui::TextWrapped("%s", app.message.c_str());
         ImGui::PopStyleColor();
         const auto log =
-            app.folder / (app.preparation_failed ? L"first-launch.log" : L"last-game.log");
+            app.folder / (app.preparation_failed ? L"Logs/first-launch.log" : L"Logs/last-game.log");
         if (std::filesystem::is_regular_file(log) && ImGui::SmallButton("Open startup/game log"))
             sl::open_file(log);
     }
@@ -363,8 +364,8 @@ bool capture_binding_event(App& app, const SDL_Event& event) {
         capture.player = -1;
         return true;
     }
-    if (event.type == SDL_EVENT_KEY_DOWN && event.key.scancode == SDL_SCANCODE_F4) {
-        app.message = "F4 is reserved for in-game remapping. Choose another key.";
+    if (event.type == SDL_EVENT_KEY_DOWN && (event.key.scancode == SDL_SCANCODE_F4 || event.key.scancode == SDL_SCANCODE_F1)) {
+        app.message = "F1 and F4 are reserved. Choose another key.";
         return true;
     }
     if (!capture.neutral || SDL_GetTicks() < capture.armed_at)
@@ -681,7 +682,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         const HRESULT com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
         App app;
         app.folder = sl::executable_directory();
-        app.settings.load(app.folder / L"launcher-settings.ini");
+        seed::prepare_portable_folders(app.folder);
+        app.settings.load(app.folder / L"config/launcher-settings.ini");
         app.updates = std::make_unique<sl::LauncherUpdates>(app.folder);
         app.colors.initialize(app.folder);
         int argc = 0;
@@ -758,7 +760,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
             throw std::runtime_error(SDL_GetError());
         app.controller_db = seed::load_controller_db(app.folder);
-        app.controls.load(app.folder / L"controls.ini");
+        app.controls.load(app.folder / L"config/controls.ini");
         app.saved_controls = app.controls;
         app.window = SDL_CreateWindow("Gundam SEED Destiny / Battle Assault - PC Launcher", 1100,
                                       820, SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
@@ -817,7 +819,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             if (const auto code = app.game.poll()) {
                 app.preparation_failed = false;
                 if (app.controls == app.saved_controls) {
-                    app.controls.load(app.folder / L"controls.ini");
+                    app.controls.load(app.folder / L"config/controls.ini");
                     app.saved_controls = app.controls;
                 }
                 app.hidden = false;

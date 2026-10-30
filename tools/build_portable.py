@@ -35,7 +35,7 @@ def main():
                     else args.version)
     for field in ("app", "launcher", "crt"):
         setattr(args, field, getattr(args, field).resolve(strict=True))
-    receipt_path = args.launcher.parent / "launcher-build.json"
+    receipt_path = args.launcher.parent / "config/launcher-build.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     if receipt.get("version") != args.version or receipt.get("sha256") != digest(args.launcher):
         raise RuntimeError("Launcher binary/version does not match its build receipt; rebuild before packaging")
@@ -43,7 +43,7 @@ def main():
     archive = args.out.parent / (args.out.name + ".zip")
     if args.out.exists() or archive.exists():
         raise RuntimeError("Portable output already exists; refusing to replace it")
-    required = ["GundamSeedRecomp.exe", "SeedJpCombat.dll", "SDL3.dll", "controllerdb.txt", "Update-Portable.ps1"]
+    required = ["GundamSeedRecomp.exe", "SeedJpCombat.dll", "SDL3.dll", "resource/controllerdb.txt", "config/Update-Portable.ps1"]
     for name in required:
         if not (args.app / name).is_file():
             raise RuntimeError("Missing runtime file: " + name)
@@ -52,30 +52,38 @@ def main():
         {path.name.lower() for path in crt_files}
     ):
         raise RuntimeError("Incomplete x64 C++ runtime")
-    icons = {name for name in BRAND_ICON_FILES if (args.app / name).is_file()}
+    icons = {name for name in BRAND_ICON_FILES if (args.app / "resource" / name).is_file()}
     if icons and icons != BRAND_ICON_FILES:
         raise RuntimeError("Incomplete branding icons")
     for name in icons:
-        if digest(args.app / name) != APPROVED_BRAND_ICONS[name]:
+        if digest(args.app / "resource" / name) != APPROVED_BRAND_ICONS[name]:
             raise RuntimeError("Unapproved branding icon: " + name)
     args.out.mkdir(parents=True)
+    for directory in ("config","resource","Logs"):
+        (args.out / directory).mkdir()
     for name in required:
+        (args.out / name).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(args.app / name, args.out / name)
     shutil.copy2(args.launcher, args.out / "GundamSeedLauncher.exe")
     for name in icons:
-        shutil.copy2(args.app / name, args.out / name)
-    licenses = args.out / "licenses"
+        shutil.copy2(args.app / "resource" / name, args.out / "resource" / name)
+    licenses = args.out / "resource/licenses"
     licenses.mkdir()
-    for path in sorted((args.app / "licenses").glob("*.txt")):
+    for path in sorted((args.app / "resource/licenses").glob("*.txt")):
         text = path.read_text(encoding="utf-8-sig")
         if chr(0) in text:
             raise RuntimeError("Unexpected binary license file")
         (licenses / path.name).write_text(text, encoding="utf-8")
     for path in crt_files:
         shutil.copy2(path, args.out / path.name)
-    (args.out / "launcher-settings.ini").write_text(
+    (args.out / "config/launcher-settings.ini").write_text(
         PORTABLE_SETTINGS, encoding="utf-8", newline="\n"
     )
+    prompts = Path(__file__).resolve().parents[1] / "resources/input-prompts"
+    (args.out / "resource/input-prompts").mkdir()
+    for path in prompts.glob("*.png"):
+        shutil.copy2(path,args.out / "resource/input-prompts" / path.name)
+    shutil.copy2(prompts / "Kenney-Input-Prompts.txt",licenses / "Kenney-Input-Prompts.txt")
     (args.out / "gamefiles").mkdir()
     (args.out / GAMEFILES_MARKER).write_bytes(GAMEFILES_MARKER_TEXT)
     (args.out / "START HERE.txt").write_text(
@@ -115,8 +123,17 @@ The bottom left of the launcher shows its version. Open Updates to check this
 project's stable GitHub releases. Download update verifies the package; Install
 and restart replaces application files in this folder while preserving settings,
 controls, names, colors, saves, game files and locally generated art caches.
-Close the game before installing. A rollback copy stays in .updates/.
+Close the game before installing. A rollback copy stays in config/updates/.
 
+Files are organized into config/ (settings and scripts), resource/ (icons, input
+glyphs, controller database and licenses), and Logs/. Game art remains in assets/.
+Existing root settings migrate automatically without changing saved game paths.
+When upgrading from 0.1.6 or older, extract this ZIP over your portable manually;
+the old built-in updater cannot read the new folder layout.
+
+F1 opens the movelist with Kenney direction/button glyphs and Berserker types.
+The reference uses simplified controls; F1 pauses offline while online play continues.
+Hold keyboard Tab for turbo; controllers never trigger turbo.
 Press F4 during play to remap controls. In Training, F5 toggles the frame
 meter without pausing: green startup, red active, blue recovery, yellow hitstun.
 After choosing both fighters, select a stage with left/right and confirm with A.
@@ -155,8 +172,8 @@ https://visualstudio.microsoft.com/license-terms/
         if path.is_file()
     }
     manifest = {
-        "schema": 5,
-        "distribution_format": "seedpc-runtime-only-v4",
+        "schema": 6,
+        "distribution_format": "seedpc-runtime-only-v5",
         "update_preserves_settings": True,
         "gamefiles_directory": "gamefiles",
         "version": args.version,
@@ -173,12 +190,13 @@ https://visualstudio.microsoft.com/license-terms/
         "relative_game_paths": True,
         "files": files,
     }
-    (args.out / "portable-manifest.json").write_text(
+    (args.out / "config/portable-manifest.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
     with zipfile.ZipFile(
         archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6
     ) as package:
+        package.write(args.out / "Logs", Path(args.out.name) / "Logs")
         for path in sorted(args.out.rglob("*")):
             if path.is_file():
                 package.write(path, Path(args.out.name) / path.relative_to(args.out))

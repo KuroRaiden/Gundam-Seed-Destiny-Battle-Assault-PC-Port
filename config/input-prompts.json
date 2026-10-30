@@ -1,0 +1,15 @@
+{
+  "license": "CC0-1.0",
+  "author": "Kenney",
+  "source": "https://kenney.nl/assets/input-prompts",
+  "files": {
+    "switch_button_a.png": "c24af67ce34d3116e4750f052221d6bfe8a87cb0de8364bb23a573a85391fb10",
+    "switch_button_b.png": "5d95680fcfbf59ba94a3cc696fd8251e4fe292b421716b90b5272ca5b32d91bf",
+    "switch_button_l.png": "944cbe119693f0bbae7bfceb9cb453c5ee4da898180441937190aeedb6bc0b83",
+    "switch_button_r.png": "9a1a982e2f6ed96863d796809007298cd4108ac3b04e425f279d486ddd6051b1",
+    "switch_dpad_down.png": "0c5575b0a55094a126f519ed03db7828494a9ad690aea347cd2cf561b6274134",
+    "switch_dpad_left.png": "5ee558c3e5f0730edaec92736aef31b5b3d07137f4a566bf8121904d49dc2af5",
+    "switch_dpad_right.png": "71f43769a4d5d0f3a4dcaebf10f457ae14fb982ac2b876ec58486412ab78db49",
+    "switch_dpad_up.png": "d89abc2e95dfdf35e1bda26ed8a0e67fd4403b9eec94f051629f234f891ccef6"
+  }
+}

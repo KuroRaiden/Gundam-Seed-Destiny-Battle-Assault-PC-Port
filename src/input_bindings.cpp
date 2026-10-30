@@ -217,8 +217,8 @@ std::string key_binding_name(SDL_Scancode key) {
 }
 std::filesystem::path controls_path() {
     const auto* base = SDL_GetBasePath();
-    return base ? std::filesystem::u8path(base) / "controls.ini"
-                : std::filesystem::path("controls.ini");
+    return base ? std::filesystem::u8path(base) / "config/controls.ini"
+                : std::filesystem::path("config/controls.ini");
 }
 void InputDevices::refresh() {
     if (!SDL_WasInit(SDL_INIT_GAMEPAD))

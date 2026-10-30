@@ -67,3 +67,17 @@ __pycache__/
 /server/matchmaking/.wrangler/
 /server/matchmaking/.dev.vars
 /.wrangler/
+
+# Local portable settings and logs under the organized 0.1.7 layout.
+/config/launcher-settings.ini
+/config/controls.ini*
+/config/ms-colors.ini*
+/config/player-name.txt*
+/config/rom.cfg
+/config/bios.cfg
+/config/recomp_coverage_*.json
+/config/recomp_master_misses_*.toml.frag
+/config/launcher-build.json
+/config/migration-backups/
+/config/updates/
+/Logs/

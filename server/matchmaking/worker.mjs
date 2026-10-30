@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { DiscordQueueAnnouncer, discordHealth } from "./discord.mjs";
+import { githubReleaseWebhook, ReleaseAnnouncer } from "./github-releases.mjs";
 import { LobbyCore, PROTOCOL, COMPATIBILITY, SUPPORTED_BUILDS, REGIONS } from "./core.mjs";
 function json(value, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
@@ -7,6 +8,11 @@ function json(value, status = 200) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if(url.pathname==="/v1/github/releases")return githubReleaseWebhook(request,env,release=>{
+      // Separate durable instance: release HTTP requests never touch the lobby.
+      const notifier=env.MATCHMAKER.get(env.MATCHMAKER.idFromName("github-release-announcements-v1"));
+      return notifier.publishRelease(release);
+    });
     if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
     if (url.pathname === "/" || url.pathname === "/health")
       return json({ service: "seedpc-matchmaking", status: "ok", protocol: PROTOCOL,
@@ -23,11 +29,13 @@ export class Matchmaker extends DurableObject {
     this.ctx = ctx;
     this.discord = new DiscordQueueAnnouncer({ storage: ctx.storage,
       queue: () => this.core(false).waiting("any",null).map(peer => peer.data), env });
+    this.releases=new ReleaseAnnouncer({storage:ctx.storage,env});
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
   peers() {
     return this.ctx.getWebSockets().map(socket => ({ socket, data: socket.deserializeAttachment() }));
   }
+  async publishRelease(release){return this.releases.publish(release);}
   core(notify = true) {
     return new LobbyCore(() => this.peers(), { fresh: peer => Math.max(peer.data.lastSeen,
       this.ctx.getWebSocketAutoResponseTimestamp(peer.socket)?.getTime() ?? 0),

@@ -90,16 +90,26 @@ astronaut shop portrait selected for **Lacus - Launcher Updates**. The queue
 webhook retains the profile picture selected by the server owner.
 
 The repository's GitHub webhook sends **Releases** events as `application/json`
-to the release webhook URL with `/github` appended. SSL verification and Active
-are enabled. The private posting URL lives in GitHub's webhook configuration;
-it must never be committed or included in a portable build. Discord's built-in
-GitHub-compatible endpoint formats release announcements. This connection does
-not need another service or a recurring polling job.
+to the existing Worker's `/v1/github/releases` endpoint. SSL verification and
+Active are enabled. A shared 64-character hexadecimal signing secret is stored
+in GitHub's webhook configuration and the Worker's
+`GITHUB_RELEASE_WEBHOOK_SECRET` secret. The channel's private posting URL lives
+in the Worker's `DISCORD_RELEASE_WEBHOOK_URL` secret. Neither credential belongs
+in source or portable builds.
+
+The Worker verifies GitHub's HMAC-SHA256 signature and repository, accepts only
+published releases, then posts an ordinary Discord webhook message. This keeps
+the chosen Lacus name and avatar: Discord's `/github` compatibility endpoint
+overrides both with GitHub branding. Pre-releases are labelled. Notifications
+use a separate durable instance, deduplicate by release ID, and send no role
+mentions. A pending or uncertain POST is not automatically repeated after a
+restart. Rejected requests can be redelivered from GitHub's delivery page.
+There is no recurring polling job.
 
 Manage this under **Repository Settings → Webhooks** and inspect **Recent
-Deliveries** after publishing a release. The release event family includes
-release creation, editing, publication, unpublishing and deletion; Discord
-decides which supported actions to display.
+Deliveries** after publishing a release. Signed ping requests test the
+connection without posting. Other release actions are acknowledged without
+announcements.
 
 References: [Discord webhooks](https://docs.discord.com/developers/resources/webhook),
 [allowed role mentions](https://docs.discord.com/developers/resources/message#allowed-mentions-object),

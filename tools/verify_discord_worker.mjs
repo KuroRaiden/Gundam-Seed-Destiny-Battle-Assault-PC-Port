@@ -15,6 +15,7 @@ const root=fileURLToPath(new URL("../",import.meta.url));
 const script=buildSync({stdin:{resolveDir:root,contents:`
 import {DiscordQueueAnnouncer} from './server/matchmaking/discord.mjs';
 import {COMPATIBILITY} from './server/matchmaking/core.mjs';
+import {ReleaseAnnouncer,githubReleaseWebhook} from './server/matchmaking/github-releases.mjs';
 export default {async fetch(){
   const values=new Map();
   const storage={get:async key=>structuredClone(values.get(key)),
@@ -30,7 +31,21 @@ export default {async fetch(){
   const probe=await bot.diagnostics();
   await bot.tick();
   queued=[];await bot.tick();
-  return Response.json({probe,final:await bot.diagnostics()});
+  const releaseEnv={DISCORD_RELEASE_WEBHOOK_URL:env.DISCORD_WEBHOOK_URL,
+    GITHUB_RELEASE_WEBHOOK_SECRET:'a'.repeat(64)};
+  const releasePayload=JSON.stringify({action:'published',
+    repository:{full_name:'KuroRaiden/Gundam-Seed-Destiny-Battle-Assault-PC-Port'},
+    release:{id:123,tag_name:'v0.1.6',name:'0.1.6',body:'Release test',
+      html_url:'https://github.com/KuroRaiden/Gundam-Seed-Destiny-Battle-Assault-PC-Port/releases/tag/v0.1.6'}});
+  const signingKey=await crypto.subtle.importKey('raw',new TextEncoder().encode(releaseEnv.GITHUB_RELEASE_WEBHOOK_SECRET),
+    {name:'HMAC',hash:'SHA-256'},false,['sign']);
+  const signature=Array.from(new Uint8Array(await crypto.subtle.sign('HMAC',signingKey,new TextEncoder().encode(releasePayload))),
+    value=>value.toString(16).padStart(2,'0')).join('');
+  const poster=new ReleaseAnnouncer({storage,env:releaseEnv});
+  const releaseResult=await githubReleaseWebhook(new Request('https://example.com/v1/github/releases',
+    {method:'POST',body:releasePayload,headers:{'X-GitHub-Event':'release','X-Hub-Signature-256':'sha256='+signature}}),
+    releaseEnv,notice=>poster.publish(notice));
+  return Response.json({probe,final:await bot.diagnostics(),release:await releaseResult.json()});
 }};`},bundle:true,format:"esm",platform:"browser",write:false}).outputFiles[0].text;
 const requests=[];
 const options={modules:true,script,compatibilityDate:"2026-10-27",rootPath:process.cwd(),
@@ -48,11 +63,15 @@ try{
   if(result.probe.webhook.status!=="reachable")console.log(JSON.stringify({runtimeProbe:result,interceptedMethods:requests.map(request=>request.method)}));
   assert.equal(result.probe.webhook.status,"reachable");
   assert.equal(result.final.delivery.status,"delivered");
-  assert.deepEqual(requests.map(request=>request.method),["GET","POST","PATCH"]);
+  assert.equal(result.release.status,"sent");
+  assert.deepEqual(requests.map(request=>request.method),["GET","POST","PATCH","POST"]);
   for(const request of requests)assert.match(request.userAgent,/^DiscordBot /);
   assert.equal(requests[1].body.allowed_mentions.roles.length,2);
   assert.deepEqual(requests[2].body.allowed_mentions,{parse:[]});
+  assert.equal(requests[3].body.username,undefined);
+  assert.equal(requests[3].body.avatar_url,undefined);
   console.log(JSON.stringify({passed:["Workers native fetch receiver","readiness probe",
-    "NA queue announcement","cancelled queue closes message","no repeated role mention"],
+    "NA queue announcement","cancelled queue closes message","no repeated role mention",
+    "GitHub HMAC verification","release post preserves selected Lacus identity"],
     realDiscordRequests:0}));
 }finally{await mf.dispose();}

@@ -228,12 +228,14 @@ if(WIN32)
   target_link_libraries(seed_launcher_updates PUBLIC seed_launcher_platform winhttp)
   add_executable(seed_launcher_update_tests tests/launcher_update_tests.cpp)
   target_link_libraries(seed_launcher_update_tests PRIVATE seed_launcher_updates)
-  add_executable(GundamSeedLauncher WIN32 launcher/main.cpp launcher/ms_colors_ui.cpp)
+  add_executable(GundamSeedLauncher WIN32 launcher/main.cpp launcher/ms_colors_ui.cpp launcher/themes.cpp launcher/title_logo.cpp)
   target_compile_definitions(GundamSeedLauncher PRIVATE SDL_MAIN_HANDLED)
   target_link_libraries(GundamSeedLauncher PRIVATE seed_imgui seed_launcher_platform seed_launcher_updates seed_controls seed_links seed_ms_colors seed_replays seed_movelist)
   target_sources(GundamSeedLauncher PRIVATE src/app.manifest)
   set(SEED_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/app" CACHE PATH "Packaged runtime destination")
   add_custom_command(TARGET GundamSeedLauncher POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Themes" "$<TARGET_FILE_DIR:GundamSeedLauncher>/Themes"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/Themes" "${SEED_APP_DIR}/Themes"
     COMMAND ${CMAKE_COMMAND} -E make_directory "${SEED_APP_DIR}/resource/licenses" "${SEED_APP_DIR}/config" "$<TARGET_FILE_DIR:GundamSeedLauncher>/config"
     COMMAND ${CMAKE_COMMAND} "-DAPP=$<TARGET_FILE:GundamSeedLauncher>" "-DVERSION=${SEED_LAUNCHER_VERSION}" "-DDESTINATION=${SEED_APP_DIR}" -P "${CMAKE_CURRENT_SOURCE_DIR}/tools/launcher-build-receipt.cmake"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/launcher/Update-Portable.ps1" "${SEED_APP_DIR}/config/Update-Portable.ps1"

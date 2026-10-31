@@ -50,6 +50,8 @@ APPROVED_BRAND_ICONS = json.loads(
 
 GLYPH_HASHES = json.loads((ROOT / "config/input-prompts.json").read_text())["files"]
 GLYPH_FILES = {"resource/input-prompts/" + name for name in GLYPH_HASHES}
+THEME_HASHES = json.loads((ROOT / "config/launcher-themes.json").read_text())["files"]
+THEME_FILES = {"Themes/" + name for name in THEME_HASHES}
 V5_RUNTIME_FILES = {"GundamSeedRecomp.exe", "GundamSeedLauncher.exe", "SeedJpCombat.dll",
                     "SDL3.dll", "resource/controllerdb.txt", "config/launcher-settings.ini",
                     "START HERE.txt", "config/portable-manifest.json"}
@@ -85,7 +87,7 @@ def audit_archive(path, forbidden_inputs=()):
                  (len(name.parts) == 4 and name.parts[1:3] == ("resource","licenses"))) and name.suffix == ".txt"
             )
             if (
-                relative not in RUNTIME_FILES | UPDATER_FILES | CRT_FILES | BRAND_ICON_FILES | V5_RUNTIME_FILES | V5_UPDATER_FILES | V5_BRAND_FILES | GLYPH_FILES | {GAMEFILES_MARKER}
+                relative not in RUNTIME_FILES | UPDATER_FILES | CRT_FILES | BRAND_ICON_FILES | V5_RUNTIME_FILES | V5_UPDATER_FILES | V5_BRAND_FILES | GLYPH_FILES | THEME_FILES | {GAMEFILES_MARKER}
                 and not license_file
             ):
                 raise ValueError("Forbidden release file: " + relative)
@@ -111,7 +113,7 @@ def audit_archive(path, forbidden_inputs=()):
     actual_members = members
     organized = "config/portable-manifest.json" in members
     if organized:
-        allowed = V5_RUNTIME_FILES | V5_UPDATER_FILES | V5_BRAND_FILES | GLYPH_FILES | CRT_FILES | {GAMEFILES_MARKER}
+        allowed = V5_RUNTIME_FILES | V5_UPDATER_FILES | V5_BRAND_FILES | GLYPH_FILES | THEME_FILES | CRT_FILES | {GAMEFILES_MARKER}
         if not (V5_RUNTIME_FILES | GLYPH_FILES).issubset(members):
             raise ValueError("Incomplete organized runtime package")
         if any(name not in allowed and not (name.startswith("resource/licenses/") and name.count("/") == 2 and name.endswith(".txt")) for name in members):
@@ -149,6 +151,13 @@ def audit_archive(path, forbidden_inputs=()):
     if updater and manifest.get("update_preserves_settings") is not True:
         raise ValueError("Missing settings-preserving update policy")
     icons = BRAND_ICON_FILES.intersection(members)
+    present_themes = THEME_FILES.intersection(members)
+    if present_themes:
+        if present_themes != THEME_FILES:
+            raise ValueError("Incomplete launcher themes")
+        for name, value in THEME_HASHES.items():
+            if hashlib.sha256(members["Themes/" + name]).hexdigest() != value:
+                raise ValueError("Unapproved launcher theme file: " + name)
     branded = bool(icons)
     if distribution == "seedpc-runtime-only-v1" and branded:
         raise ValueError("Unexpected branding in a legacy runtime package")

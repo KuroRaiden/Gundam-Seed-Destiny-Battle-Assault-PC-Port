@@ -1,5 +1,11 @@
 # Native launcher
 
+Choose **Default**, **Earth Alliance**, or **ZAFT** under **Play > Launcher theme**.
+The `Themes/` folder holds their palettes and the supplied faction emblems.
+The choice saves automatically. The upper-left SEED Destiny logo is decoded
+from the verified Japanese ROM in memory. These presentation choices do not
+change gameplay, netplay, replay compatibility or Training snapshot colors.
+
 The launcher uses Dear ImGui and SDL3. Select and verify the US cartridge,
 Japanese cartridge and extracted BIOS on **Game files**, then launch from
 **Play**. Supported sizes and hashes are checked again before launching.

@@ -75,6 +75,8 @@ void Settings::load(const std::filesystem::path& path) {
             files[1].path = value;
         else if (key == "bios")
             files[2].path = value;
+        else if (key == "theme")
+            theme = value == "earth-alliance" || value == "zaft" ? value : "default";
         else if (key == "scale") {
             try {
                 scale = std::clamp(std::stoi(value), 2, 6);
@@ -103,6 +105,7 @@ bool Settings::save(const std::filesystem::path& path, std::string& error) const
            << "japanese " << std::quoted(stored_path(files[1].path, seed::settings_root(path))) << '\n'
            << "bios " << std::quoted(stored_path(files[2].path, seed::settings_root(path))) << '\n'
            << "scale " << std::quoted(std::to_string(scale)) << '\n'
+           << "theme " << std::quoted(theme) << '\n'
            << seed::kFighterOutlineSetting << ' ' << std::quoted(fighter_outlines ? "1" : "0")
            << '\n'
            << seed::kFighterOutlineOpacitySetting << ' '

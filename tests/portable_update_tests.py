@@ -31,7 +31,7 @@ def quote(value):
 def make_case(work, name, mutation=None, organized=False, legacy_install=False):
     folder = work / name / "portable 日本語's folder"
     folder.mkdir(parents=True)
-    personal = {'launcher-settings.ini': b'fighter_outlines "0"\nus "external selected cartridge"\n',
+    personal = {'launcher-settings.ini': b'fighter_outlines "0"\nus "external selected cartridge"\ntheme "zaft"\n',
                 'controls.ini': b'custom controller mappings', 'player-name.txt': b'Kuro',
                 'player-profile.ini': b'local identity', 'ms-colors.ini': b'custom palettes',
                 'game-us.sav': b'player progress', 'game-jp.sav.training.state': b'practice state',
@@ -45,6 +45,8 @@ def make_case(work, name, mutation=None, organized=False, legacy_install=False):
            'controllerdb.txt': b'old controller database', 'portable-manifest.json': b'{"version":"0.1.2"}'}
     if organized and not legacy_install:
         personal = {('config/' + k if k.endswith('.ini') or k == 'player-name.txt' else k):v for k,v in personal.items()}
+    personal['Themes/MyTheme.ini'] = b'# personal theme extension'
+    personal['snapshots/my-snapshot.png'] = b'personal Training image'
     for relative, data in (personal | old).items():
         target = folder / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -66,6 +68,9 @@ def make_case(work, name, mutation=None, organized=False, legacy_install=False):
         for name in ('switch_dpad_up','switch_dpad_down','switch_dpad_left','switch_dpad_right','switch_button_a','switch_button_b','switch_button_l','switch_button_r'):
             files['resource/input-prompts/'+name+'.png'] = (ROOT / 'resources/input-prompts' / (name+'.png')).read_bytes()
         manifest['schema']=6; manifest['distribution_format']='seedpc-runtime-only-v5'
+        for file in (ROOT / 'Themes').iterdir():
+            if file.is_file():
+                files['Themes/' + file.name] = file.read_bytes()
         manifest['files']={k:{'bytes':len(v),'sha256':digest(v)} for k,v in files.items()}
     if mutation:
         mutation(files, manifest)

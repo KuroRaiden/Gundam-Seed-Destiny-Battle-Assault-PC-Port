@@ -14,6 +14,7 @@ from audit_release import (
     PORTABLE_SETTINGS,
     GAMEFILES_MARKER,
     GAMEFILES_MARKER_TEXT,
+    THEME_HASHES,
 )
 
 
@@ -83,6 +84,12 @@ def main():
     (args.out / "resource/input-prompts").mkdir()
     for path in prompts.glob("*.png"):
         shutil.copy2(path,args.out / "resource/input-prompts" / path.name)
+    themes = Path(__file__).resolve().parents[1] / "Themes"
+    (args.out / "Themes").mkdir()
+    for name, expected in THEME_HASHES.items():
+        if digest(themes / name) != expected:
+            raise RuntimeError("Unapproved launcher theme file: " + name)
+        shutil.copy2(themes / name, args.out / "Themes" / name)
     shutil.copy2(prompts / "Kenney-Input-Prompts.txt",licenses / "Kenney-Input-Prompts.txt")
     (args.out / "gamefiles").mkdir()
     (args.out / GAMEFILES_MARKER).write_bytes(GAMEFILES_MARKER_TEXT)
@@ -121,6 +128,10 @@ F7 saves a clean PNG in snapshots/: solid #101C2B blue, with the stage and HUD
 removed. Enabled F5 frame-meter and F6 collision overlays stay in the image.
 Normal Training visuals stay unchanged. Snapshots are disabled in other modes.
 The US font cache is generated locally from your US game file.
+Choose Default, Earth Alliance or ZAFT under Play > Launcher theme.
+Theme palettes and the supplied faction emblems live in Themes/; your choice
+saves with your settings. The SEED Destiny sidebar logo is generated in memory
+from your verified Japanese ROM. No title-logo cache is included in this ZIP.
 
 The bottom left of the launcher shows its version. Open Updates to check this
 project's stable GitHub releases. Download update verifies the package; Install

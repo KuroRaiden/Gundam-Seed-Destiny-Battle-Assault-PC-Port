@@ -47,6 +47,8 @@ function Get-RuntimeNames {
         'gamefiles/Game_and_Bios_Here.file',
         'config/launcher-settings.ini', 'config/portable-manifest.json', 'config/Update-Portable.ps1',
         'resource/Haro.ico', 'resource/LauncherShip.ico', 'resource/controllerdb.txt',
+        'Themes/Default.ini', 'Themes/EarthAlliance.ini', 'Themes/ZAFT.ini',
+        'Themes/EarthAlliance.png', 'Themes/ZAFT.png', 'Themes/README.txt',
         'resource/input-prompts/switch_dpad_up.png', 'resource/input-prompts/switch_dpad_down.png',
         'resource/input-prompts/switch_dpad_left.png', 'resource/input-prompts/switch_dpad_right.png',
         'resource/input-prompts/switch_button_a.png', 'resource/input-prompts/switch_button_b.png',
@@ -85,7 +87,7 @@ function Expand-VerifiedPortable([string]$ZipPath, [string]$Destination, [string
                 throw 'Unexpected portable root or version.'
             }
             if ($entry.FullName.EndsWith('/')) {
-                if ($parts.Count -gt 3 -or ($parts.Count -ge 2 -and $parts[1] -cnotin @('licenses','gamefiles','config','resource','Logs','replays')) -or ($parts.Count -eq 3 -and ($parts[1] -cne 'resource' -or $parts[2] -cnotin @('licenses','input-prompts')))) {
+                if ($parts.Count -gt 3 -or ($parts.Count -ge 2 -and $parts[1] -cnotin @('licenses','gamefiles','config','resource','Logs','replays','Themes')) -or ($parts.Count -eq 3 -and ($parts[1] -cne 'resource' -or $parts[2] -cnotin @('licenses','input-prompts')))) {
                     throw 'Unexpected archive directory.'
                 }
                 continue

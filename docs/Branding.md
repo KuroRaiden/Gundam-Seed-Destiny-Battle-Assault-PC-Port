@@ -22,10 +22,27 @@ retains Haro when borrowing the main game window.
 its approved original. The native SDL host test reads WM_GETICON pixels for
 the game's Haro and the same ship-setting helper used by the launcher.
 
-`config/brand-icons.json` records the only two art files permitted in portable
+`config/brand-icons.json` records the only two ROM-derived art files permitted in portable
 packages and their SHA-256 hashes. Distribution formats seedpc-runtime-only-v2/v3
 require those exact files when branding is included and prohibits game asset caches. The legacy v1
 format still permits no art. The packaging test rejects extra ROM/BIOS/cache
 files and modified icons even if their manifest hashes have been rewritten.
 The requested icons do not authorize packaging cartridge, BIOS, selector or
 color-preview data; those continue to come from the player's own files.
+
+The launcher sidebar decodes the original Japanese SEED Destiny title logo in
+memory after verifying the user's Japanese ROM. Group 2 resources 13, 14 and 15
+provide its 4bpp tiles, 30x20 tilemap and palette. The transparent logo is trimmed
+to its visible bounds. No ROM, title image or generated title cache is bundled
+or committed. Without a verified Japanese ROM, the text heading remains available.
+
+`Themes/` contains Default, Earth Alliance and ZAFT palettes and the two faction
+emblems supplied by the user. These separate assets are pinned by
+`config/launcher-themes.json`; the release audit rejects extra or modified theme
+assets. Choose a palette under **Play > Launcher theme**. The choice is saved in
+the existing launcher settings, and theme changes affect only the launcher.
+Earth Alliance uses the emblem's cyan/blue and green; ZAFT uses its red/blue.
+The in-game palette editor, technical overlay colors and snapshot background
+are independent of these themes. Updates preserve the theme preference and any
+extra personal theme files. Older updaters without support for `Themes/` require
+manual ZIP extraction for this first theme-enabled build.

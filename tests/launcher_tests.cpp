@@ -107,6 +107,7 @@ int wmain(int argc, wchar_t** argv) {
         }
         const auto settings_path = scratch / L"launcher-settings.ini";
         sl::Settings original;
+        original.theme = "zaft";
         original.scale = 5;
         original.fighter_outlines = false;
         original.fighter_outline_opacity = 55;
@@ -120,6 +121,7 @@ int wmain(int argc, wchar_t** argv) {
         sl::Settings loaded;
         loaded.load(settings_path);
         require(loaded.scale == 4, "Scale did not persist");
+        require(loaded.theme == "zaft", "Launcher theme did not persist");
         require(!loaded.fighter_outlines, "Disabled outline setting did not persist");
         require(loaded.fighter_outline_opacity == 55, "Outline opacity did not persist");
         loaded.fighter_outlines = true;

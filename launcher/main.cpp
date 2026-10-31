@@ -11,6 +11,8 @@
 #include "imgui_stdlib.h"
 #include "platform.h"
 #include "settings.h"
+#include "themes.h"
+#include "title_logo.h"
 #include "portable_paths.h"
 #include "update.h"
 #include "ms_colors_ui.h"
@@ -32,11 +34,12 @@
 
 namespace sl = seed::launcher;
 namespace {
-constexpr ImVec4 kAccent{0.20f, 0.80f, 0.88f, 1};
-constexpr ImVec4 kMuted{0.55f, 0.62f, 0.72f, 1};
-constexpr ImVec4 kGreen{0.42f, 0.84f, 0.62f, 1};
-constexpr ImVec4 kGold{0.96f, 0.74f, 0.36f, 1};
-constexpr ImVec4 kRed{0.96f, 0.48f, 0.48f, 1};
+ImVec4 kAccent{0.20f, 0.80f, 0.88f, 1};
+ImVec4 kMuted{0.55f, 0.62f, 0.72f, 1};
+sl::LauncherTheme active_theme;
+ImVec4 kGreen{0.42f, 0.84f, 0.62f, 1};
+ImVec4 kGold{0.96f, 0.74f, 0.36f, 1};
+ImVec4 kRed{0.96f, 0.48f, 0.48f, 1};
 enum class Page { Play, Files, Controllers, Colors, Replays, About, Updates };
 struct App {
     sl::Settings settings;
@@ -46,6 +49,9 @@ struct App {
     bool preparation_failed = false;
     sl::MsColorsUi colors;
     SDL_Renderer* renderer = nullptr;
+    SDL_Texture *title_logo = nullptr, *theme_emblem = nullptr;
+    unsigned logo_width = 0, logo_height = 0;
+    std::string logo_source, applied_theme;
     std::filesystem::path folder;
     seed::InputDevices devices;
     seed::ControlBindings controls, saved_controls;
@@ -245,7 +251,25 @@ struct App {
     }
 };
 
-void theme() {
+void theme(App& app) {
+    active_theme = sl::load_theme(app.folder, app.settings.theme);
+    const auto& c = active_theme.colors;
+    kAccent = c[sl::Accent];
+    kMuted = c[sl::Muted];
+    app.applied_theme = app.settings.theme;
+    SDL_DestroyTexture(app.theme_emblem);
+    app.theme_emblem = nullptr;
+    const auto index = sl::theme_index(app.settings.theme);
+    kGreen = index == 1 ? ImVec4{.04f, .36f, .20f, 1} : ImVec4{.42f, .84f, .62f, 1};
+    kGold = index == 1 ? c[sl::Muted] : ImVec4{.96f, .74f, .36f, 1};
+    kRed = index == 1 ? ImVec4{.61f, .11f, .16f, 1} : ImVec4{.96f, .48f, .48f, 1};
+    if (index) {
+        const auto file = app.folder / "Themes" / (index == 1 ? "EarthAlliance.png" : "ZAFT.png");
+        if (auto* surface = SDL_LoadPNG(sl::utf8(file.wstring()).c_str())) {
+            app.theme_emblem = SDL_CreateTextureFromSurface(app.renderer, surface);
+            SDL_DestroySurface(surface);
+        }
+    }
     ImGui::StyleColorsDark();
     auto& s = ImGui::GetStyle();
     s.FontSizeBase = 17;
@@ -259,19 +283,55 @@ void theme() {
     s.WindowBorderSize = 0;
     s.ChildBorderSize = 1;
     s.FrameBorderSize = 0;
-    s.Colors[ImGuiCol_WindowBg] = {0.045f, 0.060f, 0.085f, 1};
-    s.Colors[ImGuiCol_ChildBg] = {0.075f, 0.095f, 0.13f, 1};
-    s.Colors[ImGuiCol_Border] = {0.16f, 0.20f, 0.26f, 1};
-    s.Colors[ImGuiCol_FrameBg] = {0.10f, 0.13f, 0.18f, 1};
-    s.Colors[ImGuiCol_FrameBgHovered] = {0.15f, 0.20f, 0.26f, 1};
-    s.Colors[ImGuiCol_Button] = {0.13f, 0.19f, 0.25f, 1};
-    s.Colors[ImGuiCol_ButtonHovered] = {0.18f, 0.30f, 0.37f, 1};
-    s.Colors[ImGuiCol_ButtonActive] = {0.12f, 0.38f, 0.44f, 1};
+    s.Colors[ImGuiCol_WindowBg] = c[sl::Window];
+    s.Colors[ImGuiCol_ChildBg] = s.Colors[ImGuiCol_PopupBg] = c[sl::Panel];
+    s.Colors[ImGuiCol_Border] = s.Colors[ImGuiCol_Separator] = c[sl::Border];
+    s.Colors[ImGuiCol_FrameBg] = c[sl::Frame];
+    s.Colors[ImGuiCol_FrameBgHovered] = c[sl::FrameHover];
+    s.Colors[ImGuiCol_FrameBgActive] = c[sl::ButtonActive];
+    s.Colors[ImGuiCol_Button] = c[sl::Button];
+    s.Colors[ImGuiCol_ButtonHovered] = c[sl::ButtonHover];
+    s.Colors[ImGuiCol_ButtonActive] = c[sl::ButtonActive];
     s.Colors[ImGuiCol_CheckMark] = kAccent;
+    if (index)
+        s.Colors[ImGuiCol_CheckboxSelectedBg] = c[sl::Frame];
     s.Colors[ImGuiCol_SliderGrab] = kAccent;
-    s.Colors[ImGuiCol_HeaderHovered] = {0.16f, 0.30f, 0.36f, 1};
-    s.Colors[ImGuiCol_Text] = {0.89f, 0.92f, 0.97f, 1};
+    s.Colors[ImGuiCol_SliderGrabActive] = kAccent;
+    s.Colors[ImGuiCol_Header] = c[sl::Selected];
+    s.Colors[ImGuiCol_HeaderHovered] = c[sl::ButtonHover];
+    s.Colors[ImGuiCol_HeaderActive] = c[sl::ButtonActive];
+    s.Colors[ImGuiCol_NavCursor] = kAccent;
+    s.Colors[ImGuiCol_ScrollbarBg] = c[sl::Window];
+    s.Colors[ImGuiCol_ScrollbarGrab] = c[sl::Border];
+    s.Colors[ImGuiCol_ScrollbarGrabHovered] = c[sl::Accent];
+    s.Colors[ImGuiCol_ScrollbarGrabActive] = c[sl::ButtonActive];
+    s.Colors[ImGuiCol_Text] = c[sl::Text];
     s.Colors[ImGuiCol_TextDisabled] = kMuted;
+}
+void refresh_title_logo(App& app) {
+    const auto source = app.settings.files[1].verified ? app.settings.files[1].path : std::string{};
+    if (source == app.logo_source)
+        return;
+    app.logo_source = source;
+    SDL_DestroyTexture(app.title_logo);
+    app.title_logo = nullptr;
+    if (source.empty())
+        return;
+    try {
+        const auto logo = sl::load_title_logo(std::filesystem::path(sl::wide(source)));
+        app.title_logo =
+            SDL_CreateTexture(app.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC,
+                              int(logo.width), int(logo.height));
+        if (!app.title_logo)
+            return;
+        SDL_UpdateTexture(app.title_logo, nullptr, logo.rgba.data(), int(logo.width * 4));
+        SDL_SetTextureBlendMode(app.title_logo, SDL_BLENDMODE_BLEND);
+        SDL_SetTextureScaleMode(app.title_logo, SDL_SCALEMODE_LINEAR);
+        app.logo_width = logo.width;
+        app.logo_height = logo.height;
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "launcher_logo: %s\n", error.what());
+    }
 }
 void title(const char* heading, const char* caption) {
     ImGui::PushFont(nullptr, 30);
@@ -289,12 +349,13 @@ void card_end() {
     ImGui::PopStyleVar();
 }
 void primary_begin() {
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.11f, 0.53f, 0.61f, 1));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.15f, 0.65f, 0.72f, 1));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.43f, 0.51f, 1));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{1, 1, 1, 1});
+    ImGui::PushStyleColor(ImGuiCol_Button, active_theme.colors[sl::Primary]);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, active_theme.colors[sl::PrimaryHover]);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, active_theme.colors[sl::PrimaryActive]);
 }
 void primary_end() {
-    ImGui::PopStyleColor(3);
+    ImGui::PopStyleColor(4);
 }
 
 void replays_page(App& app) {
@@ -380,12 +441,19 @@ void replays_page(App& app) {
 
 void play_page(App& app) {
     title("Play", "Launch the game and choose a mode from its main menu.");
-    card_begin("brand", 145);
+    card_begin("brand", 195);
     ImGui::TextColored(kAccent, "GUNDAM SEED");
     ImGui::PushFont(nullptr, 27);
     ImGui::TextUnformatted("DESTINY / BATTLE ASSAULT");
     ImGui::PopFont();
     ImGui::TextColored(kMuted, "PC edition");
+    ImGui::SetNextItemWidth(220);
+    int selected_theme = int(sl::theme_index(app.settings.theme));
+    if (ImGui::Combo("Launcher theme", &selected_theme, sl::kThemeNames.data(),
+                     int(sl::kThemeNames.size()))) {
+        app.settings.theme = sl::kThemeIds[selected_theme];
+        app.save();
+    }
     card_end();
     card_begin("baseline", 200);
     ImGui::TextUnformatted("Start playing");
@@ -783,6 +851,9 @@ void updates_page(App& app) {
 }
 
 void draw(App& app) {
+    if (app.applied_theme != app.settings.theme)
+        theme(app);
+    refresh_title_logo(app);
     app.colors.tick();
     const auto* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -791,10 +862,15 @@ void draw(App& app) {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoSavedSettings);
     ImGui::BeginChild("sidebar", ImVec2(204, 0));
-    ImGui::PushFont(nullptr, 24);
-    ImGui::TextColored(kAccent, "SEED / PC");
-    ImGui::PopFont();
-    ImGui::TextColored(kMuted, "DESTINY\nBATTLE ASSAULT");
+    if (app.title_logo) {
+        ImGui::Image((ImTextureID)(intptr_t)app.title_logo,
+                     {184, 184.f * app.logo_height / app.logo_width});
+    } else {
+        ImGui::PushFont(nullptr, 24);
+        ImGui::TextColored(kAccent, "SEED / PC");
+        ImGui::PopFont();
+        ImGui::TextColored(kMuted, "DESTINY\nBATTLE ASSAULT");
+    }
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
@@ -803,14 +879,30 @@ void draw(App& app) {
     for (int index = 0; index < int(std::size(pages)); ++index) {
         const bool selected = static_cast<int>(app.page) == index;
         if (selected)
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.10f, 0.32f, 0.38f, 1));
+            ImGui::PushStyleColor(ImGuiCol_Button, active_theme.colors[sl::Selected]);
         if (ImGui::Button(pages[index], ImVec2(184, 44)))
             app.page = static_cast<Page>(index);
         if (selected)
             ImGui::PopStyleColor();
     }
     ImGui::Spacing();
-    ImGui::Spacing();
+    if (!app.theme_emblem)
+        ImGui::Spacing();
+    if (app.theme_emblem) {
+        float width = 1, height = 1;
+        SDL_GetTextureSize(app.theme_emblem, &width, &height);
+        const float available =
+            std::clamp(ImGui::GetWindowHeight() - ImGui::GetCursorPosY() - 142.f, 24.f, 82.f);
+        const float scale = std::min(120.f / width, available / height);
+        const ImVec2 size{width * scale, height * scale};
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - size.x) / 2);
+        const auto at = ImGui::GetCursorScreenPos();
+        if (sl::theme_index(app.settings.theme) == 2)
+            ImGui::GetWindowDrawList()->AddRectFilled({at.x - 6, at.y - 6},
+                                                      {at.x + size.x + 6, at.y + size.y + 6},
+                                                      IM_COL32(231, 239, 247, 255), 6);
+        ImGui::Image((ImTextureID)(intptr_t)app.theme_emblem, size);
+    }
     ImGui::TextColored(kGold, sl::launcher_version().find("-dev") != std::string::npos
                                   ? "DEVELOPMENT BUILD"
                                   : "PC EDITION");
@@ -819,7 +911,7 @@ void draw(App& app) {
                          ImGui::GetTextLineHeightWithSpacing() * 2;
     ImGui::SetCursorPosY(std::max(ImGui::GetCursorPosY(), footer));
     ImGui::Separator();
-    ImGui::TextColored(kMuted, "%s", sl::launcher_release_name().c_str());
+    ImGui::TextColored(kMuted, "%s", sl::launcher_version().c_str());
     ImGui::EndChild();
     ImGui::SameLine(0, 28);
     ImGui::BeginChild("content", ImVec2(0, 0));
@@ -860,6 +952,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         App app;
         app.folder = sl::executable_directory();
         seed::prepare_portable_folders(app.folder);
+        seed::require_plain_folder(app.folder / "Themes");
         app.settings.load(app.folder / L"config/launcher-settings.ini");
         app.updates = std::make_unique<sl::LauncherUpdates>(app.folder);
         app.colors.initialize(app.folder);
@@ -912,6 +1005,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 capture = argv[++i];
             else if (flag == L"--page")
                 page = sl::utf8(argv[++i]);
+            else if (flag == L"--theme")
+                app.settings.theme = sl::kThemeIds[sl::theme_index(sl::utf8(argv[++i]))];
         }
         if (argv)
             LocalFree(argv);
@@ -961,7 +1056,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         auto& io = ImGui::GetIO();
         io.IniFilename = nullptr;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
-        theme();
+        theme(app);
         ImGui_ImplSDL3_InitForSDLRenderer(app.window, renderer);
         ImGui_ImplSDLRenderer3_Init(renderer);
         app.refresh_pads();
@@ -1053,6 +1148,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         ImGui_ImplSDL3_Shutdown();
         ImGui::DestroyContext();
         app.colors.release_texture();
+        SDL_DestroyTexture(app.title_logo);
+        SDL_DestroyTexture(app.theme_emblem);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(app.window);
         SDL_Quit();

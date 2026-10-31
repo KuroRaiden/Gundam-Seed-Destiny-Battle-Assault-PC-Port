@@ -31,7 +31,7 @@ def quote(value):
 def make_case(work, name, mutation=None, organized=False, legacy_install=False):
     folder = work / name / "portable 日本語's folder"
     folder.mkdir(parents=True)
-    personal = {'launcher-settings.ini': b'fighter_outlines "0"\nus "external selected cartridge"\ntheme "zaft"\n',
+    personal = {'launcher-settings.ini': b'fighter_outlines "0"\nus "external selected cartridge"\ntheme "zaft"\nscreen "frontlit"\n',
                 'controls.ini': b'custom controller mappings', 'player-name.txt': b'Kuro',
                 'player-profile.ini': b'local identity', 'ms-colors.ini': b'custom palettes',
                 'game-us.sav': b'player progress', 'game-jp.sav.training.state': b'practice state',

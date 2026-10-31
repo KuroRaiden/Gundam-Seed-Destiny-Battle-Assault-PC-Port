@@ -453,6 +453,9 @@ void play_page(App& app) {
     ImGui::TextColored(kMuted, "0%% invisible / 100%% solid black. Applies when launching.");
     ImGui::TextColored(kMuted, "Saved automatically. Only changes your display online.");
     card_end();
+    ImGui::TextColored(kMuted, "Training F7: clean PNG snapshot with enabled F5/F6 overlays.");
+    if (ImGui::SmallButton("Open snapshots folder"))
+        sl::open_file(app.folder / "snapshots");
     if (app.preparation.running())
         ImGui::ProgressBar(-float(ImGui::GetTime()), ImVec2(-1, 18), "Preparing first launch...");
     if (!app.message.empty()) {

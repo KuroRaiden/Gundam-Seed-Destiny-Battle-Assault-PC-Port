@@ -15,6 +15,7 @@
 #include "move_list_overlay.h"
 #include "portable_paths.h"
 #include "training_tools.h"
+#include "training_snapshot_writer.h"
 #include <stdexcept>
 
 #include <algorithm>
@@ -2753,6 +2754,10 @@ void HostWindow::present(const uint8_t* rgb888, unsigned sampled_w, unsigned sam
     b->movelist.draw(b->online_session);
     b->remap.draw(b->online_session);
     b->online_lobby.draw();
+    if (seed::training_tools_allowed())
+        seed::save_pending_training_snapshot(
+            b->window, b->renderer, b->training_meter,
+            std::filesystem::u8path(SDL_GetBasePath()) / "snapshots", b->last_game_rect);
     // MC-WS-002: time the present itself (vsync blocks here — or doesn't)
     // and stamp the DWM refresh counter into the cadence ring.
     if (b->cadence.active()) {

@@ -59,7 +59,7 @@ def main():
         if digest(args.app / "resource" / name) != APPROVED_BRAND_ICONS[name]:
             raise RuntimeError("Unapproved branding icon: " + name)
     args.out.mkdir(parents=True)
-    for directory in ("config","resource","Logs","replays"):
+    for directory in ("config","resource","Logs","replays","snapshots"):
         (args.out / directory).mkdir()
     for name in required:
         (args.out / name).parent.mkdir(parents=True, exist_ok=True)
@@ -117,6 +117,9 @@ Press Start on character select to cycle colors/variants before pressing A.
 Each local player uses their own Start binding; in Training, P1 picks both.
 In offline Training, F6 toggles hitboxes/hurtboxes. F2 saves a practice
 situation; F3 reloads it. Start opens the English pause menu using the US font.
+F7 saves a clean PNG in snapshots/: solid #101C2B blue, with the stage and HUD
+removed. Enabled F5 frame-meter and F6 collision overlays stay in the image.
+Normal Training visuals stay unchanged. Snapshots are disabled in other modes.
 The US font cache is generated locally from your US game file.
 
 The bottom left of the launcher shows its version. Open Updates to check this
@@ -200,7 +203,7 @@ https://visualstudio.microsoft.com/license-terms/
         archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6
     ) as package:
         package.write(args.out / "Logs", Path(args.out.name) / "Logs")
-        # The launcher creates replays/ on first run. Omitting the empty ZIP
+        # The launcher creates replays/ and snapshots/ on first run. Omitting empty ZIP
         # entry keeps updates compatible with the previous updater's directory list.
         for path in sorted(args.out.rglob("*")):
             if path.is_file():

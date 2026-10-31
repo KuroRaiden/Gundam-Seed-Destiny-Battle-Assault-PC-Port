@@ -8,7 +8,7 @@ class TrainingMeterOverlay {
     void initialize(SDL_Window* window, SDL_Renderer* renderer);
     void shutdown();
     bool event(const SDL_Event& event, bool online);
-    void draw(bool online);
+    void draw(bool online, bool snapshot = false);
 
   private:
     bool prepare();

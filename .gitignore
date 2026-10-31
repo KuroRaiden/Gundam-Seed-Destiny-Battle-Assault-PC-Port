@@ -83,3 +83,4 @@ __pycache__/
 /config/migration-backups/
 /config/updates/
 /Logs/
+/snapshots/

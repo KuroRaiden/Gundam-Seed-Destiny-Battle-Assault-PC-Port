@@ -111,10 +111,10 @@ bool TrainingMeterOverlay::event(const SDL_Event& event, bool online) {
         meter.toggle();
     return true;
 }
-void TrainingMeterOverlay::draw(bool online) {
+void TrainingMeterOverlay::draw(bool online, bool snapshot) {
+    const auto message = snapshot ? std::string{} : training_tools_message();
     if (online ||
-        (!training_frame_meter().visible() && !training_boxes_visible() &&
-         training_tools_message().empty()) ||
+        (!training_frame_meter().visible() && !training_boxes_visible() && message.empty()) ||
         !prepare())
         return;
     auto* previous = ImGui::GetCurrentContext();
@@ -126,6 +126,7 @@ void TrainingMeterOverlay::draw(bool online) {
     SDL_GetRenderScale(renderer_, &sx, &sy);
     SDL_Rect viewport{};
     SDL_GetRenderViewport(renderer_, &viewport);
+    const bool viewport_set = SDL_RenderViewportSet(renderer_);
     SDL_SetRenderLogicalPresentation(renderer_, 0, 0, SDL_LOGICAL_PRESENTATION_DISABLED);
     SDL_SetRenderScale(renderer_, 1, 1);
     SDL_SetRenderViewport(renderer_, nullptr);
@@ -134,7 +135,7 @@ void TrainingMeterOverlay::draw(bool online) {
     ImGui::NewFrame();
     const auto* view = ImGui::GetMainViewport();
     const float width = std::max(220.f, std::min(960.f, view->Size.x - 16));
-    if (training_boxes_visible() || !training_tools_message().empty()) {
+    if (training_boxes_visible() || !message.empty()) {
         ImGui::SetNextWindowPos({view->Pos.x + 8, view->Pos.y + 8}, ImGuiCond_Always);
         ImGui::SetNextWindowBgAlpha(.9f);
         ImGui::Begin("Training tools", nullptr,
@@ -146,8 +147,8 @@ void TrainingMeterOverlay::draw(bool online) {
             ImGui::TextColored({.24f, .94f, .45f, 1}, "Green: hurtboxes");
             ImGui::TextUnformatted("F6: hide  |  F2: save  |  F3: load");
         }
-        if (!training_tools_message().empty())
-            ImGui::TextUnformatted(training_tools_message().c_str());
+        if (!message.empty())
+            ImGui::TextUnformatted(message.c_str());
         ImGui::End();
     }
     if (training_frame_meter().visible()) {
@@ -182,7 +183,7 @@ void TrainingMeterOverlay::draw(bool online) {
     ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer_);
     SDL_SetRenderLogicalPresentation(renderer_, lw, lh, logical);
     SDL_SetRenderScale(renderer_, sx, sy);
-    SDL_SetRenderViewport(renderer_, &viewport);
+    SDL_SetRenderViewport(renderer_, viewport_set ? &viewport : nullptr);
     ImGui::SetCurrentContext(previous);
 }
 } // namespace seed

@@ -5,6 +5,7 @@
 #include "fighter_outline.h"
 #include "fighter_outline_setting.h"
 #include "training_tools.h"
+#include "training_snapshot.h"
 #include "mini_json.h"
 #include "mod_function_hooks.h"
 #include "mod_state.h"
@@ -110,6 +111,7 @@ void start_match() {
     match_started = true;
     sampled_player_inputs = {};
     combat_presentation_enabled(true);
+    if (training) attach_training_snapshot_observer();
     std::printf("jp_combat: native fighters %u / %u, %s, no serial\n", match_request.fighters[0],
                 match_request.fighters[1], training ? "training" : "versus");
 }

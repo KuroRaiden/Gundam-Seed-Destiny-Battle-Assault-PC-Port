@@ -10,6 +10,14 @@ Enter Training from the US main menu, then choose both fighters and a stage.
 | F4 | Remap controls; pauses offline play |
 | F5 | Toggle the frame meter |
 | F6 | Toggle collision boxes: red hitboxes, green hurtboxes |
+| F7 | Save a clean PNG in `snapshots/` beside the launcher |
+
+F7 captures the combat sprites on a solid **#101C2B** background with the native
+HUD and stage removed. The PNG uses the game window's size. Enabled F5 frame-meter
+and F6 collision overlays remain visible; other menus and status messages are
+omitted. Normal gameplay visuals remain unchanged. A paused capture uses the last
+combat image before the pause menu; after loading a paused state, resume once
+to refresh it. Snapshots are private local files, excluded from Git and packages.
 
 The US pause-menu word sprites are extracted from the verified US cartridge at
 launch into `assets/us-training-menu.bin`. This local cache is generated on the
@@ -34,7 +42,7 @@ Incompatible or corrupt states are rejected before changing the live machine.
 A missing slot displays a short message. State files are private player data;
 they are excluded from Git and portable archives.
 
-F2, F3 and F6 are reserved and inactive outside offline Training, including online
+F2, F3, F6 and F7 are reserved and inactive outside offline Training, including online
 matches. The tools do not alter the online protocol or require an opponent to
 have them. F4 captures these keys while remapping so they cannot trigger a
 Training action at the same time.

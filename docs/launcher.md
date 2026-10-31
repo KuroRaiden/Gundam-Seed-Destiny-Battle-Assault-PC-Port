@@ -98,7 +98,7 @@ pack. Select and verify your own three inputs under Game files. Launch game is
 available without a pre-existing art cache and generates that cache locally
 before starting the US menu. A source build script is not required for setup.
 
-Training uses an English pause menu with the US ROM font. F5 opens the frame meter, F6 toggles red hitboxes/green hurtboxes, and F2/F3 save/reload a practice situation. These tools are offline Training only; see [Training tools](Training-Tools.md).
+Training uses an English pause menu with the US ROM font. F5 opens the frame meter, F6 toggles red hitboxes/green hurtboxes, and F2/F3 save/reload a practice situation. F7 saves a clean PNG on a solid #101C2B background, retaining enabled F5/F6 overlays. Open the snapshots folder from Play. These tools are offline Training only; see [Training tools](Training-Tools.md).
 
 Game window size is on **Play → Battle display**, beside the outline controls.
 **Join Discord** opens the project's server invite from Play. First launch keeps

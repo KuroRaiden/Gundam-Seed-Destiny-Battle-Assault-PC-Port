@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include "training_tools.h"
+#include "training_snapshot.h"
 #include "us_training_art.h"
 #include "frame_control.h"
 #include "runtime_bus_bridge.h"
@@ -113,6 +114,7 @@ void menu(const TrainingView& view) {
 void configure_training_tools(bool training, bool online, const std::filesystem::path& save,
                               const std::filesystem::path& cache) {
     allowed = training && !online;
+    configure_training_snapshots(allowed);
     boxes_visible = false;
     pending = 0;
     busy = false;
@@ -145,8 +147,13 @@ bool training_tools_event(const SDL_Event& event, bool online) {
         return false;
     const auto key = event.key.scancode;
     // Retired shortcuts must not fall through to the engine's legacy slots.
-    if (key == SDL_SCANCODE_F7 || key == SDL_SCANCODE_F8)
+    if (key == SDL_SCANCODE_F8)
         return true;
+    if (key == SDL_SCANCODE_F7) {
+        if (!online && allowed && event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
+            request_training_snapshot();
+        return true;
+    }
     if (key != SDL_SCANCODE_F6 && key != SDL_SCANCODE_F2 && key != SDL_SCANCODE_F3)
         return false;
     // Reserved even outside Training: never leak into the engine's generic
@@ -173,6 +180,10 @@ const std::string& training_tools_message() {
 }
 void training_presentation_restored() {
     display.fill(0);
+    reset_training_snapshot();
+}
+void training_snapshot_notice(std::string text) {
+    notice(std::move(text));
 }
 bool training_service_checkpoint(gbarecomp::NativeFrameControl& machine) {
     if (!allowed || !pending.load())
@@ -239,6 +250,31 @@ bool training_service_checkpoint(gbarecomp::NativeFrameControl& machine) {
         return false;
     }
 }
+namespace {
+void draw_training_boxes(const TrainingView& view) {
+    for (const auto& box : view.boxes) {
+        const std::array<std::uint8_t, 3> color = box.attack
+                                                      ? std::array<std::uint8_t, 3>{255, 55, 70}
+                                                      : std::array<std::uint8_t, 3>{60, 240, 115};
+        for (int y = std::max(0, box.y); y < std::min(160, box.y + box.h); ++y)
+            for (int x = std::max(0, box.x); x < std::min(240, box.x + box.w); ++x) {
+                const bool edge =
+                    x == box.x || x == box.x + box.w - 1 || y == box.y || y == box.y + box.h - 1;
+                pixel(x, y, color, edge ? 255 : 35);
+            }
+    }
+}
+} // namespace
+const std::uint8_t* training_snapshot_display_pixels(const std::uint8_t* pixels) {
+    if (!allowed || !pixels || !boxes_visible)
+        return pixels;
+    const auto view = training_view();
+    if (!view.ready)
+        return pixels;
+    std::copy_n(pixels, display.size(), display.begin());
+    draw_training_boxes(view);
+    return display.data();
+}
 const std::uint8_t* training_display_pixels(const std::uint8_t* pixels, unsigned w, unsigned h) {
     if (!allowed || !pixels || w != 240 || h != 160)
         return pixels;
@@ -252,17 +288,7 @@ const std::uint8_t* training_display_pixels(const std::uint8_t* pixels, unsigned
         menu(view);
         return display.data();
     }
-    for (const auto& box : view.boxes) {
-        const std::array<std::uint8_t, 3> color = box.attack
-                                                      ? std::array<std::uint8_t, 3>{255, 55, 70}
-                                                      : std::array<std::uint8_t, 3>{60, 240, 115};
-        for (int y = std::max(0, box.y); y < std::min(160, box.y + box.h); ++y)
-            for (int x = std::max(0, box.x); x < std::min(240, box.x + box.w); ++x) {
-                const bool edge =
-                    x == box.x || x == box.x + box.w - 1 || y == box.y || y == box.y + box.h - 1;
-                pixel(x, y, color, edge ? 255 : 35);
-            }
-    }
+    draw_training_boxes(view);
     return display.data();
 }
 } // namespace seed

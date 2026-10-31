@@ -260,9 +260,9 @@ void theme(App& app) {
     SDL_DestroyTexture(app.theme_emblem);
     app.theme_emblem = nullptr;
     const auto index = sl::theme_index(app.settings.theme);
-    kGreen = index == 1 ? ImVec4{.04f, .36f, .20f, 1} : ImVec4{.42f, .84f, .62f, 1};
-    kGold = index == 1 ? c[sl::Muted] : ImVec4{.96f, .74f, .36f, 1};
-    kRed = index == 1 ? ImVec4{.61f, .11f, .16f, 1} : ImVec4{.96f, .48f, .48f, 1};
+    kGreen = index ? ImVec4{.04f, .36f, .20f, 1} : ImVec4{.42f, .84f, .62f, 1};
+    kGold = index ? c[sl::Muted] : ImVec4{.96f, .74f, .36f, 1};
+    kRed = index ? ImVec4{.61f, .11f, .16f, 1} : ImVec4{.96f, .48f, .48f, 1};
     if (index) {
         const auto file = app.folder / "Themes" / (index == 1 ? "EarthAlliance.png" : "ZAFT.png");
         if (auto* surface = SDL_LoadPNG(sl::utf8(file.wstring()).c_str())) {
@@ -862,14 +862,24 @@ void draw(App& app) {
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
                      ImGuiWindowFlags_NoSavedSettings);
     ImGui::BeginChild("sidebar", ImVec2(204, 0));
+    const auto center_sidebar_item = [](float width) {
+        ImGui::SetCursorPosX(std::max(0.f, (ImGui::GetWindowWidth() - width) * .5f));
+    };
+    const auto sidebar_text = [&](const ImVec4& color, const char* text) {
+        center_sidebar_item(ImGui::CalcTextSize(text).x);
+        ImGui::TextColored(color, "%s", text);
+    };
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 8);
     if (app.title_logo) {
+        center_sidebar_item(184);
         ImGui::Image((ImTextureID)(intptr_t)app.title_logo,
                      {184, 184.f * app.logo_height / app.logo_width});
     } else {
         ImGui::PushFont(nullptr, 24);
-        ImGui::TextColored(kAccent, "SEED / PC");
+        sidebar_text(kAccent, "SEED / PC");
         ImGui::PopFont();
-        ImGui::TextColored(kMuted, "DESTINY\nBATTLE ASSAULT");
+        sidebar_text(kMuted, "DESTINY");
+        sidebar_text(kMuted, "BATTLE ASSAULT");
     }
     ImGui::Spacing();
     ImGui::Separator();
@@ -880,6 +890,7 @@ void draw(App& app) {
         const bool selected = static_cast<int>(app.page) == index;
         if (selected)
             ImGui::PushStyleColor(ImGuiCol_Button, active_theme.colors[sl::Selected]);
+        center_sidebar_item(184);
         if (ImGui::Button(pages[index], ImVec2(184, 44)))
             app.page = static_cast<Page>(index);
         if (selected)
@@ -895,7 +906,7 @@ void draw(App& app) {
             std::clamp(ImGui::GetWindowHeight() - ImGui::GetCursorPosY() - 142.f, 24.f, 82.f);
         const float scale = std::min(120.f / width, available / height);
         const ImVec2 size{width * scale, height * scale};
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - size.x) / 2);
+        center_sidebar_item(size.x);
         const auto at = ImGui::GetCursorScreenPos();
         if (sl::theme_index(app.settings.theme) == 2)
             ImGui::GetWindowDrawList()->AddRectFilled({at.x - 6, at.y - 6},
@@ -903,18 +914,19 @@ void draw(App& app) {
                                                       IM_COL32(231, 239, 247, 255), 6);
         ImGui::Image((ImTextureID)(intptr_t)app.theme_emblem, size);
     }
-    ImGui::TextColored(kGold, sl::launcher_version().find("-dev") != std::string::npos
-                                  ? "DEVELOPMENT BUILD"
-                                  : "PC EDITION");
-    ImGui::TextWrapped("F4 in game: controls");
+    sidebar_text(kGold, sl::launcher_version().find("-dev") != std::string::npos
+                            ? "DEVELOPMENT BUILD"
+                            : "PC EDITION");
+    sidebar_text(ImGui::GetStyleColorVec4(ImGuiCol_Text), "F4 in game: controls");
     const float footer = ImGui::GetWindowHeight() - ImGui::GetStyle().WindowPadding.y -
                          ImGui::GetTextLineHeightWithSpacing() * 2;
     ImGui::SetCursorPosY(std::max(ImGui::GetCursorPosY(), footer));
     ImGui::Separator();
-    ImGui::TextColored(kMuted, "%s", sl::launcher_version().c_str());
+    sidebar_text(kMuted, sl::launcher_version().c_str());
     ImGui::EndChild();
     ImGui::SameLine(0, 28);
-    ImGui::BeginChild("content", ImVec2(0, 0));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20, 20));
+    ImGui::BeginChild("content", ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
     switch (app.page) {
     case Page::Play:
         play_page(app);
@@ -941,6 +953,7 @@ void draw(App& app) {
         break;
     }
     ImGui::EndChild();
+    ImGui::PopStyleVar();
     ImGui::End();
 }
 } // namespace

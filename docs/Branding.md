@@ -41,7 +41,8 @@ emblems supplied by the user. These separate assets are pinned by
 `config/launcher-themes.json`; the release audit rejects extra or modified theme
 assets. Choose a palette under **Play > Launcher theme**. The choice is saved in
 the existing launcher settings, and theme changes affect only the launcher.
-Earth Alliance uses the emblem's cyan/blue and green; ZAFT uses its red/blue.
+Earth Alliance uses the emblem's cyan/blue and green; ZAFT has white backgrounds
+with the emblem's red/blue accents.
 The in-game palette editor, technical overlay colors and snapshot background
 are independent of these themes. Updates preserve the theme preference and any
 extra personal theme files. Older updaters without support for `Themes/` require

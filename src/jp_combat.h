@@ -6,7 +6,13 @@
 #include <cstdint>
 
 namespace seed {
-inline constexpr unsigned kCombatApiVersion = 8;
+inline constexpr unsigned kCombatApiVersion = 9;
+struct ReplayPlaybackResult {
+    unsigned frames = 0;
+    std::uint32_t final_crc = 0;
+    bool verified = false;
+    char message[192]{};
+};
 struct OnlineCombatResult {
     unsigned frames = 0, rollbacks = 0, replayed_frames = 0, max_rollback = 0, stalls = 0,
              desyncs = 0;
@@ -34,8 +40,11 @@ struct JpCombatRequest {
     char player_names[2][49]{"Player 1", "Player 2"};
     NetConnection connection;
     OnlineCombatResult* online_result = nullptr;
-    unsigned qualification_frames = 0;    // Developer oracle only; zero in gameplay.
-    unsigned qualification_end_frame = 0; // Exercise negotiated finish boundary.
+    unsigned qualification_frames = 0;      // Developer oracle only; zero in gameplay.
+    unsigned qualification_end_frame = 0;   // Exercise negotiated finish boundary.
+    const char* replay_path = nullptr;      // Playback only; never opens a network connection.
+    const char* replay_directory = nullptr; // Null uses the portable's replays folder.
+    ReplayPlaybackResult* replay_result = nullptr;
 };
 // 0: finished/returned to selection, 2: window closed, negative: startup failure.
 using RunJpCombat = int (*)(const JpCombatRequest*);

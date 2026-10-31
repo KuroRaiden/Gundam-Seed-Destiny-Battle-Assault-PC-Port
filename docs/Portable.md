@@ -6,6 +6,9 @@ notices. It excludes ROMs, BIOS images, game art caches, saves and player profil
 The original v0.1.0 game-data download was withdrawn; current packages use the
 runtime-only packager and archive audit.
 
+The launcher creates `replays/` for automatic Local VS and online match
+recordings. Personal recordings are excluded from ZIPs and preserved by updates.
+
 Extract the whole ZIP to a writable folder and run `GundamSeedLauncher.exe`.
 Put your own inputs inside `gamefiles/` using these prefilled relative paths:
 

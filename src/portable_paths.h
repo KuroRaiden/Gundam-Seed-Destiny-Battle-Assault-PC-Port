@@ -47,7 +47,7 @@ inline void require_plain_folder(const std::filesystem::path& path) {
     std::filesystem::create_directories(path);
 }
 inline void prepare_portable_folders(const std::filesystem::path& root) {
-    for (const auto name : {"config", "resource", "Logs"})
+    for (const auto name : {"config", "resource", "Logs", "replays"})
         require_plain_folder(root / name);
     for (const auto& entry : std::filesystem::directory_iterator(root)) {
         if (entry.is_symlink() || !entry.is_regular_file())

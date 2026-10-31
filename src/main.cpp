@@ -8,6 +8,7 @@
 #include "local_vs_runtime.h"
 #include "invite_window.h"
 #include "invite_code.h"
+#include "replay_player.h"
 #include <cstdio>
 #include <exception>
 #include <stdexcept>
@@ -38,12 +39,19 @@ int main(int argc, char** argv) {
     options.builtin_game_name = "Gundam SEED: Battle Assault (US)";
     options.builtin_rom_sha1 = "8287d3d336d94a85c5cb22da0fd84918199197e1";
     options.diagnostic_replay_default = false;
-    std::string us_rom, jp_rom, bios, save, join_code, import_output;
+    std::string us_rom, jp_rom, bios, save, join_code, import_output, replay_path;
+    int replay_scale = 3;
     bool import_colors = false, import_stages = false, prepare_only = false;
     int jp_debug_port = 0;
     std::vector<char*> args{argv[0]};
     for (int i = 1; i < argc; ++i) {
         const std::string flag = argv[i];
+        if (flag == "--watch-replay" && i + 1 < argc) {
+            replay_path = argv[++i];
+            continue;
+        }
+        if (flag == "--scale" && i + 1 < argc)
+            replay_scale = std::atoi(argv[i + 1]);
         if (flag == "--prepare-game-assets") {
             prepare_only = true;
             continue;
@@ -91,6 +99,11 @@ int main(int argc, char** argv) {
     try {
         const auto base = std::filesystem::absolute(argv[0]).parent_path();
         seed::prepare_portable_folders(base);
+        if (!replay_path.empty()) {
+            startup_phase = "replay playback";
+            return seed::watch_match_replay(std::filesystem::u8path(replay_path), jp_rom, bios,
+                                            replay_scale);
+        }
         const auto art = base / "assets" / "destiny-selection.bin";
         if (!import_output.empty()) {
             import_jp_art(base, jp_rom, bios, std::filesystem::u8path(import_output), import_colors,
@@ -127,6 +140,8 @@ int main(int argc, char** argv) {
                                  jp_rom, bios, save, jp_debug_port);
     } catch (const std::exception& error) {
         std::fprintf(stderr, "startup_failure: %s: %s\n", startup_phase, error.what());
+        if (!replay_path.empty())
+            MessageBoxA(nullptr, error.what(), "Gundam SEED - Replay", MB_OK | MB_ICONERROR);
         return 2;
     }
     return gbarecomp::run_game(int(args.size()), args.data(), options);

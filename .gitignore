@@ -5,6 +5,8 @@
 *.bin
 *.sav
 *.state
+*.seedreplay
+/replays/
 
 # Local ROM analysis databases and generated decompiler output.
 *.i64

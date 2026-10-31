@@ -11,6 +11,11 @@ game's main menu; the launcher has no Local VS/Online VS cards or Online page.
 Game files, Controllers and the display setting under Play remain
 available.
 
+**Replays** lists automatic Local VS and online recordings from `replays/`.
+Select a match and choose **Watch replay**; Space pauses, Tab fast-forwards and
+Esc exits. Recordings keep both fighters' inputs, colors and stage. See
+[replays and compatibility](Replays.md).
+
 ## Remapping
 
 Open **Controllers**, select **Player 1** or **Player 2**, and click a keyboard,

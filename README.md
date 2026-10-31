@@ -20,6 +20,7 @@ character select and battle-system injection** supplies the expanded combat.
 - **Launcher palette editor:** edit MS colors while cycling through four battle-sprite poses; custom palettes also sync online.
 - **Play page:** display scaling and the Discord link are beside the launch controls. First-launch asset preparation stays visible in the launcher.
 - **Online VS:** rollback, automatic NAT hole punching, join codes/links and unlimited rematches in the same room.
+- **Replays:** automatic Local VS and online recordings in `replays/`, with a launcher browser and playback. Space pauses, Tab fast-forwards and Esc exits; recordings require the same game build and BIOS.
 - **Training:** JP practice mode with the US-font English pause menu, **F5 frame meter**, **F6 hitbox/hurtbox viewer**, and **F2 save / F3 load** for practice situations.
 - **Launcher updates:** version display and GitHub release checks, with verified in-place updates that preserve player settings and saves.
 - **Movelist:** **F1** opens all 27 JP roster entries with D-pad and A/B/L/R glyphs, air availability and Berserker types. Offline play pauses; online play continues.
@@ -81,3 +82,5 @@ bridge; a fully static recompile remains unfinished.
 [Online VS](docs/Online-VS.md) · [Stage select](docs/Stage-Select.md) · [Palette editor](docs/MS-colors.md) ·
 [Movelist](docs/Movelist.md) · [Training tools](docs/Training-Tools.md) · [Frame meter](docs/Training-Frame-Meter.md) · [Source guide](docs/Source-Guide.md) ·
 [Build notes](docs/Build.md)
+
+[Replay recording and playback](docs/Replays.md)

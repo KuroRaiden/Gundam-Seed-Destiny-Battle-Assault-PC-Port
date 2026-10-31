@@ -1,5 +1,6 @@
 #include "game_addresses.h"
 #include "jp_online.h"
+#include "jp_replay_runtime.h"
 #include "frame_control.h"
 #include "host_window.h"
 #include "host_overlay.h"
@@ -248,6 +249,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         constexpr unsigned delay = input_delay;
         gekko_set_local_delay(session, local, delay);
         gekko_set_disconnect_timeout(session, 10000);
+        auto recording = begin_online_recording(session, match, result.initial_crc);
         auto session_events = [&] {
             int count = 0;
             auto** events = gekko_session_events(session, &count);
@@ -404,6 +406,8 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         result.hp[0] = bus_read_u16(jp_address::kPlayer1Health);
         result.hp[1] = bus_read_u16(jp_address::kPlayer2Health);
         require(!target || converged, "Online qualification did not converge");
+        if (recording)
+            recording->finish(next, result.final_crc, converged);
         publish("Online match finished");
         return 0;
     } catch (const std::exception& error) {

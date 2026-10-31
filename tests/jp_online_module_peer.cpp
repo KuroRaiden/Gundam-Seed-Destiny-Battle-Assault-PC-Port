@@ -126,6 +126,9 @@ int main(int argc, char** argv) {
         request.rom = rom.c_str();
         request.bios = bios.c_str();
         request.save = save.c_str();
+        const auto replay_directory =
+            (std::filesystem::path(save).parent_path() / "replays").string();
+        request.replay_directory = replay_directory.c_str();
         request.sample_inputs = inputs;
         request.online_result = &result;
         std::snprintf(request.player_names[0], sizeof(request.player_names[0]), "Kira");

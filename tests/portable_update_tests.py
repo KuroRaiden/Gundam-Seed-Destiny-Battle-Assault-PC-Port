@@ -38,7 +38,8 @@ def make_case(work, name, mutation=None, organized=False, legacy_install=False):
                 'gamefiles/my.gba': b'private test cartridge placeholder',
                 'gamefiles/gba_bios.bin': b'private test BIOS placeholder',
                 'gamefiles/Game_and_Bios_Here.file': b'personal marker',
-                'assets/local-preview.bin': b'local generated cache'}
+                'assets/local-preview.bin': b'local generated cache',
+                'replays/a-match.seedreplay': b'personal input recording'}
     old = {'GundamSeedLauncher.exe': b'MZ old launcher', 'GundamSeedRecomp.exe': b'MZ old game',
            'SeedJpCombat.dll': b'MZ old combat', 'SDL3.dll': b'MZ old SDL',
            'controllerdb.txt': b'old controller database', 'portable-manifest.json': b'{"version":"0.1.2"}'}

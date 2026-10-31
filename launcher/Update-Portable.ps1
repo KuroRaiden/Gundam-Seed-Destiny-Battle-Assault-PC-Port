@@ -85,7 +85,7 @@ function Expand-VerifiedPortable([string]$ZipPath, [string]$Destination, [string
                 throw 'Unexpected portable root or version.'
             }
             if ($entry.FullName.EndsWith('/')) {
-                if ($parts.Count -gt 3 -or ($parts.Count -ge 2 -and $parts[1] -cnotin @('licenses','gamefiles','config','resource','Logs')) -or ($parts.Count -eq 3 -and ($parts[1] -cne 'resource' -or $parts[2] -cnotin @('licenses','input-prompts')))) {
+                if ($parts.Count -gt 3 -or ($parts.Count -ge 2 -and $parts[1] -cnotin @('licenses','gamefiles','config','resource','Logs','replays')) -or ($parts.Count -eq 3 -and ($parts[1] -cne 'resource' -or $parts[2] -cnotin @('licenses','input-prompts')))) {
                     throw 'Unexpected archive directory.'
                 }
                 continue

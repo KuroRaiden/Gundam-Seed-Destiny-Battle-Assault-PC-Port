@@ -14,6 +14,8 @@
 #include "portable_paths.h"
 #include "update.h"
 #include "ms_colors_ui.h"
+#include "match_replay.h"
+#include "move_list.h"
 #include "../src/controller_db.h"
 #include "../src/brand_icons.h"
 #include "input_bindings.h"
@@ -26,6 +28,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <ctime>
 
 namespace sl = seed::launcher;
 namespace {
@@ -34,7 +37,7 @@ constexpr ImVec4 kMuted{0.55f, 0.62f, 0.72f, 1};
 constexpr ImVec4 kGreen{0.42f, 0.84f, 0.62f, 1};
 constexpr ImVec4 kGold{0.96f, 0.74f, 0.36f, 1};
 constexpr ImVec4 kRed{0.96f, 0.48f, 0.48f, 1};
-enum class Page { Play, Files, Controllers, Colors, About, Updates };
+enum class Page { Play, Files, Controllers, Colors, Replays, About, Updates };
 struct App {
     sl::Settings settings;
     std::unique_ptr<sl::LauncherUpdates> updates;
@@ -60,6 +63,91 @@ struct App {
     void* native_window = nullptr;
     bool hidden = false;
     seed::ControllerDbResult controller_db;
+    struct ReplayEntry {
+        std::filesystem::path path;
+        seed::MatchReplay info;
+        unsigned frames = 0;
+        std::string error;
+    };
+    std::vector<ReplayEntry> replays;
+    int selected_replay = -1;
+    bool replays_loaded = false, watching_replay = false;
+
+    void refresh_replays() {
+        replays.clear();
+        selected_replay = -1;
+        replays_loaded = true;
+        try {
+            const auto hash = seed::replay_file_hash(folder / "SeedJpCombat.dll");
+            for (const auto& file : std::filesystem::directory_iterator(folder / "replays")) {
+                if (file.is_symlink() || !file.is_regular_file() ||
+                    file.path().extension() != ".seedreplay")
+                    continue;
+                ReplayEntry entry;
+                entry.path = file.path();
+                try {
+                    entry.info = seed::read_match_replay(file.path());
+                    entry.frames = unsigned(entry.info.inputs.size());
+                    entry.info.inputs = decltype(entry.info.inputs){};
+                    if (entry.info.combat_hash != hash)
+                        entry.error = "This replay needs its original game build: " +
+                                      entry.info.build_version;
+                } catch (const std::exception& error) {
+                    entry.error = error.what();
+                }
+                replays.push_back(std::move(entry));
+                if (replays.size() >= 1000)
+                    break;
+            }
+            std::sort(replays.begin(), replays.end(), [](const auto& a, const auto& b) {
+                return a.info.recorded_at > b.info.recorded_at;
+            });
+            if (!replays.empty())
+                selected_replay = 0;
+        } catch (const std::exception& e) {
+            error = true;
+            message = e.what();
+        }
+    }
+    void watch_replay() {
+        if (selected_replay < 0 || selected_replay >= int(replays.size()) || game.running() ||
+            preparation.running() || colors.busy())
+            return;
+        const auto& replay = replays[selected_replay];
+        if (!replay.error.empty()) {
+            error = true;
+            message = replay.error;
+            return;
+        }
+        for (unsigned p : {1u, 2u}) {
+            settings.files[p].verify(folder);
+            if (!settings.files[p].verified) {
+                error = true;
+                message = "Select and verify the JP cartridge and BIOS in Game files first.";
+                return;
+            }
+        }
+        if (controls != saved_controls && !save_controls())
+            return;
+        error = false;
+        save();
+        if (error)
+            return;
+        const std::vector<std::wstring> args{L"--watch-replay", replay.path.wstring(),
+                                             L"--jp-rom",       sl::wide(settings.files[1].path),
+                                             L"--bios",         sl::wide(settings.files[2].path),
+                                             L"--scale",        std::to_wstring(settings.scale)};
+        if (!game.start(folder / "GundamSeedRecomp.exe", args, folder / "Logs/last-replay.log",
+                        message)) {
+            error = true;
+            return;
+        }
+        watching_replay = true;
+        error = false;
+        message = "Watching replay";
+        SDL_HideWindow(window);
+        hidden = true;
+    }
 
     void save() {
         if (!settings.save(folder / L"config/launcher-settings.ini", message))
@@ -149,6 +237,7 @@ struct App {
             return;
         }
         join_code.clear();
+        watching_replay = false;
         error = false;
         message = "Game running";
         SDL_HideWindow(window);
@@ -206,6 +295,87 @@ void primary_begin() {
 }
 void primary_end() {
     ImGui::PopStyleColor(3);
+}
+
+void replays_page(App& app) {
+    title("Replays", "Local VS and online matches are recorded automatically.");
+    if (!app.replays_loaded)
+        app.refresh_replays();
+    if (ImGui::Button("Refresh"))
+        app.refresh_replays();
+    ImGui::SameLine();
+    if (ImGui::Button("Open replay folder"))
+        sl::open_file(app.folder / "replays");
+    ImGui::SameLine();
+    ImGui::TextColored(kMuted, "%zu recordings", app.replays.size());
+    if (app.replays.empty()) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("Play a Local VS or online match, then return here to watch it. "
+                           "Recordings are saved in the replays folder beside the launcher.");
+    } else {
+        if (ImGui::BeginTable("replays", 4,
+                              ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
+                                  ImGuiTableFlags_BordersInnerH,
+                              ImVec2(0, 290))) {
+            ImGui::TableSetupColumn("Recorded", ImGuiTableColumnFlags_WidthFixed, 170);
+            ImGui::TableSetupColumn("Players", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Mode", ImGuiTableColumnFlags_WidthFixed, 65);
+            ImGui::TableSetupColumn("Length", ImGuiTableColumnFlags_WidthFixed, 66);
+            ImGui::TableHeadersRow();
+            for (unsigned i = 0; i < app.replays.size(); ++i) {
+                const auto& replay = app.replays[i];
+                const auto stamp = std::time_t(replay.info.recorded_at);
+                std::tm date{};
+                char when[48] = "Unreadable replay";
+                if (stamp && localtime_s(&date, &stamp) == 0)
+                    std::strftime(when, sizeof(when), "%Y-%m-%d %H:%M", &date);
+                ImGui::PushID(int(i));
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                if (ImGui::Selectable(when, app.selected_replay == int(i),
+                                      ImGuiSelectableFlags_SpanAllColumns))
+                    app.selected_replay = int(i);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(
+                    (replay.info.names[0] + " vs " + replay.info.names[1]).c_str());
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(replay.info.online ? "Online" : "Local");
+                ImGui::TableNextColumn();
+                ImGui::Text("%u:%02u", replay.frames / 3600, replay.frames / 60 % 60);
+                ImGui::PopID();
+            }
+            ImGui::EndTable();
+        }
+        if (app.selected_replay >= 0) {
+            const auto& entry = app.replays[app.selected_replay];
+            const auto* left = seed::fighter_moves(entry.info.fighters[0]);
+            const auto* right = seed::fighter_moves(entry.info.fighters[1]);
+            ImGui::TextWrapped("%s vs %s", left ? left->name.data() : "Unknown",
+                               right ? right->name.data() : "Unknown");
+            ImGui::TextColored(kMuted, "Stage %u  |  %s", unsigned(entry.info.stage) + 1,
+                               entry.info.complete ? "Complete recording" : "Partial recording");
+            ImGui::TextColored(kMuted, "Recorded with %s", entry.info.build_version.c_str());
+            if (!entry.error.empty())
+                ImGui::TextColored(kGold, "%s", entry.error.c_str());
+            ImGui::BeginDisabled(!entry.error.empty() || app.game.running() ||
+                                 app.preparation.running() || app.colors.busy());
+            primary_begin();
+            if (ImGui::Button("Watch replay", ImVec2(200, 46)))
+                app.watch_replay();
+            primary_end();
+            ImGui::EndDisabled();
+        }
+    }
+    ImGui::Spacing();
+    ImGui::TextWrapped(
+        "Playback: Space pauses, hold Tab to fast-forward, Esc returns to the launcher. "
+        "Recorded inputs control both fighters.");
+    ImGui::TextColored(kMuted,
+                       "Replays require the same game build and BIOS. Training is not recorded.");
+    if (ImGui::Button("Open replay log"))
+        sl::open_file(app.folder / "Logs/last-replay.log");
+    if (!app.message.empty())
+        ImGui::TextWrapped("%s", app.message.c_str());
 }
 
 void play_page(App& app) {
@@ -289,8 +459,8 @@ void play_page(App& app) {
         ImGui::PushStyleColor(ImGuiCol_Text, app.error ? kRed : kMuted);
         ImGui::TextWrapped("%s", app.message.c_str());
         ImGui::PopStyleColor();
-        const auto log =
-            app.folder / (app.preparation_failed ? L"Logs/first-launch.log" : L"Logs/last-game.log");
+        const auto log = app.folder / (app.preparation_failed ? L"Logs/first-launch.log"
+                                                              : L"Logs/last-game.log");
         if (std::filesystem::is_regular_file(log) && ImGui::SmallButton("Open startup/game log"))
             sl::open_file(log);
     }
@@ -364,7 +534,8 @@ bool capture_binding_event(App& app, const SDL_Event& event) {
         capture.player = -1;
         return true;
     }
-    if (event.type == SDL_EVENT_KEY_DOWN && (event.key.scancode == SDL_SCANCODE_F4 || event.key.scancode == SDL_SCANCODE_F1)) {
+    if (event.type == SDL_EVENT_KEY_DOWN &&
+        (event.key.scancode == SDL_SCANCODE_F4 || event.key.scancode == SDL_SCANCODE_F1)) {
         app.message = "F1 and F4 are reserved. Choose another key.";
         return true;
     }
@@ -624,8 +795,8 @@ void draw(App& app) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    const char* pages[] = {"Play",      "Game files",     "Controllers",
-                           "MS Colors", "Project status", "Updates"};
+    const char* pages[] = {"Play",    "Game files",     "Controllers", "MS Colors",
+                           "Replays", "Project status", "Updates"};
     for (int index = 0; index < int(std::size(pages)); ++index) {
         const bool selected = static_cast<int>(app.page) == index;
         if (selected)
@@ -666,6 +837,9 @@ void draw(App& app) {
         break;
     case Page::About:
         about_page(app);
+        break;
+    case Page::Replays:
+        replays_page(app);
         break;
     case Page::Updates:
         updates_page(app);
@@ -748,6 +922,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             app.page = Page::About;
         else if (page == "updates")
             app.page = Page::Updates;
+        else if (page == "replays")
+            app.page = Page::Replays;
         if (page.empty() && std::all_of(app.settings.files.begin(), app.settings.files.end(),
                                         [](const auto& file) { return file.path.empty(); }))
             app.page = Page::Files;
@@ -817,6 +993,9 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 }
             }
             if (const auto code = app.game.poll()) {
+                const bool replay = app.watching_replay;
+                app.watching_replay = false;
+                app.replays_loaded = false;
                 app.preparation_failed = false;
                 if (app.controls == app.saved_controls) {
                     app.controls.load(app.folder / L"config/controls.ini");
@@ -826,9 +1005,12 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 SDL_ShowWindow(app.window);
                 SDL_RaiseWindow(app.window);
                 app.error = *code != 0;
-                app.message = app.error ? "The game closed unexpectedly (code " +
-                                              std::to_string(*code) + "). Check the game log."
-                                        : "Game closed.";
+                app.message =
+                    app.error ? replay ? "Replay playback stopped. Open the replay log for details."
+                                       : "The game closed unexpectedly (code " +
+                                             std::to_string(*code) + "). Check the game log."
+                    : replay  ? "Replay closed."
+                              : "Game closed.";
             }
             if (app.hidden) {
                 SDL_Delay(30);

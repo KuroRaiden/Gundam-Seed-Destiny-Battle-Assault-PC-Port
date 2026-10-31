@@ -1,5 +1,6 @@
 #include "jp_combat_runtime.h"
 #include "jp_online.h"
+#include "jp_replay_runtime.h"
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -23,16 +24,20 @@ extern "C" __declspec(dllexport) int SeedRunJpCombat(const seed::JpCombatRequest
     if (request->mode != seed::JpCombatMode::Versus &&
         request->mode != seed::JpCombatMode::Training)
         return -1;
+    if (request->replay_path &&
+        (request->surface.online || request->mode != seed::JpCombatMode::Versus))
+        return -1;
     try {
         gbarecomp::RunOptions options;
         seed::configure_jp_combat(options, *request);
         if (request->surface.online)
             seed::configure_jp_online(options, *request);
+        else if (request->mode == seed::JpCombatMode::Versus && !request->debug_port)
+            seed::configure_jp_replays(options, *request);
         std::filesystem::path online_save;
-        if (request->surface.online) {
+        if (request->mode == seed::JpCombatMode::Versus) {
             online_save = std::filesystem::u8path(request->save);
-            online_save += ".online-" + std::to_string(request->connection.epoch) + "-" +
-                           std::to_string(request->connection.seat);
+            online_save += ".match-" + seed::replay_unique_id();
             // Do not inherit a player's unrelated EEPROM into the initial
             // rollback state. This private match file is removed on return.
             if (std::filesystem::exists(online_save))
@@ -57,7 +62,7 @@ extern "C" __declspec(dllexport) int SeedRunJpCombat(const seed::JpCombatRequest
             args.push_back(std::to_string(request->debug_port));
         }
         if (!request->surface.window && !request->debug_port && !request->qualification_frames &&
-            !request->qualification_end_frame)
+            !request->qualification_end_frame && !request->replay_path)
             return -2;
         std::vector<char*> argv;
         for (auto& arg : args)

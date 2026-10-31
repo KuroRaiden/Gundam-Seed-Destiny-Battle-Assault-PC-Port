@@ -59,7 +59,7 @@ def main():
         if digest(args.app / "resource" / name) != APPROVED_BRAND_ICONS[name]:
             raise RuntimeError("Unapproved branding icon: " + name)
     args.out.mkdir(parents=True)
-    for directory in ("config","resource","Logs"):
+    for directory in ("config","resource","Logs","replays"):
         (args.out / directory).mkdir()
     for name in required:
         (args.out / name).parent.mkdir(parents=True, exist_ok=True)
@@ -134,6 +134,9 @@ the old built-in updater cannot read the new folder layout.
 F1 opens the movelist with Kenney direction/button glyphs and Berserker types.
 The reference uses simplified controls; F1 pauses offline while online play continues.
 Hold keyboard Tab for turbo; controllers never trigger turbo.
+Local VS and online matches save automatically in replays/. Open Replays in the
+launcher to watch them. Space pauses playback, Tab fast-forwards, and Esc exits.
+Recordings require the same game build and BIOS. Training is not recorded.
 Press F4 during play to remap controls. In Training, F5 toggles the frame
 meter without pausing: green startup, red active, blue recovery, yellow hitstun.
 After choosing both fighters, select a stage with left/right and confirm with A.
@@ -197,6 +200,8 @@ https://visualstudio.microsoft.com/license-terms/
         archive, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6
     ) as package:
         package.write(args.out / "Logs", Path(args.out.name) / "Logs")
+        # The launcher creates replays/ on first run. Omitting the empty ZIP
+        # entry keeps updates compatible with the previous updater's directory list.
         for path in sorted(args.out.rglob("*")):
             if path.is_file():
                 package.write(path, Path(args.out.name) / path.relative_to(args.out))

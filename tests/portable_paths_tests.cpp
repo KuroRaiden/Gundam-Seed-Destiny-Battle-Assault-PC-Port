@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
         put(root / "resource/licenses/conflict.txt", "new license");
         put(root / "licenses/conflict.txt", "old license");
         seed::prepare_portable_folders(root);
+        check(std::filesystem::is_directory(root / "replays"), "Replay folder was not created");
         check(seed::file_text(root / "config/launcher-settings.ini") == personal,
               "Personal settings masked by defaults");
         for (const auto name :

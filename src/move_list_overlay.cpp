@@ -200,6 +200,16 @@ void MoveListOverlay::draw(bool online) {
         }
     }
     ImGui::Separator();
+    ImGui::TextDisabled("GUARD CANCELS (while blocking)");
+    for (const auto& move : fighter_guard_cancels(selected->id)) {
+        input(move.command.data());
+        ImGui::SameLine();
+        ImGui::TextUnformatted("(AIR OK)");
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", move.condition.data());
+    }
+    ImGui::TextDisabled("Requires thruster gauge. Counter attacks use this suit's animations.");
+    ImGui::Separator();
     for (const auto& move : selected->moves) {
         input(move.command.data());
         if (move.air != MoveAir::Ground) {

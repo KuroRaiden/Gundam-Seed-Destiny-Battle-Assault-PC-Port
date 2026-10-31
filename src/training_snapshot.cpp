@@ -136,6 +136,16 @@ void attach_training_snapshot_observer() {
 bool request_training_snapshot() {
     if (!capture || !capture->allowed || !training_tools_allowed() || !training_view().ready)
         return false;
+    // The ordinary windowed runtime pumps input inside the current raster;
+    // NativeFrameControl tests normally request between complete frames.
+    // Finish that raster rather than silently discarding F7 during Drawing.
+    if (capture->job == Capture::Drawing) {
+        if (capture->deliver)
+            return false;
+        capture->deliver = true;
+        training_snapshot_notice("Snapshot queued.");
+        return true;
+    }
     if (training_view().paused && !capture->cached) {
         training_snapshot_notice("Resume Training once before taking a snapshot.");
         return false;
@@ -144,7 +154,10 @@ bool request_training_snapshot() {
     auto idle = Capture::Idle;
     const auto requested =
         training_view().paused && capture->cached ? Capture::Ready : Capture::Requested;
-    return capture->job.compare_exchange_strong(idle, requested);
+    const bool accepted = capture->job.compare_exchange_strong(idle, requested);
+    if (accepted)
+        training_snapshot_notice("Snapshot queued.");
+    return accepted;
 }
 void reset_training_snapshot() {
     if (capture)

@@ -27,6 +27,18 @@ int main() {
             check(ultimate, "Missing ultimate requirement");
         }
         check(!seed::fighter_moves(0) && !seed::fighter_moves(28), "Invalid native ID accepted");
+        for (unsigned fighter = 1; fighter <= 27; ++fighter) {
+            const auto cancels = seed::fighter_guard_cancels(fighter);
+            check(cancels.size() == 4, "Missing guard cancels");
+            for (const auto& move : cancels) {
+                check(move.air == seed::MoveAir::Allowed, "Guard cancel air availability lost");
+                for (const auto token : move.command)
+                    check(std::string_view("UDBFablr").find(token) != std::string_view::npos,
+                          "Invalid guard cancel glyph");
+            }
+        }
+        check(seed::fighter_guard_cancels(0).empty() && seed::fighter_guard_cancels(28).empty(),
+              "Invalid fighter has guard cancels");
         check(seed::fighter_moves(26)->berserker == "Newtype Mode" &&
                   seed::fighter_moves(27)->berserker == "SEED Mode",
               "Hidden variant type lost");

@@ -175,6 +175,12 @@ if(JP_SHARDS)
   add_executable(seed_replay_native_tests tests/replay_native_tests.cpp)
   target_link_libraries(seed_replay_native_tests PRIVATE seed_replays seed_controls)
   add_dependencies(seed_replay_native_tests SeedJpCombat)
+  add_executable(seed_training_snapshot_window_tests tests/training_snapshot_window_tests.cpp)
+  target_link_libraries(seed_training_snapshot_window_tests PRIVATE seed_replays seed_controls)
+  add_dependencies(seed_training_snapshot_window_tests SeedJpCombat)
+  if(MSVC)
+    target_link_options(seed_training_snapshot_window_tests PRIVATE /STACK:16777216)
+  endif()
   if(MSVC)
     target_link_options(seed_replay_native_tests PRIVATE /STACK:16777216)
   endif()
@@ -276,8 +282,8 @@ if(TARGET SeedJpCombat)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${DEPS_DIR}/GekkoNet/GekkoLib/thirdparty/zpp/LICENSE" "${SEED_APP_DIR}/resource/licenses/GekkoNet-zpp.txt")
 endif()
 
-# Replay tests can also be built independently of the application targets.
-foreach(SEED_REPLAY_TEST seed_replay_tests seed_replay_native_tests)
+# DLL integration tests can also be built independently of the application targets.
+foreach(SEED_REPLAY_TEST seed_replay_tests seed_replay_native_tests seed_training_snapshot_window_tests)
   if(TARGET ${SEED_REPLAY_TEST})
     add_custom_command(TARGET ${SEED_REPLAY_TEST} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:SDL3::SDL3>" "$<TARGET_FILE_DIR:${SEED_REPLAY_TEST}>")

@@ -2,6 +2,13 @@
 namespace seed {
 namespace {
 using A = MoveAir;
+// Native JP shared guard routines, reached by all 27 fighter updates:
+// 0x080060C4 -> 0x08008B1C (R + direction), 0x08008D1C (back + A/B).
+// Attack animations are selected from the current suit's own animation table.
+constexpr MoveInput guard_cancels[]{{"Br", A::Allowed, "Escape back"},
+                                    {"Fr", A::Allowed, "Escape forward"},
+                                    {"Ba", A::Allowed, "Counter A"},
+                                    {"Bb", A::Allowed, "Counter B"}};
 // Functional command/availability facts from kira_yamato_88's guide v1.68.
 // No guide descriptions, ratings, strategies, or narrative are reproduced.
 constexpr MoveInput strike[]{
@@ -124,6 +131,10 @@ std::span<const FighterMoves> fighter_movelist() {
 }
 const FighterMoves* fighter_moves(unsigned id) {
     return id >= 1 && id <= 27 ? &roster[id - 1] : nullptr;
+}
+std::span<const MoveInput> fighter_guard_cancels(unsigned id) {
+    return fighter_moves(id) ? std::span<const MoveInput>(guard_cancels)
+                             : std::span<const MoveInput>{};
 }
 void set_movelist_fighters(std::array<std::uint8_t, 2> value, bool jp, unsigned local_seat) {
     selected = value;

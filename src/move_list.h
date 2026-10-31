@@ -17,6 +17,7 @@ struct FighterMoves {
 };
 std::span<const FighterMoves> fighter_movelist();
 const FighterMoves* fighter_moves(unsigned native_id);
+std::span<const MoveInput> fighter_guard_cancels(unsigned native_id);
 // Presentation metadata only: never serialized into rollback snapshots.
 void set_movelist_fighters(std::array<std::uint8_t, 2> fighters, bool japanese,
                            unsigned local_seat = 0);

@@ -13,6 +13,18 @@ Directions assume the fighter faces right. A plus means simultaneous inputs;
 `(AIR)` means airborne only. MS/MA and Berserker labels specify required states.
 Each character lists Normal Berserk, SEED Mode, or Newtype Mode.
 
+Each fighter also has a **Guard cancels** section, using the same D-pad/button
+glyphs: Back + R or Forward + R to escape, Back + A and Back + B for the two
+counter attacks. These require an active block and sufficient thruster gauge;
+they work in ground or air guard. Inputs are shared across the roster, while
+counter animations come from the selected suit's native animation table.
+
+The commands were checked against JP ROM routines `0x080060C4`, `0x08008B1C`
+and `0x08008D1C`. The guide's Guard Cancel paragraph mixes up button labels,
+so it is not the authority for these inputs. The shared dispatcher requires
+guard state 3/4, a nonzero guard timer and animation frame; the handlers test
+new R plus a direction, or held Back plus new A/B, and spend 3584 thruster units.
+
 This is the **simplified control** reference. It does not document Manual-control
 motion commands. Functional command/air-availability facts and mode categories
 reference [kira_yamato_88's guide v1.68](https://gamefaqs.gamespot.com/gba/924564-gundam-seed-destiny/faqs/34177).

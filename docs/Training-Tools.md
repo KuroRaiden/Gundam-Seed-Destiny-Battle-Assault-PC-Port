@@ -52,3 +52,9 @@ snapshot equality before/after display, repeated full-state restores, paused
 states and rejected files. `seed_training_view_tests` checks signed coordinates,
 mirroring, camera projection and native actor flags. SDL tests check key edges,
 repeats, release, remapping isolation and online exclusion.
+
+`seed_training_snapshot_window_tests JP_ROM BIOS OUTPUT` also exercises F7
+through the production DLL's ordinary windowed Training loop. Host input can
+arrive partway through a raster, so F7 must finish that in-progress capture
+rather than require an idle frame boundary. This check reproduces the original
+zero-file failure and verifies three saved PNGs, including F5/F6 overlays.

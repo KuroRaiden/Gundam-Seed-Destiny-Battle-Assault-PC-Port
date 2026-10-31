@@ -2,6 +2,7 @@
 #include "portable_paths.h"
 #include "platform.h"
 #include "fighter_outline_setting.h"
+#include "display_mode.h"
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -86,6 +87,7 @@ void Settings::load(const std::filesystem::path& path) {
         }
     }
     const auto outlines = seed::load_fighter_outline_settings(path);
+    screen = seed::load_display_mode(path);
     fighter_outlines = outlines.enabled;
     fighter_outline_opacity = outlines.opacity;
     for (unsigned index = 0; index < files.size(); ++index) {
@@ -102,10 +104,13 @@ bool Settings::save(const std::filesystem::path& path, std::string& error) const
         return false;
     }
     output << "us " << std::quoted(stored_path(files[0].path, seed::settings_root(path))) << '\n'
-           << "japanese " << std::quoted(stored_path(files[1].path, seed::settings_root(path))) << '\n'
+           << "japanese " << std::quoted(stored_path(files[1].path, seed::settings_root(path)))
+           << '\n'
            << "bios " << std::quoted(stored_path(files[2].path, seed::settings_root(path))) << '\n'
            << "scale " << std::quoted(std::to_string(scale)) << '\n'
            << "theme " << std::quoted(theme) << '\n'
+           << "screen " << std::quoted(seed::kDisplayModeIds[seed::display_mode_index(screen)])
+           << '\n'
            << seed::kFighterOutlineSetting << ' ' << std::quoted(fighter_outlines ? "1" : "0")
            << '\n'
            << seed::kFighterOutlineOpacitySetting << ' '

@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include "imgui.h"
+#include "display_mode.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
 #include "imgui_stdlib.h"
@@ -488,9 +489,25 @@ void play_page(App& app) {
     else
         ImGui::TextColored(kGreen, "Both cartridges and BIOS verified");
     card_end();
-    card_begin("battle-display", 270);
+    card_begin("battle-display", 340);
     ImGui::TextUnformatted("Battle display");
     ImGui::BeginDisabled(app.game.running() || app.preparation.running());
+    ImGui::SetNextItemWidth(350);
+    int selected_screen = int(seed::display_mode_index(app.settings.screen));
+    if (ImGui::Combo("GBA color mode", &selected_screen, seed::kDisplayModeNames.data(),
+                     int(seed::kDisplayModeNames.size()))) {
+        const auto previous = app.settings.screen;
+        app.settings.screen = seed::kDisplayModeIds[selected_screen];
+        if (!app.settings.save(app.folder / L"config/launcher-settings.ini", app.message)) {
+            app.settings.screen = previous;
+            app.error = true;
+        } else {
+            app.message.clear();
+            app.error = false;
+        }
+    }
+    ImGui::TextColored(kMuted,
+                       "LCD profiles simulate the handheld display. Applies when launching.");
     ImGui::SetNextItemWidth(350);
     if (ImGui::SliderInt("Game window size", &app.settings.scale, 2, 6, "%dx"))
         app.save();

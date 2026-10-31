@@ -4,6 +4,7 @@
 #include <shellapi.h>
 #include "platform.h"
 #include "settings.h"
+#include "display_mode.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -50,6 +51,7 @@ int wmain(int argc, wchar_t** argv) {
         file.edited();
         require(!file.verified, "Editing did not invalidate identity");
         sl::Settings defaults;
+        require(defaults.screen == "raw", "Color correction should default off");
         require(defaults.fighter_outlines, "Outlines should default on");
         require(defaults.fighter_outline_opacity == 100, "Outline opacity should default to solid");
         for (unsigned index = 0; index < defaults.files.size(); ++index)
@@ -89,6 +91,21 @@ int wmain(int argc, wchar_t** argv) {
         legacy.load(legacy_path);
         require(legacy.fighter_outlines, "Legacy/invalid settings disabled outlines");
         require(legacy.fighter_outline_opacity == 100, "Legacy settings lost solid outlines");
+        require(legacy.screen == "raw", "Legacy settings changed display colors");
+        for (const auto* mode : seed::kDisplayModeIds) {
+            std::ofstream(legacy_path) << "screen " << std::quoted(mode) << '\n';
+            sl::Settings parsed;
+            parsed.load(legacy_path);
+            require(parsed.screen == mode, "Color mode was not loaded");
+            std::string save_error;
+            require(parsed.save(legacy_path, save_error), "Color mode could not be saved");
+            require(seed::load_display_mode(legacy_path) == mode,
+                    "Game and launcher disagree about the saved color mode");
+        }
+        std::ofstream(legacy_path) << "screen \"invalid\"\n";
+        sl::Settings invalid_screen;
+        invalid_screen.load(legacy_path);
+        require(invalid_screen.screen == "raw", "Invalid color mode should use original colors");
         for (const auto& [text, expected] : {std::pair{"-10", 0},
                                              {"180", 100},
                                              {"0", 0},
@@ -108,6 +125,7 @@ int wmain(int argc, wchar_t** argv) {
         const auto settings_path = scratch / L"launcher-settings.ini";
         sl::Settings original;
         original.theme = "zaft";
+        original.screen = "frontlit";
         original.scale = 5;
         original.fighter_outlines = false;
         original.fighter_outline_opacity = 55;
@@ -122,6 +140,7 @@ int wmain(int argc, wchar_t** argv) {
         loaded.load(settings_path);
         require(loaded.scale == 4, "Scale did not persist");
         require(loaded.theme == "zaft", "Launcher theme did not persist");
+        require(loaded.screen == "frontlit", "GBA color mode did not persist");
         require(!loaded.fighter_outlines, "Disabled outline setting did not persist");
         require(loaded.fighter_outline_opacity == 55, "Outline opacity did not persist");
         loaded.fighter_outlines = true;

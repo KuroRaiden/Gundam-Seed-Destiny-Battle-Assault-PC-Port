@@ -25,6 +25,7 @@ struct Settings {
                                    {FileKind::Bios, kPortableGamePaths[2]}}};
     int scale = 3;
     std::string theme = "default";
+    std::string screen = "raw";
     bool fighter_outlines = true;
     int fighter_outline_opacity = 100;
     void load(const std::filesystem::path& path);

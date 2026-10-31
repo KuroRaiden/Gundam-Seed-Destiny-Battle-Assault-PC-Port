@@ -2,6 +2,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include "runtime.h"
+#include "display_mode.h"
 #include "portable_paths.h"
 #include "jp_asset_import.h"
 #include "us_training_art.h"
@@ -10,6 +11,7 @@
 #include "invite_code.h"
 #include "replay_player.h"
 #include <cstdio>
+#include <cstdlib>
 #include <exception>
 #include <stdexcept>
 #include <string>
@@ -39,7 +41,7 @@ int main(int argc, char** argv) {
     options.builtin_game_name = "Gundam SEED: Battle Assault (US)";
     options.builtin_rom_sha1 = "8287d3d336d94a85c5cb22da0fd84918199197e1";
     options.diagnostic_replay_default = false;
-    std::string us_rom, jp_rom, bios, save, join_code, import_output, replay_path;
+    std::string us_rom, jp_rom, bios, save, join_code, import_output, replay_path, screen;
     int replay_scale = 3;
     bool import_colors = false, import_stages = false, prepare_only = false;
     int jp_debug_port = 0;
@@ -52,6 +54,8 @@ int main(int argc, char** argv) {
         }
         if (flag == "--scale" && i + 1 < argc)
             replay_scale = std::atoi(argv[i + 1]);
+        if (flag == "--screen" && i + 1 < argc)
+            screen = argv[i + 1];
         if (flag == "--prepare-game-assets") {
             prepare_only = true;
             continue;
@@ -99,6 +103,17 @@ int main(int argc, char** argv) {
     try {
         const auto base = std::filesystem::absolute(argv[0]).parent_path();
         seed::prepare_portable_folders(base);
+        // Both the US host and the existing JP DLL inherit this process-local
+        // presentation setting. Explicit developer environment overrides still win.
+        if (!std::getenv("GBARECOMP_SCREEN")) {
+            if (screen.empty())
+                screen = seed::load_display_mode(base / "config/launcher-settings.ini");
+            if (_putenv_s("GBARECOMP_SCREEN", screen.c_str()) != 0)
+                throw std::runtime_error("Could not apply the selected GBA color mode.");
+        }
+        std::fprintf(
+            stderr, "GBA color mode: %s\n",
+            seed::kDisplayModeIds[seed::display_mode_index(std::getenv("GBARECOMP_SCREEN"))]);
         if (!replay_path.empty()) {
             startup_phase = "replay playback";
             return seed::watch_match_replay(std::filesystem::u8path(replay_path), jp_rom, bios,

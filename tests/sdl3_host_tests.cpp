@@ -10,13 +10,17 @@
 #include "jp_selection.h"
 #include "jp_selection_overlay.h"
 #include "controller_db.h"
+#include "color_lut.h"
 #include <SDL3/SDL.h>
 #include <array>
+#include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
+#include <memory>
 
 namespace {
 void require(bool value, const char* message) {
@@ -28,6 +32,7 @@ std::filesystem::path capture;
 unsigned captures = 0;
 std::string display_case = "windowed";
 SDL_FRect expected_rectangle{};
+std::unique_ptr<gbarecomp::runtime::ColorLut> expected_colors;
 void render(gbarecomp::HostOverlay* out) {
     if (pixels)
         seed::draw_jp_selection(out, *pixels);
@@ -64,9 +69,13 @@ void render(gbarecomp::HostOverlay* out) {
             const int py = int(expected_rectangle.y + (y + .5) * expected_rectangle.h / 160);
             require(SDL_ReadSurfacePixel(surface, px, py, &r, &g, &b, &a),
                     "Capture pixel read failed");
-            require(pixels ? r == (p & 31) * 255 / 31 && g == ((p >> 5) & 31) * 255 / 31 &&
-                                 b == ((p >> 10) & 31) * 255 / 31
-                           : r == 20 && g == 20 && b == 20,
+            std::array<std::uint8_t, 3> expected{20, 20, 20};
+            if (pixels)
+                expected = {std::uint8_t((p & 31) * 255 / 31),
+                            std::uint8_t(((p >> 5) & 31) * 255 / 31),
+                            std::uint8_t(((p >> 10) & 31) * 255 / 31)};
+            expected_colors->map_rgb888(expected.data(), expected.data(), 1, 1);
+            require(r == expected[0] && g == expected[1] && b == expected[2],
                     "Renderer differs from expected framebuffer");
             ++checked;
         }
@@ -82,7 +91,8 @@ void render(gbarecomp::HostOverlay* out) {
                                     y + .5f >= expected_rectangle.y &&
                                     x + .5f < expected_rectangle.x + expected_rectangle.w &&
                                     y + .5f < expected_rectangle.y + expected_rectangle.h;
-                require(!inside || r != 20 || g != 20 || b != 20,
+                require(!expected_colors->is_passthrough() || !inside || r != 20 || g != 20 ||
+                            b != 20,
                         "US framebuffer leaked through the JP selector");
                 require(inside || (r == 7 && g == 11 && b == 20),
                         "JP selector painted into a letterbox bar");
@@ -104,6 +114,11 @@ void render(gbarecomp::HostOverlay* out) {
 int main(int argc, char** argv) {
     try {
         require(argc == 3 || argc == 4, "Usage: seed_sdl3_host_tests ART_PACK CAPTURE.png [--gpu]");
+        gbarecomp::runtime::ColorSettings color_settings;
+        if (const char* screen = std::getenv("GBARECOMP_SCREEN"))
+            require(gbarecomp::runtime::screen_kind_from_name(screen, color_settings.screen),
+                    "Unknown GBA color mode");
+        expected_colors = std::make_unique<gbarecomp::runtime::ColorLut>(color_settings);
         if (argc == 3)
             SDL_SetHint(SDL_HINT_RENDER_DRIVER, "software");
         SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
@@ -231,6 +246,9 @@ int main(int argc, char** argv) {
         check_display("fullscreen-after-movelist", 0, 0, 1);
         check_display("fullscreen-exclusive", 0, 0, 2);
         check_display("windowed-again", 720, 480, 0);
+        require(std::all_of(framebuffer.begin(), framebuffer.end(),
+                            [](auto value) { return value == 20; }),
+                "Display color correction changed the source framebuffer");
         if (stages) {
             selection.stage_active = true;
             selection.stage_cursor = 17;

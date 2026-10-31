@@ -255,6 +255,7 @@ if(WIN32)
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/config/controllerdb-LICENSE.txt" "${SEED_APP_DIR}/resource/licenses/SDL-GameControllerDB.txt")
   endif()
   add_executable(seed_launcher_tests tests/launcher_tests.cpp)
+  target_include_directories(seed_launcher_tests PRIVATE src)
   target_link_libraries(seed_launcher_tests PRIVATE seed_launcher_platform)
 endif()
 

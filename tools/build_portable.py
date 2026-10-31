@@ -118,8 +118,9 @@ and shares them with your opponent. Both players need this updated build.
 Play > Black sprite outlines toggles a simple black border around battle fighters.
 Outline opacity sets its strength from 0% invisible to 100% solid black.
 Both settings save automatically, apply when launching and only change your display.
-The preference saves automatically and takes effect when launching a game.
-It only changes your display online; the opponent can choose independently.
+Play > GBA color mode selects Original colors, GBA LCD frontlit/unlit,
+GBA SP backlit, or Classic GBA. The saved mode applies when launching games
+and replays and only affects your display online. F7 exports keep raw colors.
 Press Start on character select to cycle colors/variants before pressing A.
 Each local player uses their own Start binding; in Training, P1 picks both.
 In offline Training, F6 toggles hitboxes/hurtboxes. F2 saves a practice

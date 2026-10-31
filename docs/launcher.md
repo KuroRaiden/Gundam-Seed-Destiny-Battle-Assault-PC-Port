@@ -107,6 +107,15 @@ before starting the US menu. A source build script is not required for setup.
 Training uses an English pause menu with the US ROM font. F5 opens the frame meter, F6 toggles red hitboxes/green hurtboxes, and F2/F3 save/reload a practice situation. F7 saves a clean PNG on a solid #101C2B background, retaining enabled F5/F6 overlays. Open the snapshots folder from Play. These tools are offline Training only; see [Training tools](Training-Tools.md).
 
 Game window size is on **Play → Battle display**, beside the outline controls.
+**GBA color mode** selects Original colors (the default), frontlit or unlit GBA
+LCD simulation, backlit GBA SP, or the Classic GBA profile. This uses GBARecomp's
+existing present-time screen simulation, including the Japanese selector and
+stage previews. The choice saves automatically and applies on the next game or
+replay launch. It affects only local display colors; the original palettes,
+recorded inputs and online simulation remain unchanged. The launcher theme and
+MS palette editor are separate settings. Clean F7 sprite exports retain their
+raw palette colors and exact blue background. Advanced `GBARECOMP_SCREEN`
+environment overrides take priority over the saved choice.
 **Join Discord** opens the project's server invite from Play. First launch keeps
 the launcher visible while `first-launch.log` records local asset preparation;
 the native game starts automatically in a fresh process after preparation

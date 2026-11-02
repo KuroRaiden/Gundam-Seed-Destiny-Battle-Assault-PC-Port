@@ -13,6 +13,36 @@ contains confirmed inputs rather than predictions.
 Open **Replays** in the launcher, select a recording and choose **Watch replay**.
 The list shows the recording date, players, mode, duration, fighters and stage.
 **Refresh** finds files copied into the folder; **Open replay folder** opens it.
+The **Takeover frame** slider chooses a precise starting point. **Take over 1P**
+and **Take over 2P** fast-forward to that point, save the practice checkpoint and
+start paused. Press Space to play. Both seats use your P1 controls. F10 retries
+that point; F11 returns to the original recording. The original file is preserved.
+
+**Export MP4** renders the selected recording offline with its audio. Choose
+native 240 x 160, 720p or 1080p, and optionally include native hitboxes/hurtboxes.
+HD exports preserve the game's 3:2 aspect ratio with black side bars and nearest
+pixel scaling. Current outline and GBA screen-color preferences apply. Exports
+contain the game image and HUD, without playback menus or status banners.
+
+Videos are saved to `replays/exports/` with unique names. The launcher stays open
+with progress and Cancel controls. **Open MP4** plays the completed video;
+**Open exports folder** opens its location. Closing the launcher cancels an active
+export. Cancelled/failed jobs remove their incomplete video and preserve existing
+files, recordings and settings. Export progress and diagnostic logs stay in Logs.
+
+Encoding uses Windows' [Media Foundation sink writer](https://learn.microsoft.com/en-us/windows/win32/medfound/sink-writer)
+with H.264 video and stereo AAC audio. There are no FFmpeg downloads or bundled
+encoder files. Media Foundation is loaded only for exports; Windows N needs its
+Media Feature Pack for this feature. Video timestamps follow the native GBA
+clock, and audio is resampled to 48 kHz on the same timeline. Complete recordings
+must reproduce their final machine checksum before the finished MP4 is saved.
+An MP4 is a video; keep the `.seedreplay` file for interactive takeover.
+
+Developer CLI: `GundamSeedRecomp.exe --watch-replay RECORDING --jp-rom JP_ROM
+--bios BIOS --export-mp4 NEW_FILE.mp4 --export-height 720`. Add `--replay-boxes`
+for collision overlays. For practice, use `--takeover-player 1` (or 2) and
+`--takeover-frame FRAME` instead of the export flags.
+
 During playback, **Space** pauses, **Tab** fast-forwards, **F6** toggles native
 hitboxes/hurtboxes and **Esc** returns to the launcher. Collision boxes also work
 while paused and during takeover. They read the current frame without changing
@@ -73,3 +103,8 @@ seats, exact checkpoint retries, F1/F4 isolation, return to the original match,
 clean practice exit and end-of-segment handling. It also compares F6 on/off
 captures while checking the original machine checksum and file hash. The
 developer-side image comparisons require Pillow; the portable does not.
+
+`seed_replay_export_job_tests` checks real launcher child-process progress,
+completion, cancellation and incomplete-file cleanup. `seed_mp4_writer_tests`
+encodes and decodes all three output sizes, checks frame timing, image orientation,
+audio and A/V duration using Windows Media Foundation.

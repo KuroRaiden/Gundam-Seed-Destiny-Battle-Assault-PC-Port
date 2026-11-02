@@ -43,64 +43,101 @@ int main(int argc, char** argv) {
     options.diagnostic_replay_default = false;
     std::string us_rom, jp_rom, bios, save, join_code, import_output, replay_path, screen;
     int replay_scale = 3;
+    seed::ReplayLaunchOptions replay_launch;
     bool import_colors = false, import_stages = false, prepare_only = false;
     int jp_debug_port = 0;
     std::vector<char*> args{argv[0]};
-    for (int i = 1; i < argc; ++i) {
-        const std::string flag = argv[i];
-        if (flag == "--watch-replay" && i + 1 < argc) {
-            replay_path = argv[++i];
-            continue;
-        }
-        if (flag == "--scale" && i + 1 < argc)
-            replay_scale = std::atoi(argv[i + 1]);
-        if (flag == "--screen" && i + 1 < argc)
-            screen = argv[i + 1];
-        if (flag == "--prepare-game-assets") {
-            prepare_only = true;
-            continue;
-        }
-
-        if (flag == "--import-jp-color-previews" && i + 1 < argc) {
-            import_output = argv[++i];
-            import_colors = true;
-            continue;
-        }
-        if (flag == "--import-jp-stage-previews" && i + 1 < argc) {
-            import_output = argv[++i];
-            import_stages = true;
-            continue;
-        }
-        if (flag == "--import-jp-assets" && i + 1 < argc) {
-            import_output = argv[++i];
-            continue;
-        }
-        if (flag == "--join-code" && i + 1 < argc) {
-            join_code = argv[++i];
-            continue;
-        }
-        if (flag == "--jp-rom" && i + 1 < argc) {
-            jp_rom = argv[++i];
-            continue;
-        }
-        if (flag == "--jp-tcp" && i + 1 < argc) {
-            jp_debug_port = std::stoi(argv[++i]);
-            continue;
-        }
-        if (flag == "--rom" && i + 1 < argc)
-            us_rom = argv[i + 1];
-        if (flag == "--bios" && i + 1 < argc)
-            bios = argv[i + 1];
-        if (flag == "--save" && i + 1 < argc)
-            save = argv[i + 1];
-        args.push_back(argv[i]);
-    }
-    if (save.empty())
-        save = (std::filesystem::absolute(argv[0]).parent_path() / "local-vs-jp.sav").string();
-    else
-        save += ".jp-local.sav";
     const char* startup_phase = "startup";
     try {
+        for (int i = 1; i < argc; ++i) {
+            const std::string flag = argv[i];
+            if (flag == "--watch-replay" && i + 1 < argc) {
+                replay_path = argv[++i];
+                continue;
+            }
+            if (flag == "--takeover-player" && i + 1 < argc) {
+                replay_launch.takeover_player = std::stoi(argv[++i]) - 1;
+                if (replay_launch.takeover_player < 0 || replay_launch.takeover_player > 1)
+                    throw std::runtime_error("Choose takeover player 1 or 2.");
+                continue;
+            }
+            if (flag == "--takeover-frame" && i + 1 < argc) {
+                const auto n = std::stoull(argv[++i]);
+                if (n > 2160000)
+                    throw std::runtime_error("Invalid takeover frame.");
+                replay_launch.takeover_frame = unsigned(n);
+                continue;
+            }
+            if (flag == "--replay-boxes") {
+                replay_launch.boxes = true;
+                continue;
+            }
+            if (flag == "--export-mp4" && i + 1 < argc) {
+                replay_launch.mp4 = argv[++i];
+                continue;
+            }
+            if (flag == "--export-status" && i + 1 < argc) {
+                replay_launch.status = argv[++i];
+                continue;
+            }
+            if (flag == "--export-cancel" && i + 1 < argc) {
+                replay_launch.cancel = argv[++i];
+                continue;
+            }
+            if (flag == "--export-height" && i + 1 < argc) {
+                replay_launch.export_height = unsigned(std::stoul(argv[++i]));
+                if (replay_launch.export_height != 160 && replay_launch.export_height != 720 &&
+                    replay_launch.export_height != 1080)
+                    throw std::runtime_error("Choose native, 720p or 1080p export.");
+                continue;
+            }
+            if (flag == "--scale" && i + 1 < argc)
+                replay_scale = std::atoi(argv[i + 1]);
+            if (flag == "--screen" && i + 1 < argc)
+                screen = argv[i + 1];
+            if (flag == "--prepare-game-assets") {
+                prepare_only = true;
+                continue;
+            }
+
+            if (flag == "--import-jp-color-previews" && i + 1 < argc) {
+                import_output = argv[++i];
+                import_colors = true;
+                continue;
+            }
+            if (flag == "--import-jp-stage-previews" && i + 1 < argc) {
+                import_output = argv[++i];
+                import_stages = true;
+                continue;
+            }
+            if (flag == "--import-jp-assets" && i + 1 < argc) {
+                import_output = argv[++i];
+                continue;
+            }
+            if (flag == "--join-code" && i + 1 < argc) {
+                join_code = argv[++i];
+                continue;
+            }
+            if (flag == "--jp-rom" && i + 1 < argc) {
+                jp_rom = argv[++i];
+                continue;
+            }
+            if (flag == "--jp-tcp" && i + 1 < argc) {
+                jp_debug_port = std::stoi(argv[++i]);
+                continue;
+            }
+            if (flag == "--rom" && i + 1 < argc)
+                us_rom = argv[i + 1];
+            if (flag == "--bios" && i + 1 < argc)
+                bios = argv[i + 1];
+            if (flag == "--save" && i + 1 < argc)
+                save = argv[i + 1];
+            args.push_back(argv[i]);
+        }
+        if (save.empty())
+            save = (std::filesystem::absolute(argv[0]).parent_path() / "local-vs-jp.sav").string();
+        else
+            save += ".jp-local.sav";
         const auto base = std::filesystem::absolute(argv[0]).parent_path();
         seed::prepare_portable_folders(base);
         // Both the US host and the existing JP DLL inherit this process-local
@@ -117,7 +154,7 @@ int main(int argc, char** argv) {
         if (!replay_path.empty()) {
             startup_phase = "replay playback";
             return seed::watch_match_replay(std::filesystem::u8path(replay_path), jp_rom, bios,
-                                            replay_scale);
+                                            replay_scale, replay_launch);
         }
         const auto art = base / "assets" / "destiny-selection.bin";
         if (!import_output.empty()) {
@@ -155,9 +192,9 @@ int main(int argc, char** argv) {
                                  jp_rom, bios, save, jp_debug_port);
     } catch (const std::exception& error) {
         std::fprintf(stderr, "startup_failure: %s: %s\n", startup_phase, error.what());
-        if (!replay_path.empty())
+        if (!replay_path.empty() && replay_launch.mp4.empty())
             MessageBoxA(nullptr, error.what(), "Gundam SEED - Replay", MB_OK | MB_ICONERROR);
-        return 2;
+        return replay_launch.mp4.empty() ? 2 : 1;
     }
     return gbarecomp::run_game(int(args.size()), args.data(), options);
 }

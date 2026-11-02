@@ -45,7 +45,8 @@ int main(int argc, char** argv) {
         const std::string scenario = argv[1];
         require(scenario == "plain" || scenario == "boxes" || scenario == "boxes-off" ||
                     scenario == "takeover" || scenario == "takeover-close" ||
-                    scenario == "takeover-end",
+                    scenario == "takeover-end" || scenario == "launcher-1p" ||
+                    scenario == "launcher-2p",
                 "Unknown replay practice scenario.");
         const auto file = std::filesystem::u8path(argv[2]);
         const auto before = seed::replay_file_hash(file);
@@ -82,7 +83,13 @@ int main(int argc, char** argv) {
             request.palettes[p] = replay.palettes[p];
         }
         std::vector<std::pair<unsigned, SDL_Scancode>> schedule;
-        if (scenario == "takeover") {
+        if (scenario == "launcher-1p" || scenario == "launcher-2p") {
+            request.replay_takeover_player = scenario == "launcher-1p" ? 0 : 1;
+            request.replay_takeover_frame = 369;
+            request.replay_boxes = true;
+            schedule = {
+                {5000, SDL_SCANCODE_SPACE}, {5600, SDL_SCANCODE_F10}, {6100, SDL_SCANCODE_F11}};
+        } else if (scenario == "takeover") {
             schedule = {
                 {6800, SDL_SCANCODE_SPACE}, {7100, SDL_SCANCODE_F8},  {7500, SDL_SCANCODE_F10},
                 {7800, SDL_SCANCODE_F9},    {8100, SDL_SCANCODE_F4},  {8300, SDL_SCANCODE_F8},
@@ -128,7 +135,8 @@ int main(int argc, char** argv) {
             require(result.verified && result.frames == replay.inputs.size(), result.message);
             require(!replay.complete || result.final_crc == replay.final_crc,
                     "Replay practice or collision display changed the original match result.");
-            require((scenario.starts_with("takeover")) == (live_calls > 0),
+            require((scenario.starts_with("takeover") || scenario.starts_with("launcher")) ==
+                        (live_calls > 0),
                     "Live inputs were sampled in the wrong playback mode.");
         }
         require(seed::replay_file_hash(file) == before, "The source replay was rewritten.");

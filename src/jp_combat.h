@@ -6,7 +6,14 @@
 #include <cstdint>
 
 namespace seed {
-inline constexpr unsigned kCombatApiVersion = 9;
+inline constexpr unsigned kCombatApiVersion = 10;
+struct ReplayVideoExportRequest {
+    const char* output = nullptr;
+    const char* status = nullptr; // Atomic progress JSON, outside the recording.
+    const char* cancel = nullptr; // Launcher-owned cancellation marker.
+    unsigned width = 1280, height = 720;
+    bool boxes = false;
+};
 struct ReplayPlaybackResult {
     unsigned frames = 0;
     std::uint32_t final_crc = 0;
@@ -45,6 +52,10 @@ struct JpCombatRequest {
     const char* replay_path = nullptr;      // Playback only; never opens a network connection.
     const char* replay_directory = nullptr; // Null uses the portable's replays folder.
     ReplayPlaybackResult* replay_result = nullptr;
+    int replay_takeover_player = -1;
+    unsigned replay_takeover_frame = 0;
+    bool replay_boxes = false;
+    const ReplayVideoExportRequest* video_export = nullptr;
 };
 // 0: finished/returned to selection, 2: window closed, negative: startup failure.
 using RunJpCombat = int (*)(const JpCombatRequest*);

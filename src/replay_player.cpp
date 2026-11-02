@@ -13,7 +13,7 @@
 
 namespace seed {
 int watch_match_replay(const std::filesystem::path& file, const std::string& rom,
-                       const std::string& bios, int scale) {
+                       const std::string& bios, int scale, const ReplayLaunchOptions& launch) {
     const auto replay = read_match_replay(file);
     const auto library = combat_library_path();
     if (!replay_build_compatible(replay, replay_file_hash(library)))
@@ -21,7 +21,7 @@ int watch_match_replay(const std::filesystem::path& file, const std::string& rom
                                  replay.build_version);
     if (replay.bios_hash != replay_file_hash(std::filesystem::u8path(bios)))
         throw std::runtime_error("This replay needs the same BIOS it was recorded with.");
-    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD))
+    if (!SDL_Init(launch.mp4.empty() ? SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD : 0))
         throw std::runtime_error(SDL_GetError());
     struct Owner {
         SDL_Window* window = nullptr;
@@ -37,21 +37,25 @@ int watch_match_replay(const std::filesystem::path& file, const std::string& rom
             SDL_Quit();
         }
     } owner;
-    scale = std::clamp(scale, 1, 10);
-    owner.window = SDL_CreateWindow("Gundam SEED - Replay", 240 * scale, 160 * scale,
-                                    SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
-    if (!owner.window)
-        throw std::runtime_error(SDL_GetError());
-    set_game_window_icon(owner.window);
-    owner.renderer = SDL_CreateRenderer(owner.window, nullptr);
-    if (!owner.renderer)
-        owner.renderer = SDL_CreateRenderer(owner.window, "software");
-    if (!owner.renderer)
-        throw std::runtime_error(SDL_GetError());
+    if (launch.mp4.empty()) {
+        scale = std::clamp(scale, 1, 10);
+        owner.window = SDL_CreateWindow("Gundam SEED - Replay", 240 * scale, 160 * scale,
+                                        SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
+        if (!owner.window)
+            throw std::runtime_error(SDL_GetError());
+        set_game_window_icon(owner.window);
+        owner.renderer = SDL_CreateRenderer(owner.window, nullptr);
+        if (!owner.renderer)
+            owner.renderer = SDL_CreateRenderer(owner.window, "software");
+        if (!owner.renderer)
+            throw std::runtime_error(SDL_GetError());
+    }
     const auto root = library.parent_path();
-    load_controller_db(root);
     LiveControls controls;
-    controls.load(root / "config/controls.ini");
+    if (launch.mp4.empty()) {
+        load_controller_db(root);
+        controls.load(root / "config/controls.ini");
+    }
     owner.module = LoadLibraryW(library.c_str());
     const auto run =
         owner.module
@@ -67,7 +71,20 @@ int watch_match_replay(const std::filesystem::path& file, const std::string& rom
     request.save = save.c_str();
     request.replay_path = playback_file.c_str();
     request.stage = replay.stage;
-    request.surface = {owner.window, owner.renderer, &controls, false};
+    request.surface = {owner.window, owner.renderer, owner.window ? &controls : nullptr, false};
+    request.replay_takeover_player = launch.takeover_player;
+    request.replay_takeover_frame = launch.takeover_frame;
+    request.replay_boxes = launch.boxes;
+    ReplayVideoExportRequest video;
+    if (!launch.mp4.empty()) {
+        video.output = launch.mp4.c_str();
+        video.status = launch.status.c_str();
+        video.cancel = launch.cancel.c_str();
+        video.height = launch.export_height;
+        video.width = video.height == 160 ? 240 : video.height == 720 ? 1280 : 1920;
+        video.boxes = launch.boxes;
+        request.video_export = &video;
+    }
     for (unsigned p = 0; p < 2; ++p) {
         request.fighters[p] = replay.fighters[p];
         request.colors[p] = replay.colors[p];
@@ -81,9 +98,9 @@ int watch_match_replay(const std::filesystem::path& file, const std::string& rom
     controls.devices.close();
     std::fprintf(stderr, "replay_playback: frames=%u verified=%u crc=%u %s\n", result.frames,
                  unsigned(result.verified), result.final_crc, result.message);
-    if (code < 0)
+    if (code != 0 && code != 2)
         throw std::runtime_error(*result.message ? result.message
                                                  : "Replay playback failed. Check the replay log.");
-    return 0;
+    return !launch.mp4.empty() && !result.verified ? 2 : 0;
 }
 } // namespace seed

@@ -18,6 +18,7 @@
 #include "update.h"
 #include "ms_colors_ui.h"
 #include "match_replay.h"
+#include "replay_export.h"
 #include "move_list.h"
 #include "../src/controller_db.h"
 #include "../src/brand_icons.h"
@@ -47,6 +48,9 @@ struct App {
     std::unique_ptr<sl::LauncherUpdates> updates;
     bool update_exit = false;
     sl::GameProcess game, preparation;
+    sl::ReplayExportJob replay_export;
+    bool exit_after_export = false, replay_boxes = false;
+    int takeover_frame = 0, export_resolution = 1;
     bool preparation_failed = false;
     sl::MsColorsUi colors;
     SDL_Renderer* renderer = nullptr;
@@ -116,9 +120,9 @@ struct App {
             message = e.what();
         }
     }
-    void watch_replay() {
+    void watch_replay(int player = -1) {
         if (selected_replay < 0 || selected_replay >= int(replays.size()) || game.running() ||
-            preparation.running() || colors.busy())
+            preparation.running() || colors.busy() || replay_export.running())
             return;
         const auto& replay = replays[selected_replay];
         if (!replay.error.empty()) {
@@ -140,10 +144,17 @@ struct App {
         save();
         if (error)
             return;
-        const std::vector<std::wstring> args{L"--watch-replay", replay.path.wstring(),
-                                             L"--jp-rom",       sl::wide(settings.files[1].path),
-                                             L"--bios",         sl::wide(settings.files[2].path),
-                                             L"--scale",        std::to_wstring(settings.scale)};
+        std::vector<std::wstring> args{L"--watch-replay", replay.path.wstring(),
+                                       L"--jp-rom",       sl::wide(settings.files[1].path),
+                                       L"--bios",         sl::wide(settings.files[2].path),
+                                       L"--scale",        std::to_wstring(settings.scale)};
+        if (player >= 0) {
+            args.insert(args.end(),
+                        {L"--takeover-player", std::to_wstring(player + 1), L"--takeover-frame",
+                         std::to_wstring(std::clamp(takeover_frame, 0, int(replay.frames) - 1))});
+        }
+        if (replay_boxes)
+            args.push_back(L"--replay-boxes");
         if (!game.start(folder / "GundamSeedRecomp.exe", args, folder / "Logs/last-replay.log",
                         message)) {
             error = true;
@@ -154,6 +165,41 @@ struct App {
         message = "Watching replay";
         SDL_HideWindow(window);
         hidden = true;
+    }
+    void export_replay() {
+        if (selected_replay < 0 || selected_replay >= int(replays.size()) || game.running() ||
+            preparation.running() || colors.busy() || replay_export.running())
+            return;
+        const auto& entry = replays[selected_replay];
+        if (!entry.error.empty()) {
+            error = true;
+            message = entry.error;
+            return;
+        }
+        for (unsigned p : {1u, 2u}) {
+            settings.files[p].verify(folder);
+            if (!settings.files[p].verified) {
+                error = true;
+                message = "Select and verify the JP cartridge and BIOS in Game files first.";
+                return;
+            }
+        }
+        error = false;
+        save();
+        if (error)
+            return;
+        auto jp = std::filesystem::u8path(settings.files[1].path),
+             bios = std::filesystem::u8path(settings.files[2].path);
+        if (jp.is_relative())
+            jp = folder / jp;
+        if (bios.is_relative())
+            bios = folder / bios;
+        constexpr unsigned heights[]{160, 720, 1080};
+        if (!replay_export.start(folder, entry.path, jp, bios, heights[export_resolution],
+                                 replay_boxes, message))
+            error = true;
+        else
+            message.clear();
     }
 
     void save() {
@@ -186,6 +232,10 @@ struct App {
     inline static constexpr const char* seed_asset_names[]{
         "destiny-selection.bin", "destiny-stages.bin", "us-training-menu.bin"};
     void launch() {
+        if (replay_export.running()) {
+            message = "Finish or cancel the MP4 export before launching a game.";
+            return;
+        }
         if (preparation.running())
             return;
         if (colors.busy()) {
@@ -375,10 +425,10 @@ void replays_page(App& app) {
         ImGui::TextWrapped("Play a Local VS or online match, then return here to watch it. "
                            "Recordings are saved in the replays folder beside the launcher.");
     } else {
-        if (ImGui::BeginTable("replays", 4,
-                              ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY |
-                                  ImGuiTableFlags_BordersInnerH,
-                              ImVec2(0, 290))) {
+        if (ImGui::BeginTable(
+                "replays", 4,
+                ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersInnerH,
+                ImVec2(0, std::clamp(ImGui::GetContentRegionAvail().y - 500.f, 110.f, 240.f)))) {
             ImGui::TableSetupColumn("Recorded", ImGuiTableColumnFlags_WidthFixed, 170);
             ImGui::TableSetupColumn("Players", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Mode", ImGuiTableColumnFlags_WidthFixed, 65);
@@ -395,8 +445,10 @@ void replays_page(App& app) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 if (ImGui::Selectable(when, app.selected_replay == int(i),
-                                      ImGuiSelectableFlags_SpanAllColumns))
+                                      ImGuiSelectableFlags_SpanAllColumns)) {
                     app.selected_replay = int(i);
+                    app.takeover_frame = 0;
+                }
                 ImGui::TableNextColumn();
                 ImGui::TextUnformatted(
                     (replay.info.names[0] + " vs " + replay.info.names[1]).c_str());
@@ -420,14 +472,65 @@ void replays_page(App& app) {
             if (!entry.error.empty())
                 ImGui::TextColored(kGold, "%s", entry.error.c_str());
             ImGui::BeginDisabled(!entry.error.empty() || app.game.running() ||
-                                 app.preparation.running() || app.colors.busy());
+                                 app.preparation.running() || app.colors.busy() ||
+                                 app.replay_export.running());
             primary_begin();
             if (ImGui::Button("Watch replay", ImVec2(200, 46)))
                 app.watch_replay();
             primary_end();
+            ImGui::Spacing();
+            if (ImGui::BeginTable("replay-actions", 2, ImGuiTableFlags_SizingStretchSame)) {
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted("Takeover frame");
+                app.takeover_frame =
+                    std::clamp(app.takeover_frame, 0, std::max(0, int(entry.frames) - 1));
+                ImGui::SetNextItemWidth(-1);
+                ImGui::SliderInt("##takeover-frame", &app.takeover_frame, 0,
+                                 std::max(0, int(entry.frames) - 1));
+                ImGui::TextWrapped("Starts paused at %.2f seconds. Space plays. Either seat uses "
+                                   "your P1 controls.",
+                                   double(app.takeover_frame) * 280896 / 16777216);
+                const float button_width =
+                    (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * .5f;
+                if (ImGui::Button("Take over 1P", ImVec2(button_width, 38)))
+                    app.watch_replay(0);
+                ImGui::SameLine();
+                if (ImGui::Button("Take over 2P", ImVec2(button_width, 38)))
+                    app.watch_replay(1);
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted("MP4 resolution");
+                constexpr const char* resolutions[]{"Native (240 x 160)", "720p (1280 x 720)",
+                                                    "1080p (1920 x 1080)"};
+                ImGui::SetNextItemWidth(-1);
+                ImGui::Combo("##mp4-resolution", &app.export_resolution, resolutions, 3);
+                ImGui::Checkbox("Include hitboxes / hurtboxes", &app.replay_boxes);
+                if (ImGui::Button("Export MP4", ImVec2(200, 42)))
+                    app.export_replay();
+                ImGui::EndTable();
+            }
             ImGui::EndDisabled();
         }
     }
+    const auto& exporting = app.replay_export.state();
+    if (exporting.phase != sl::ExportPhase::Idle) {
+        ImGui::Spacing();
+        ImGui::TextWrapped("%s", exporting.message.c_str());
+        if (app.replay_export.running()) {
+            ImGui::ProgressBar(exporting.progress, ImVec2(-1, 22));
+            if (ImGui::Button("Cancel export"))
+                app.replay_export.cancel();
+        } else if (exporting.phase == sl::ExportPhase::Done) {
+            if (ImGui::Button("Open MP4"))
+                sl::open_file(exporting.output);
+        }
+    }
+    if (ImGui::Button("Open exports folder")) {
+        std::filesystem::create_directories(app.folder / "replays/exports");
+        sl::open_file(app.folder / "replays/exports");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Open export log"))
+        sl::open_file(app.folder / "Logs/last-replay-export.log");
     ImGui::Spacing();
     ImGui::TextWrapped(
         "Playback: Space pauses, hold Tab to fast-forward, Esc returns to the launcher. "
@@ -468,7 +571,8 @@ void play_page(App& app) {
     const bool combat = std::filesystem::is_regular_file(app.folder / L"SeedJpCombat.dll");
     const bool ready = host && combat && app.settings.files[0].verified &&
                        app.settings.files[1].verified && app.settings.files[2].verified;
-    ImGui::BeginDisabled(!ready || app.game.running() || app.preparation.running());
+    ImGui::BeginDisabled(!ready || app.game.running() || app.preparation.running() ||
+                         app.replay_export.running());
     primary_begin();
     if (ImGui::Button("Launch game", ImVec2(195, 40)))
         app.launch();
@@ -541,7 +645,8 @@ void play_page(App& app) {
     ImGui::TextColored(kMuted, "Saved automatically. Only changes your display online.");
     card_end();
     ImGui::TextColored(kMuted, "Training F7: clean PNG snapshot with enabled F5/F6 overlays.");
-    ImGui::TextColored(kMuted, "Training challenges: F8 next drill, F9 retry, F10 return to practice.");
+    ImGui::TextColored(kMuted,
+                       "Training challenges: F8 next drill, F9 retry, F10 return to practice.");
     if (ImGui::SmallButton("Open snapshots folder"))
         sl::open_file(app.folder / "snapshots");
     if (app.preparation.running())
@@ -837,7 +942,8 @@ void updates_page(App& app) {
             app.updates->download();
     }
     if (state.phase == sl::UpdatePhase::Ready) {
-        ImGui::BeginDisabled(app.game.running() || app.preparation.running() || app.colors.busy());
+        ImGui::BeginDisabled(app.game.running() || app.preparation.running() || app.colors.busy() ||
+                             app.replay_export.running());
         if (ImGui::Button("Install and restart", ImVec2(220, 38))) {
             app.error = false;
             if (!app.colors.save()) {
@@ -1106,11 +1212,18 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                 if (event.type == SDL_EVENT_QUIT ||
                     (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED &&
                      event.window.windowID == SDL_GetWindowID(app.window)))
-                    done = true;
+                    if (app.replay_export.running()) {
+                        app.replay_export.cancel();
+                        app.exit_after_export = true;
+                    } else
+                        done = true;
                 if (event.type == SDL_EVENT_GAMEPAD_ADDED ||
                     event.type == SDL_EVENT_GAMEPAD_REMOVED)
                     app.refresh_pads();
             }
+            app.replay_export.tick();
+            if (app.exit_after_export && !app.replay_export.running())
+                done = true;
             if (const auto code = app.preparation.poll()) {
                 app.preparation_failed = *code != 0;
                 if (!app.preparation_failed)

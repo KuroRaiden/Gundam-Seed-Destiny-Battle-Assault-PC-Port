@@ -160,6 +160,11 @@ During replay playback, F6 toggles hitboxes/hurtboxes. F8/F9 take over 1P/2P
 using your P1 controls while the opponent follows its recorded inputs. F10
 retries the same checkpoint; F11 resumes the original replay. Practice pauses
 at the round/recording end. Your original replay file is never changed.
+The launcher Replays tab also offers a takeover-frame slider and Take over 1P/2P
+buttons. Practice starts paused at the selected frame; press Space to play.
+Export MP4 saves video and audio in replays/exports/. Choose native, 720p or
+1080p output and optional hitboxes. Progress and Cancel stay in the launcher.
+Exports use Windows Media Foundation; no FFmpeg installation is needed.
 Press F4 during play to remap controls. In Training, F5 toggles the frame
 meter without pausing: green startup, red active, blue recovery, yellow hitstun.
 After choosing both fighters, select a stage with left/right and confirm with A.

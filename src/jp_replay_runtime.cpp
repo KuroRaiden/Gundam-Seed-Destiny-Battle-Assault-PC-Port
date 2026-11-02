@@ -3,6 +3,7 @@
 #include "host_window.h"
 #include "runtime_bus_bridge.h"
 #include "training_tools.h"
+#include "replay_video_export.h"
 #include <chrono>
 #include <atomic>
 #include <cstdio>
@@ -116,9 +117,14 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                           replay.palettes[p] == match.palettes[p],
                       "Replay match configuration differs.");
             check(replay.stage == match.stage, "Replay stage differs.");
+            check(match.replay_takeover_player >= -1 && match.replay_takeover_player < 2,
+                  "Choose takeover player 1 or 2.");
+            if (match.replay_takeover_player >= 0)
+                check(match.replay_takeover_frame < replay.inputs.size(),
+                      "Takeover frame is outside this recording.");
         }
         gbarecomp::HostWindow window;
-        if (match.surface.window) {
+        if (match.surface.window && !match.video_export) {
             check(window.open(3, 240, 160,
                               playback ? "Gundam SEED - Replay"
                                        : "Gundam SEED Destiny / Battle Assault - Local VS"),
@@ -133,6 +139,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                   "Cannot initialize replay controls.");
         }
         bool quit = false, paused = false, fast = false, overlay_pause = false;
+        bool launch_takeover = playback && match.replay_takeover_player >= 0;
         auto pump = [&] {
             if (!window.is_open())
                 return;
@@ -150,9 +157,9 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                 window.set_volume(window.volume() - 5);
             if (events.toggle_fps)
                 window.set_fps_readout(!window.fps_readout());
-            if (events.toggle_pause)
+            if (events.toggle_pause && !launch_takeover)
                 paused = !paused;
-            if (keys.pause.exchange(false) && !events.remap_pause) {
+            if (keys.pause.exchange(false) && !events.remap_pause && !launch_takeover) {
                 paused = !paused;
                 std::fprintf(stderr, "replay_pause: %s at frame %u\n",
                              paused ? "paused" : "resumed", result.frames);
@@ -191,6 +198,18 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                 std::fprintf(stderr, "replay_recording_unavailable: %s\n", error.what());
             }
         }
+        if (playback && match.video_export) {
+            result = export_replay_video(machine, replay, *match.video_export);
+            if (match.replay_result)
+                *match.replay_result = result;
+            return 0;
+        }
+        if (playback && match.replay_boxes) {
+            SDL_Event e{};
+            e.type = SDL_EVENT_KEY_DOWN;
+            e.key.scancode = SDL_SCANCODE_F6;
+            training_tools_event(e, false);
+        }
         auto deadline = std::chrono::steady_clock::now();
         std::string last_title;
         struct Practice {
@@ -222,7 +241,16 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             pump();
             if (quit)
                 break;
-            const auto action = keys.action.exchange(ReplayAction::None);
+            auto action = keys.action.exchange(ReplayAction::None);
+            const bool entering_from_launcher =
+                launch_takeover && result.frames >= match.replay_takeover_frame && !overlay_pause;
+            if (entering_from_launcher) {
+                action = match.replay_takeover_player == 0 ? ReplayAction::Player1
+                                                           : ReplayAction::Player2;
+                launch_takeover = false;
+            }
+            if (launch_takeover)
+                action = ReplayAction::None;
             if (playback && !overlay_pause) {
                 if (action == ReplayAction::Player1 || action == ReplayAction::Player2) {
                     if (practice.player < 0) {
@@ -237,7 +265,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                     }
                     practice.player = action == ReplayAction::Player1 ? 0 : 1;
                     practice.ended = practice.logged_input = false;
-                    paused = false;
+                    paused = entering_from_launcher;
                     result.verified = false;
                     release_host_controls();
                     std::fprintf(stderr,
@@ -264,15 +292,19 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             if (practice.ended)
                 paused = true;
             if (playback && window.is_open()) {
-                const auto title = std::string("Gundam SEED - Replay | ") +
-                                   (practice.player >= 0
-                                        ? "TAKEOVER " + std::to_string(practice.player + 1) + "P | "
-                                        : "") +
-                                   (paused || overlay_pause ? "PAUSED | " : "") +
-                                   std::to_string(result.frames / 60) + " / " +
-                                   std::to_string(replay.inputs.size() / 60) +
-                                   "s | F6: boxes | F8/F9: take over | F10: retry | F11: watch | "
-                                   "Space: pause | Esc: exit";
+                const auto title =
+                    launch_takeover
+                        ? "Gundam SEED - Replay | Seeking frame " + std::to_string(result.frames) +
+                              " / " + std::to_string(match.replay_takeover_frame) + " | Esc: exit"
+                        : std::string("Gundam SEED - Replay | ") +
+                              (practice.player >= 0
+                                   ? "TAKEOVER " + std::to_string(practice.player + 1) + "P | "
+                                   : "") +
+                              (paused || overlay_pause ? "PAUSED | " : "") +
+                              std::to_string(result.frames / 60) + " / " +
+                              std::to_string(replay.inputs.size() / 60) +
+                              "s | F6: boxes | F8/F9: take over | F10: retry | F11: watch | "
+                              "Space: pause | Esc: exit";
                 if (title != last_title) {
                     window.set_title(title.c_str());
                     last_title = title;
@@ -322,7 +354,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             if (recording && replay.inputs.size() < kMaxReplayFrames)
                 replay.inputs.push_back(input);
             ++result.frames;
-            if (window.is_open()) {
+            if (window.is_open() && !launch_takeover) {
                 if (!fast)
                     for (const auto& block : audio)
                         window.push_audio_block(block.samples.data(), block.samples.size(),
@@ -338,7 +370,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                 }
                 break;
             }
-            if (window.is_open() && !fast) {
+            if (window.is_open() && !fast && !launch_takeover) {
                 deadline += std::chrono::microseconds(16743);
                 if (deadline < std::chrono::steady_clock::now() - std::chrono::milliseconds(50))
                     deadline = std::chrono::steady_clock::now();

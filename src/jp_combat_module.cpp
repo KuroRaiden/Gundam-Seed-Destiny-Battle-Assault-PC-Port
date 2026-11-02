@@ -27,6 +27,12 @@ extern "C" __declspec(dllexport) int SeedRunJpCombat(const seed::JpCombatRequest
     if (request->replay_path &&
         (request->surface.online || request->mode != seed::JpCombatMode::Versus))
         return -1;
+    if ((request->video_export || request->replay_takeover_player >= 0) && !request->replay_path)
+        return -1;
+    if (request->video_export && request->replay_takeover_player >= 0)
+        return -1;
+    if (request->replay_takeover_player >= 0 && !request->surface.window)
+        return -1;
     try {
         gbarecomp::RunOptions options;
         seed::configure_jp_combat(options, *request);

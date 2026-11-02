@@ -38,7 +38,8 @@ def main():
 
     results = {}
     for group in (('plain', 'boxes', 'boxes-off'),
-                  ('takeover', 'takeover-close', 'takeover-end')):
+                  ('takeover', 'takeover-close', 'takeover-end'),
+                  ('launcher-1p', 'launcher-2p')):
         with ThreadPoolExecutor(max_workers=3) as pool:
             for future in as_completed([pool.submit(run, name) for name in group]):
                 name, text = future.result()
@@ -73,6 +74,13 @@ def main():
     assert bounds is not None, 'F6 did not render collision boxes during replay playback'
     assert ImageChops.difference(plain, restored).getbbox() is None, 'F6 off did not restore the original image'
     assert args.replay.read_bytes() == original, 'The original replay file changed'
+    for name, player in (('launcher-1p', '1'), ('launcher-2p', '2')):
+        trace = results[name]
+        point = re.search(r'replay_takeover: player ' + player + r' at frame (\d+) checkpoint_crc (\d+)', trace)
+        assert point and int(point[1]) == 369, 'Launcher did not seek to the chosen frame'
+        assert f'replay_takeover_retry: player {player} at frame 369 crc {point[2]}' in trace
+        assert f'replay_takeover_resume: frame 369 crc {point[2]}' in trace
+        assert 'verified=1 source_unchanged=1' in trace
     report = {'scenarios': list(results), 'source_sha256': original_hash,
               'source_unchanged': True, 'p1_controls_for_both_seats': True,
               'opponent_recorded_inputs_verified': True,

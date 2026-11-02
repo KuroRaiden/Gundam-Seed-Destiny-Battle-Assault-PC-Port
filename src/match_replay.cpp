@@ -102,13 +102,20 @@ bool replay_build_compatible(const MatchReplay& replay, std::string_view current
     if (replay.combat_hash == current_combat_hash)
         return true;
     // Replay tools and offline Training drills leave versus combat unchanged.
-    // Keep the release 0.1.8 and local replay-tools builds, with all BIOS and
-    // initial/final-state checks. No other build hash is aliased.
+    // 0.1.9 keeps the verified 0.1.8 versus engine. Preserve the release and
+    // local tool builds, with all BIOS and initial/final-state checks.
+    // Future versions must qualify compatibility again before extending this list.
+    const std::string_view version = replay_build_version();
     return current_combat_hash.size() == 64 && replay.build_version == "0.1.8" &&
-           std::string_view(replay_build_version()) == "0.1.8" &&
-           (replay.combat_hash == "8d8162305122503ff5ffd729d645bb83fb52c5c9bf6f7fb5451e24335a4320dc" ||
-            replay.combat_hash == "4deb5f7e749073b27bcac73a1527e3ce60810b829903b197663117ef421b0f41" ||
-            replay.combat_hash == "cbacf8ec16e6651b01631c7bcd0c9c370665fa6b820993bc390ea5f45f24378f");
+           (version == "0.1.8" || version == "0.1.9") &&
+           (replay.combat_hash ==
+                "8d8162305122503ff5ffd729d645bb83fb52c5c9bf6f7fb5451e24335a4320dc" ||
+            replay.combat_hash ==
+                "4deb5f7e749073b27bcac73a1527e3ce60810b829903b197663117ef421b0f41" ||
+            replay.combat_hash ==
+                "cbacf8ec16e6651b01631c7bcd0c9c370665fa6b820993bc390ea5f45f24378f" ||
+            replay.combat_hash ==
+                "cad1c3d07f5460e7e125baa461e0ef67dc490deabaa1b8e93b78564fda1bd1e4");
 }
 std::string replay_file_hash(const std::filesystem::path& file) {
     struct Handles {

@@ -25,9 +25,8 @@ int main(int argc, char** argv) {
         original_018.build_version = "0.1.8";
         original_018.combat_hash =
             "8d8162305122503ff5ffd729d645bb83fb52c5c9bf6f7fb5451e24335a4320dc";
-        if (std::string_view(seed::replay_build_version()) == "0.1.8")
-            check(seed::replay_build_compatible(original_018, std::string(64, 'c')),
-                  "HUD-only fix rejected the initial 0.1.8 build.");
+        check(seed::replay_build_compatible(original_018, std::string(64, 'c')),
+              "Replay tools rejected the initial 0.1.8 build.");
         original_018.build_version = "0.1.7";
         check(!seed::replay_build_compatible(original_018, std::string(64, 'c')),
               "Compatibility alias escaped its verified game version.");
@@ -35,9 +34,17 @@ int main(int argc, char** argv) {
         replay_tools_018.build_version = "0.1.8";
         replay_tools_018.combat_hash =
             "4deb5f7e749073b27bcac73a1527e3ce60810b829903b197663117ef421b0f41";
-        if (std::string_view(seed::replay_build_version()) == "0.1.8")
+        for (const auto* hash :
+             {"4deb5f7e749073b27bcac73a1527e3ce60810b829903b197663117ef421b0f41",
+              "cbacf8ec16e6651b01631c7bcd0c9c370665fa6b820993bc390ea5f45f24378f",
+              "cad1c3d07f5460e7e125baa461e0ef67dc490deabaa1b8e93b78564fda1bd1e4"}) {
+            replay_tools_018.combat_hash = hash;
             check(seed::replay_build_compatible(replay_tools_018, std::string(64, 'c')),
-                  "Offline drills rejected the local replay-tools build.");
+                  "Replay tools rejected a verified 0.1.8 build.");
+        }
+        replay_tools_018.build_version = "0.1.9";
+        check(!seed::replay_build_compatible(replay_tools_018, std::string(64, 'c')),
+              "Compatibility alias accepted mismatched build metadata.");
         replay.fighters = {24, 27};
         replay.colors = {1, 0};
         replay.stage = 24;

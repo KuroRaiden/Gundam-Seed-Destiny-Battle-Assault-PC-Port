@@ -101,12 +101,13 @@ const char* replay_build_version() {
 bool replay_build_compatible(const MatchReplay& replay, std::string_view current_combat_hash) {
     if (replay.combat_hash == current_combat_hash)
         return true;
-    // The replay tools leave recorded combat unchanged. Keep recordings from
-    // the initial 0.1.8 DLL (release source 1f2b28e), with the same BIOS and
+    // Replay tools and offline Training drills leave versus combat unchanged.
+    // Keep the release 0.1.8 and local replay-tools builds, with all BIOS and
     // initial/final-state checks. No other build hash is aliased.
     return current_combat_hash.size() == 64 && replay.build_version == "0.1.8" &&
            std::string_view(replay_build_version()) == "0.1.8" &&
-           replay.combat_hash == "8d8162305122503ff5ffd729d645bb83fb52c5c9bf6f7fb5451e24335a4320dc";
+           (replay.combat_hash == "8d8162305122503ff5ffd729d645bb83fb52c5c9bf6f7fb5451e24335a4320dc" ||
+            replay.combat_hash == "4deb5f7e749073b27bcac73a1527e3ce60810b829903b197663117ef421b0f41");
 }
 std::string replay_file_hash(const std::filesystem::path& file) {
     struct Handles {

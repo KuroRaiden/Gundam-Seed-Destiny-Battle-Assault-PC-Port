@@ -541,6 +541,7 @@ void play_page(App& app) {
     ImGui::TextColored(kMuted, "Saved automatically. Only changes your display online.");
     card_end();
     ImGui::TextColored(kMuted, "Training F7: clean PNG snapshot with enabled F5/F6 overlays.");
+    ImGui::TextColored(kMuted, "Training challenges: F8 next drill, F9 retry, F10 return to practice.");
     if (ImGui::SmallButton("Open snapshots folder"))
         sl::open_file(app.folder / "snapshots");
     if (app.preparation.running())

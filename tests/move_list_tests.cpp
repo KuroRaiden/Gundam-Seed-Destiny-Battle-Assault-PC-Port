@@ -27,6 +27,16 @@ int main() {
             check(ultimate, "Missing ultimate requirement");
         }
         check(!seed::fighter_moves(0) && !seed::fighter_moves(28), "Invalid native ID accepted");
+        check(seed::fighter_moves(4)->name == "Raider" && seed::fighter_moves(9)->name == "CGUE" &&
+                  seed::fighter_moves(10)->name == "Astray Red Frame" &&
+                  seed::fighter_moves(11)->name == "Freedom" &&
+                  seed::fighter_moves(20)->name == "Slash Zaku Phantom" &&
+                  seed::fighter_moves(21)->name == "Providence" &&
+                  seed::fighter_moves(22)->name == "Astray Gold Frame Amatsu Mina",
+              "Native roster order was replaced with FAQ order");
+        check(seed::fighter_guard_cancels(13)[2].command == "Fa" &&
+                  seed::fighter_guard_cancels(13)[3].command == "Fb",
+              "Native Guard Counter directions lost");
         for (unsigned fighter = 1; fighter <= 27; ++fighter) {
             const auto cancels = seed::fighter_guard_cancels(fighter);
             check(cancels.size() == 4, "Missing guard cancels");

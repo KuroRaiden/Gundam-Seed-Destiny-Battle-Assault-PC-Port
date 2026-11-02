@@ -6,6 +6,7 @@
 #include "fighter_outline_setting.h"
 #include "training_tools.h"
 #include "training_snapshot.h"
+#include "training_challenges.h"
 #include "mini_json.h"
 #include "mod_function_hooks.h"
 #include "mod_state.h"
@@ -44,6 +45,8 @@ struct MeterBus {
     }
 };
 int begin_meter_frame(std::uint32_t, int, ArmCpuState*) {
+    if (guard_challenge_active())
+        guard_challenge_frame_begin();
     meter_frame_pending = match_started && training_frame_meter().allowed();
     meter_global_hitstop =
         meter_frame_pending &&
@@ -55,6 +58,8 @@ int finish_meter_frame(std::uint32_t, int, ArmCpuState*) {
         bus_read_u32(jp_address::kGameState) == jp_address::kStateTraining) {
         meter_frame_pending = false;
         training_frame_meter().observe(frame_probe.sample(MeterBus{}, meter_global_hitstop));
+        if (guard_challenge_active())
+            guard_challenge_frame_end();
     }
     return 0;
 }
@@ -166,6 +171,8 @@ int update_jp_inputs(std::uint32_t, int, ArmCpuState* cpu) {
         if (match_request.sample_inputs && match_started)
             match_request.sample_inputs(sampled_player_inputs.data());
     }
+    if (guard_challenge_active())
+        guard_challenge_inputs(sampled_player_inputs);
     call_original_game_function(jp_address::kUpdateInputState,
                                 {jp_address::kPlayer1InputState, sampled_player_inputs[0]});
     call_original_game_function(jp_address::kUpdateInputState,
@@ -174,7 +181,7 @@ int update_jp_inputs(std::uint32_t, int, ArmCpuState* cpu) {
     return 1;
 }
 int update_second_fighter_input(std::uint32_t, int, ArmCpuState* cpu) {
-    if (!match_started || match_request.mode == JpCombatMode::Training)
+    if (!match_started || (match_request.mode == JpCombatMode::Training && !guard_challenge_active()))
         return 0; // Keep the native practice dummy and settings.
     call_original_game_function(
         jp_address::kApplyFighterInput,

@@ -1661,6 +1661,150 @@
       "kind": "offset",
       "meaning": "Bits marking already-connected offensive rectangles.",
       "evidence": "IDA sub_8020FE4 / sub_8021DD4."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_health_offset",
+      "value": "8",
+      "kind": "offset",
+      "meaning": "PLAYERDATA health gauge.",
+      "evidence": "IDA sub_80060C4 and native Training command probes."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_weapon_gauge_offset",
+      "value": "10",
+      "kind": "offset",
+      "meaning": "PLAYERDATA weapon gauge.",
+      "evidence": "IDA sub_8007A40 and sub_80060C4."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_thruster_offset",
+      "value": "12",
+      "kind": "offset",
+      "meaning": "PLAYERDATA thruster gauge.",
+      "evidence": "IDA sub_8008B1C / sub_8008D1C deduct the Guard Cancel cost."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_motion_offset",
+      "value": "14",
+      "kind": "offset",
+      "meaning": "PLAYERDATA requested motion kind.",
+      "evidence": "IDA sub_800ACB4; native command execution oracle."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_world_x_offset",
+      "value": "36",
+      "kind": "offset",
+      "meaning": "PLAYERDATA world X in signed 16.16 coordinates.",
+      "evidence": "IDA sub_8005FEC and sub_800750C; native movement probes."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_facing_offset",
+      "value": "74",
+      "kind": "offset",
+      "meaning": "PLAYERDATA facing flags; direction normalization uses bit 0x4000.",
+      "evidence": "IDA sub_8007A40 and sub_800779C."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_held_input_offset",
+      "value": "24",
+      "kind": "offset",
+      "meaning": "PLAYERDATA active-high held game inputs.",
+      "evidence": "IDA sub_8003C78 and native command probes."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_command_descriptor_offset",
+      "value": "28",
+      "kind": "offset",
+      "meaning": "PLAYERDATA pointer to command records, ground/air route lists and animation map.",
+      "evidence": "IDA sub_8007A40 / sub_800779C; native catalog oracle."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_berserker_type_offset",
+      "value": "42",
+      "kind": "offset",
+      "meaning": "Fighter descriptor Berserker category: 0..2 SEED, 3 Newtype, 4 Normal.",
+      "evidence": "IDA sub_800935C, local portrait identification and all 27 native descriptor probes."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_guard_escape",
+      "value": "16",
+      "kind": "constant",
+      "meaning": "Accepted native Guard Cancel escape.",
+      "evidence": "IDA sub_8008B1C and all four native Training drills."
+    },
+    {
+      "group": "jp",
+      "name": "fighter_state_guard_counter",
+      "value": "17",
+      "kind": "constant",
+      "meaning": "Accepted native Guard Counter attack.",
+      "evidence": "IDA sub_8008D1C and native Training counter drills."
+    },
+    {
+      "group": "jp",
+      "name": "guard_cancel_thruster_cost",
+      "value": "3584",
+      "kind": "constant",
+      "meaning": "Thruster cost of a successful native Guard Cancel.",
+      "evidence": "IDA sub_8008B1C / sub_8008D1C; native gauge transition tests."
+    },
+    {
+      "group": "jp",
+      "name": "guard_cancel_escape",
+      "value": "0x08008B1C",
+      "kind": "address",
+      "meaning": "Native Guard Cancel escape validator.",
+      "evidence": "IDA; 0x080060C4 dispatches it during guard reaction."
+    },
+    {
+      "group": "jp",
+      "name": "guard_cancel_counter",
+      "value": "0x08008D1C",
+      "kind": "address",
+      "meaning": "Native Guard Counter validator; facing-relative Forward plus new A/B.",
+      "evidence": "IDA and native Training input tests."
+    },
+    {
+      "group": "jp",
+      "name": "ground_attack_commands",
+      "value": "0x08007A40",
+      "kind": "address",
+      "meaning": "Native simplified/manual ground attack route handler.",
+      "evidence": "IDA and native movelist execution oracle."
+    },
+    {
+      "group": "jp",
+      "name": "air_attack_commands",
+      "value": "0x0800779C",
+      "kind": "address",
+      "meaning": "Native simplified/manual air attack route handler.",
+      "evidence": "IDA and native movelist execution oracle."
+    },
+    {
+      "group": "jp",
+      "name": "attack_input_matcher",
+      "value": "0x0800B150",
+      "kind": "address",
+      "meaning": "Native held-mask and newly pressed attack-button matcher.",
+      "evidence": "IDA; called by ground and air attack handlers."
+    },
+    {
+      "group": "jp",
+      "name": "berserker_dispatch",
+      "value": "0x0800935C",
+      "kind": "address",
+      "meaning": "Dispatches the fighter descriptor Berserker category.",
+      "evidence": "IDA disassembly and native per-fighter type checks."
     }
   ]
 }

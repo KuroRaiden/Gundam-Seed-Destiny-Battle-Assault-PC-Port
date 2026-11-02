@@ -3,125 +3,43 @@ namespace seed {
 namespace {
 using A = MoveAir;
 // Native JP shared guard routines, reached by all 27 fighter updates:
-// 0x080060C4 -> 0x08008B1C (R + direction), 0x08008D1C (back + A/B).
+// 0x080060C4 -> 0x08008B1C (R + direction), 0x08008D1C (forward + A/B).
 // Attack animations are selected from the current suit's own animation table.
 constexpr MoveInput guard_cancels[]{{"Br", A::Allowed, "Escape back"},
                                     {"Fr", A::Allowed, "Escape forward"},
-                                    {"Ba", A::Allowed, "Counter A"},
-                                    {"Bb", A::Allowed, "Counter B"}};
-// Functional command/availability facts from kira_yamato_88's guide v1.68.
-// No guide descriptions, ratings, strategies, or narrative are reproduced.
-constexpr MoveInput strike[]{
-    {"Fa", A::Allowed}, {"l"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput aegis[]{
-    {"Fa", A::Allowed}, {"Fl", A::Allowed}, {"Bl"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput buster[]{{"Fa", A::Allowed}, {"Ba", A::Allowed},
-                             {"Da", A::Only},    {"l"},
-                             {"l", A::Only},     {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput duel[]{
-    {"Fa"}, {"Da", A::Only}, {"l", A::Allowed}, {"Fl"}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput blitz[]{
-    {"a"}, {"Fa", A::Allowed}, {"Ua"}, {"l", A::Allowed}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput cgue[]{{"Fa", A::Allowed}, {"l", A::Allowed}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput calamity[]{
-    {"a", A::Allowed}, {"Fa", A::Allowed}, {"l"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput forbidden[]{
-    {"Fa", A::Allowed}, {"l", A::Allowed}, {"Fl", A::Allowed}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput raider[]{
-    {"a", A::Allowed}, {"l"}, {"Fl"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput freedom[]{
-    {"Fa", A::Allowed}, {"l"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput justice[]{
-    {"Fa"}, {"Fa", A::Only}, {"l", A::Allowed}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput providence[]{
-    {"a", A::Allowed}, {"Fa", A::Allowed}, {"l", A::Allowed}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput force[]{{"Fa", A::Allowed},
-                            {"l"},
-                            {"Fl", A::Allowed},
-                            {"Fl>b", A::Allowed, "Follow-up on hit"},
-                            {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput sword[]{
-    {"Fa", A::Allowed}, {"l"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput blast[]{
-    {"Fa", A::Allowed}, {"Da"}, {"l"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput chaos[]{{"Fa", A::Allowed},
-                            {"Da", A::Only},
-                            {"l"},
-                            {"l", A::Only},
-                            {"DFl", A::Only},
-                            {"BDl", A::Only},
-                            {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput gaia[]{{"Fa", A::Ground, "MS"},
-                           {"l", A::Allowed, "MS"},
-                           {"Dl", A::Ground, "MS / Berserker"},
-                           {"Fa", A::Ground, "MA"},
-                           {"Fb", A::Allowed, "MA"},
-                           {"l", A::Ground, "MA"},
-                           {"Dl", A::Ground, "MA / Berserker"}};
-constexpr MoveInput abyss[]{
-    {"Fa", A::Allowed}, {"Da"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput savior[]{{"Fa"}, {"l"},          {"Fl"},
-                             {"Bl"}, {"l", A::Only}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput gold[]{{"a", A::Allowed},
-                           {"Fa", A::Allowed},
-                           {"Da", A::Allowed},
-                           {"l", A::Allowed},
-                           {"Fl", A::Allowed},
-                           {"Dl", A::Only},
-                           {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput red[]{{"Fl"},
-                          {"l"},
-                          {"Bl"},
-                          {"Dl", A::Ground, "Berserker"},
-                          {"Dl>a", A::Ground, "Berserker follow-up"}};
-constexpr MoveInput slash[]{{"a", A::Allowed},
-                            {"l", A::Allowed},
-                            {"Fl"},
-                            {"Fl>b", A::Ground, "Follow-up"},
-                            {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput luna[]{{"a", A::Allowed}, {"l", A::Allowed}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput dearka[]{
-    {"a", A::Allowed}, {"l"}, {"Fl"}, {"Bl"}, {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput rey[]{{"a", A::Allowed},
-                          {"Da", A::Allowed},
-                          {"l", A::Allowed},
-                          {"Dl", A::Only},
-                          {"Dl", A::Ground, "Berserker"}};
-constexpr MoveInput mwu[]{{"Fa", A::Allowed},
-                          {"l"},
-                          {"l", A::Only},
-                          {"Dl", A::Ground, "Berserker"},
-                          {"Dl>a", A::Ground, "Berserker follow-up"}};
-constexpr MoveInput rouge[]{
-    {"Fa", A::Allowed}, {"l", A::Allowed}, {"Fl"}, {"Dl", A::Ground, "Berserker"}};
+                                    {"Fa", A::Allowed, "Counter A"},
+                                    {"Fb", A::Allowed, "Counter B"}};
+#include "native_move_inputs.inc"
+// Native portrait order, checked against the locally imported JP selection art.
 constexpr FighterMoves roster[]{
-    {1, "Strike", "Kira Yamato", "SEED Mode", strike},
-    {2, "Aegis", "Athrun Zala", "SEED Mode", aegis},
-    {3, "Buster", "Dearka Elsman", "Normal Berserk", buster},
-    {4, "Duel Assault Shroud", "Yzak Joule", "Normal Berserk", duel},
-    {5, "Blitz", "Nicol Amalfi", "Normal Berserk", blitz},
-    {6, "CGUE", "Rau Le Creuset", "Newtype Mode", cgue},
-    {7, "Calamity", "Orga Sabnak", "Normal Berserk", calamity},
-    {8, "Forbidden", "Shani Andras", "Normal Berserk", forbidden},
-    {9, "Raider", "Clotho Buer", "Normal Berserk", raider},
-    {10, "Freedom", "Kira Yamato", "SEED Mode", freedom},
-    {11, "Justice", "Athrun Zala", "SEED Mode", justice},
-    {12, "Providence", "Rau Le Creuset", "Newtype Mode", providence},
-    {13, "Force Impulse", "Shinn Asuka", "Normal Berserk", force},
-    {14, "Sword Impulse", "Shinn Asuka", "Normal Berserk", sword},
-    {15, "Blast Impulse", "Shinn Asuka", "Normal Berserk", blast},
-    {16, "Chaos", "Sting Oakley", "Normal Berserk", chaos},
-    {17, "Gaia", "Stella Loussier", "Normal Berserk", gaia},
-    {18, "Abyss", "Auel Neider", "Normal Berserk", abyss},
-    {19, "Savior", "Athrun Zala", "SEED Mode", savior},
-    {20, "Astray Gold Frame Amatsu Mina", "Rondo Mina Sahaku", "Normal Berserk", gold},
-    {21, "Astray Red Frame", "Lowe Guele", "Normal Berserk", red},
-    {22, "Slash Zaku Phantom", "Yzak Joule", "Normal Berserk", slash},
-    {23, "Gunner Zaku Warrior", "Lunamaria Hawke", "Normal Berserk", luna},
-    {24, "Gunner Zaku Warrior", "Dearka Elsman", "Normal Berserk", dearka},
-    {25, "Blaze Zaku Phantom", "Rey Za Burrel", "Newtype Mode", rey},
-    {26, "Strike", "Mu La Flaga", "Newtype Mode", mwu},
-    {27, "Strike Rouge", "Cagalli Yula Athha", "SEED Mode", rouge}};
+    {1, "Strike", "Kira Yamato", "SEED Mode", native_1},
+    {2, "Aegis", "Athrun Zala", "SEED Mode", native_2},
+    {3, "Buster", "Dearka Elsman", "Normal Berserk", native_3},
+    {4, "Raider", "Clotho Buer", "Normal Berserk", native_4},
+    {5, "Calamity", "Orga Sabnak", "Normal Berserk", native_5},
+    {6, "Forbidden", "Shani Andras", "Normal Berserk", native_6},
+    {7, "Duel Assault Shroud", "Yzak Joule", "Normal Berserk", native_7},
+    {8, "Blitz", "Nicol Amalfi", "Normal Berserk", native_8},
+    {9, "CGUE", "Rau Le Creuset", "Newtype Mode", native_9},
+    {10, "Astray Red Frame", "Lowe Guele", "Normal Berserk", native_10},
+    {11, "Freedom", "Kira Yamato", "SEED Mode", native_11},
+    {12, "Justice", "Athrun Zala", "SEED Mode", native_12},
+    {13, "Force Impulse", "Shinn Asuka", "Normal Berserk", native_13},
+    {14, "Sword Impulse", "Shinn Asuka", "Normal Berserk", native_14},
+    {15, "Blast Impulse", "Shinn Asuka", "Normal Berserk", native_15},
+    {16, "Chaos", "Sting Oakley", "Normal Berserk", native_16},
+    {17, "Gaia", "Stella Loussier", "Normal Berserk", native_17},
+    {18, "Abyss", "Auel Neider", "Normal Berserk", native_18},
+    {19, "Savior", "Athrun Zala", "Normal Berserk", native_19},
+    {20, "Slash Zaku Phantom", "Yzak Joule", "Normal Berserk", native_20},
+    {21, "Providence", "Rau Le Creuset", "Newtype Mode", native_21},
+    {22, "Astray Gold Frame Amatsu Mina", "Rondo Mina Sahaku", "Normal Berserk", native_22},
+    {23, "Gunner Zaku Warrior", "Lunamaria Hawke", "Normal Berserk", native_23},
+    {24, "Gunner Zaku Warrior", "Dearka Elsman", "Normal Berserk", native_24},
+    {25, "Blaze Zaku Phantom", "Rey Za Burrel", "Newtype Mode", native_25},
+    {26, "Strike", "Mu La Flaga", "Newtype Mode", native_26},
+    {27, "Strike Rouge", "Cagalli Yula Athha", "SEED Mode", native_27},
+};
 std::array<std::uint8_t, 2> selected{1, 2};
 bool japanese = false;
 unsigned local_player = 0;

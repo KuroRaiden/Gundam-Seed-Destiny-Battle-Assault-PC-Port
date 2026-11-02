@@ -14,22 +14,43 @@ Directions assume the fighter faces right. A plus means simultaneous inputs;
 Each character lists Normal Berserk, SEED Mode, or Newtype Mode.
 
 Each fighter also has a **Guard cancels** section, using the same D-pad/button
-glyphs: Back + R or Forward + R to escape, Back + A and Back + B for the two
+glyphs: Back + R or Forward + R to escape, Forward + A and Forward + B for the two
 counter attacks. These require an active block and sufficient thruster gauge;
 they work in ground or air guard. Inputs are shared across the roster, while
 counter animations come from the selected suit's native animation table.
 
 The commands were checked against JP ROM routines `0x080060C4`, `0x08008B1C`
-and `0x08008D1C`. The guide's Guard Cancel paragraph mixes up button labels,
-so it is not the authority for these inputs. The shared dispatcher requires
+and `0x08008D1C`, and executed in the native Training engine. The shared dispatcher requires
 guard state 3/4, a nonzero guard timer and animation frame; the handlers test
-new R plus a direction, or held Back plus new A/B, and spend 3584 thruster units.
+new R plus a direction, or held Forward plus new A/B, and spend 3584 thruster units.
 
-This is the **simplified control** reference. It does not document Manual-control
-motion commands. Functional command/air-availability facts and mode categories
-reference [kira_yamato_88's guide v1.68](https://gamefaqs.gamespot.com/gba/924564-gundam-seed-destiny/faqs/34177).
-Descriptions, ratings, and strategy text are omitted. This is not an exhaustive
-game command dump.
+This is the **simplified control** reference used by the port. Commands now come
+from the supported Japanese game's ground/air command records and cancel routes,
+not the FAQ. Manual-control motion commands are outside this reference. Basic
+attacks and distinct follow-up actions are included. A follow-up uses the native
+cancel window and may require contact; it is not a guaranteed combo.
+
+Native portrait IDs determine the suit and pilot. The old reference mistakenly
+assigned several FAQ-order names to native IDs: ID 10 is Red Frame, ID 11 is
+Freedom, ID 20 is Slash Zaku, ID 21 is Providence, and ID 22 is Gold Frame.
+Those mappings and the other misplaced entries are corrected. Berserker types
+come from the native fighter descriptor and dispatcher; Savior uses Normal
+Berserk in this game. Gaia has separate MS/MA lists. Transforming with L changes
+its command descriptor, so a follow-up from the previous form is not inherited.
+
+`tests/jp_command_catalog.cpp` reads the player's original cartridge in place and
+stores its research catalog outside the checkout. `tools/export_native_movelist.py`
+exports only functional button/availability facts to `src/native_move_inputs.inc`.
+It does not copy ROM bytes, sprites, animation data, Manual command sequences or
+decompiled game code. The native ground/air dispatchers are `0x08007A40` and
+`0x0800779C`, the input matcher is `0x0800B150`, and the Berserker dispatcher is
+`0x0800935C` (fighter descriptor byte 42).
+
+`seed_native_movelist_tests JP_ROM BIOS PRIVATE_OUTPUT` executes the displayed
+inputs for all 27 fighters and both Gaia forms. It checks the accepted native
+motion/route, ground/air availability and Berserker category; follow-up tests
+use close contact rather than assuming on-hit cancels work on whiff. The UI
+test checks glyphs, selection, offline pause and online continuation.
 
 Offline F1 pauses simulation and audio using the existing F4 host pause
 mechanism. Online simulation continues and the local player's gameplay inputs

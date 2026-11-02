@@ -4,6 +4,7 @@
 #include "imgui_impl_sdlrenderer3.h"
 #include "training_frame_meter.h"
 #include "training_tools.h"
+#include "training_challenges.h"
 #include <algorithm>
 #include <cstdio>
 
@@ -114,8 +115,10 @@ bool TrainingMeterOverlay::event(const SDL_Event& event, bool online) {
 void TrainingMeterOverlay::draw(bool online, bool snapshot) {
     const auto message = snapshot ? std::string{} : training_tools_message();
     const bool boxes_legend = training_tools_allowed() && training_boxes_visible();
+    const auto challenge = guard_challenge_view();
     if (online ||
-        (!training_frame_meter().visible() && !boxes_legend && message.empty()) ||
+        (!training_frame_meter().visible() && !boxes_legend && message.empty() &&
+         !challenge.active) ||
         !prepare())
         return;
     auto* previous = ImGui::GetCurrentContext();
@@ -136,6 +139,22 @@ void TrainingMeterOverlay::draw(bool online, bool snapshot) {
     ImGui::NewFrame();
     const auto* view = ImGui::GetMainViewport();
     const float width = std::max(220.f, std::min(960.f, view->Size.x - 16));
+    if (challenge.active && !snapshot) {
+        ImGui::SetNextWindowPos(
+            {view->Pos.x + view->Size.x * .5f, view->Pos.y + view->Size.y * .20f}, ImGuiCond_Always,
+            {.5f, 0});
+        ImGui::SetNextWindowSize({std::min(width, 640.f), 0}, ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(.94f);
+        ImGui::Begin("Guard Cancel challenge", nullptr,
+                     ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
+                         ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("GUARD CANCEL %u / 4: %s", challenge.drill + 1, challenge.name.data());
+        ImGui::TextColored({.25f, .9f, .9f, 1}, "%s   |   Successes %u (goal 5)   Attempt %u",
+                           challenge.input.data(), challenge.successes, challenge.attempts);
+        ImGui::TextWrapped("%s", challenge.status.data());
+        ImGui::TextWrapped("F8: next drill   F9: retry   F10: return to Training");
+        ImGui::End();
+    }
     if (boxes_legend || !message.empty()) {
         ImGui::SetNextWindowPos({view->Pos.x + 8, view->Pos.y + 8}, ImGuiCond_Always);
         ImGui::SetNextWindowBgAlpha(.9f);

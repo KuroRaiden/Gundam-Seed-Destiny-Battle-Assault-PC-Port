@@ -424,6 +424,42 @@ inline constexpr std::uint32_t kCollisionGeometryCountOffset = 5;
 inline constexpr std::uint32_t kCollisionGeometryCountShift = 2;
 // Bits marking already-connected offensive rectangles.
 inline constexpr std::uint32_t kCollisionHitMaskOffset = 22;
+// PLAYERDATA health gauge.
+inline constexpr std::uint32_t kFighterHealthOffset = 8;
+// PLAYERDATA weapon gauge.
+inline constexpr std::uint32_t kFighterWeaponGaugeOffset = 10;
+// PLAYERDATA thruster gauge.
+inline constexpr std::uint32_t kFighterThrusterOffset = 12;
+// PLAYERDATA requested motion kind.
+inline constexpr std::uint32_t kFighterMotionOffset = 14;
+// PLAYERDATA world X in signed 16.16 coordinates.
+inline constexpr std::uint32_t kFighterWorldXOffset = 36;
+// PLAYERDATA facing flags; direction normalization uses bit 0x4000.
+inline constexpr std::uint32_t kFighterFacingOffset = 74;
+// PLAYERDATA active-high held game inputs.
+inline constexpr std::uint32_t kFighterHeldInputOffset = 24;
+// PLAYERDATA pointer to command records, ground/air route lists and animation map.
+inline constexpr std::uint32_t kFighterCommandDescriptorOffset = 28;
+// Fighter descriptor Berserker category: 0..2 SEED, 3 Newtype, 4 Normal.
+inline constexpr std::uint32_t kFighterBerserkerTypeOffset = 42;
+// Accepted native Guard Cancel escape.
+inline constexpr std::uint32_t kFighterStateGuardEscape = 16;
+// Accepted native Guard Counter attack.
+inline constexpr std::uint32_t kFighterStateGuardCounter = 17;
+// Thruster cost of a successful native Guard Cancel.
+inline constexpr std::uint32_t kGuardCancelThrusterCost = 3584;
+// Native Guard Cancel escape validator.
+inline constexpr std::uint32_t kGuardCancelEscape = 0x08008B1C;
+// Native Guard Counter validator; facing-relative Forward plus new A/B.
+inline constexpr std::uint32_t kGuardCancelCounter = 0x08008D1C;
+// Native simplified/manual ground attack route handler.
+inline constexpr std::uint32_t kGroundAttackCommands = 0x08007A40;
+// Native simplified/manual air attack route handler.
+inline constexpr std::uint32_t kAirAttackCommands = 0x0800779C;
+// Native held-mask and newly pressed attack-button matcher.
+inline constexpr std::uint32_t kAttackInputMatcher = 0x0800B150;
+// Dispatches the fighter descriptor Berserker category.
+inline constexpr std::uint32_t kBerserkerDispatch = 0x0800935C;
 } // namespace jp
 
 } // namespace seed::address

@@ -226,3 +226,21 @@ The C++ API is in `src/game_addresses.h`; Python tools import `tools/game_addres
 | `jp::kCollisionGeometryCountOffset` | `5` | Actor byte whose bits 2..3 count collision geometry records. | IDA sub_8020FE4 and sub_8021DD4. |
 | `jp::kCollisionGeometryCountShift` | `2` | Shift of native collision geometry count. | IDA sub_8020FE4. |
 | `jp::kCollisionHitMaskOffset` | `22` | Bits marking already-connected offensive rectangles. | IDA sub_8020FE4 / sub_8021DD4. |
+| `jp::kFighterHealthOffset` | `8` | PLAYERDATA health gauge. | IDA sub_80060C4 and native Training command probes. |
+| `jp::kFighterWeaponGaugeOffset` | `10` | PLAYERDATA weapon gauge. | IDA sub_8007A40 and sub_80060C4. |
+| `jp::kFighterThrusterOffset` | `12` | PLAYERDATA thruster gauge. | IDA sub_8008B1C / sub_8008D1C deduct the Guard Cancel cost. |
+| `jp::kFighterMotionOffset` | `14` | PLAYERDATA requested motion kind. | IDA sub_800ACB4; native command execution oracle. |
+| `jp::kFighterWorldXOffset` | `36` | PLAYERDATA world X in signed 16.16 coordinates. | IDA sub_8005FEC and sub_800750C; native movement probes. |
+| `jp::kFighterFacingOffset` | `74` | PLAYERDATA facing flags; direction normalization uses bit 0x4000. | IDA sub_8007A40 and sub_800779C. |
+| `jp::kFighterHeldInputOffset` | `24` | PLAYERDATA active-high held game inputs. | IDA sub_8003C78 and native command probes. |
+| `jp::kFighterCommandDescriptorOffset` | `28` | PLAYERDATA pointer to command records, ground/air route lists and animation map. | IDA sub_8007A40 / sub_800779C; native catalog oracle. |
+| `jp::kFighterBerserkerTypeOffset` | `42` | Fighter descriptor Berserker category: 0..2 SEED, 3 Newtype, 4 Normal. | IDA sub_800935C, local portrait identification and all 27 native descriptor probes. |
+| `jp::kFighterStateGuardEscape` | `16` | Accepted native Guard Cancel escape. | IDA sub_8008B1C and all four native Training drills. |
+| `jp::kFighterStateGuardCounter` | `17` | Accepted native Guard Counter attack. | IDA sub_8008D1C and native Training counter drills. |
+| `jp::kGuardCancelThrusterCost` | `3584` | Thruster cost of a successful native Guard Cancel. | IDA sub_8008B1C / sub_8008D1C; native gauge transition tests. |
+| `jp::kGuardCancelEscape` | `0x08008B1C` | Native Guard Cancel escape validator. | IDA; 0x080060C4 dispatches it during guard reaction. |
+| `jp::kGuardCancelCounter` | `0x08008D1C` | Native Guard Counter validator; facing-relative Forward plus new A/B. | IDA and native Training input tests. |
+| `jp::kGroundAttackCommands` | `0x08007A40` | Native simplified/manual ground attack route handler. | IDA and native movelist execution oracle. |
+| `jp::kAirAttackCommands` | `0x0800779C` | Native simplified/manual air attack route handler. | IDA and native movelist execution oracle. |
+| `jp::kAttackInputMatcher` | `0x0800B150` | Native held-mask and newly pressed attack-button matcher. | IDA; called by ground and air attack handlers. |
+| `jp::kBerserkerDispatch` | `0x0800935C` | Dispatches the fighter descriptor Berserker category. | IDA disassembly and native per-fighter type checks. |

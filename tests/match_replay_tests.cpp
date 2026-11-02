@@ -31,6 +31,13 @@ int main(int argc, char** argv) {
         original_018.build_version = "0.1.7";
         check(!seed::replay_build_compatible(original_018, std::string(64, 'c')),
               "Compatibility alias escaped its verified game version.");
+        auto replay_tools_018 = replay;
+        replay_tools_018.build_version = "0.1.8";
+        replay_tools_018.combat_hash =
+            "4deb5f7e749073b27bcac73a1527e3ce60810b829903b197663117ef421b0f41";
+        if (std::string_view(seed::replay_build_version()) == "0.1.8")
+            check(seed::replay_build_compatible(replay_tools_018, std::string(64, 'c')),
+                  "Offline drills rejected the local replay-tools build.");
         replay.fighters = {24, 27};
         replay.colors = {1, 0};
         replay.stage = 24;

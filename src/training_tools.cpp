@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "training_tools.h"
 #include "training_snapshot.h"
+#include "training_challenges.h"
 #include "us_training_art.h"
 #include "frame_control.h"
 #include "runtime_bus_bridge.h"
@@ -114,6 +115,7 @@ void menu(const TrainingView& view) {
 void configure_training_tools(bool training, bool online, const std::filesystem::path& save,
                               const std::filesystem::path& cache) {
     allowed = training && !online;
+    configure_guard_challenges(allowed);
     replay_viewer = false;
     configure_training_snapshots(allowed);
     boxes_visible = false;
@@ -153,9 +155,13 @@ bool training_tools_event(const SDL_Event& event, bool online) {
     if (event.type != SDL_EVENT_KEY_DOWN && event.type != SDL_EVENT_KEY_UP)
         return false;
     const auto key = event.key.scancode;
-    // Retired shortcuts must not fall through to the engine's legacy slots.
-    if (key == SDL_SCANCODE_F8)
+    if (key == SDL_SCANCODE_F8 || key == SDL_SCANCODE_F9 || key == SDL_SCANCODE_F10) {
+        if (allowed && !online && event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
+            request_guard_challenge(key == SDL_SCANCODE_F8   ? GuardChallengeAction::Next
+                                    : key == SDL_SCANCODE_F9 ? GuardChallengeAction::Retry
+                                                             : GuardChallengeAction::Stop);
         return true;
+    }
     if (key == SDL_SCANCODE_F7) {
         if (!online && allowed && event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
             request_training_snapshot();
@@ -176,11 +182,13 @@ bool training_tools_event(const SDL_Event& event, bool online) {
     return true;
 }
 void training_request_state(bool load) {
-    if (allowed)
+    if (allowed && guard_challenge_active())
+        notice("Challenge active. F9: retry; F10: return to regular Training saves.");
+    else if (allowed)
         pending = load ? 2 : 1;
 }
 bool training_checkpoint_pending() {
-    return allowed && (pending.load() != 0 || busy.load());
+    return allowed && (pending.load() != 0 || busy.load() || guard_challenge_pending());
 }
 const std::string& training_tools_message() {
     if (!allowed || SDL_GetTicks() > message_until)
@@ -195,8 +203,15 @@ void training_snapshot_notice(std::string text) {
     notice(std::move(text));
 }
 bool training_service_checkpoint(gbarecomp::NativeFrameControl& machine) {
+    if (guard_challenge_pending())
+        return service_guard_challenge(machine);
     if (!allowed || !pending.load())
         return false;
+    if (guard_challenge_active()) {
+        pending = 0;
+        notice("Challenge active. F9: retry; F10: return to regular Training saves.");
+        return false;
+    }
     busy = true;
     struct Completion {
         ~Completion() {

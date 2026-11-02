@@ -24,6 +24,7 @@ character select and battle-system injection** supplies the expanded combat.
 - **Training:** JP practice mode with the US-font English pause menu, **F5 frame meter**, **F6 hitbox/hurtbox viewer**, **F2 save / F3 load** for practice situations, and **F7 clean PNG snapshots** with a solid blue background.
 - **Launcher updates:** version display and GitHub release checks, with verified in-place updates that preserve player settings and saves.
 - **Movelist:** **F1** opens all 27 JP roster entries with D-pad and A/B/L/R glyphs, air availability and Berserker types. Offline play pauses; online play continues.
+- **Guard Cancel challenges:** offline Training drills with native success detection, five-success goals, F8 to choose a drill, F9 to retry and F10 to restore the original practice situation. F1 commands and fighter IDs are checked against the Japanese game.
 - **Turbo:** hold keyboard **Tab**. Controller triggers remain available for ordinary button remapping.
 - **Controls:** launcher remapping and **F4** in-game remapping. **Start** cycles colors on character select.
 

@@ -67,6 +67,14 @@ and display names stay outside deterministic simulation state.
 
 ## Formatting and generated code
 
+`src/native_move_inputs.inc` contains functional input facts exported from the
+player's JP game through `seed_jp_command_catalog`. `move_list.cpp` supplies
+verified native roster names and Berserker categories. The native command oracle
+executes both standalone commands and contact-dependent follow-up routes.
+`training_challenges.cpp` owns offline drill scripting and RAM-only retry states;
+native versus/replay simulation never enables these drills. See
+[Movelist](Movelist.md) and [Training tools](Training-Tools.md).
+
 `.clang-format` defines the C++ style; `pyproject.toml` defines the Python style.
 Generated address files are written by the generator and checked without a
 formatter pass. Private generated cartridge/BIOS instruction output remains

@@ -128,6 +128,10 @@ situation; F3 reloads it. Start opens the English pause menu using the US font.
 F7 saves a clean PNG in snapshots/: solid #101C2B blue, with the stage and HUD
 removed. Enabled F5 frame-meter and F6 collision overlays stay in the image.
 Normal Training visuals stay unchanged. Snapshots are disabled in other modes.
+Training F8 starts/cycles four Guard Cancel drills. Block the scripted opponent,
+then perform the displayed escape or counter. Each drill has a five-success goal.
+F9 retries from an in-memory checkpoint; F10 restores your original Training
+situation. F2/F3 slots are preserved and unavailable while a drill is active.
 The US font cache is generated locally from your US game file.
 Choose Default, Earth Alliance or ZAFT under Play > Launcher theme.
 Theme palettes and the supplied faction emblems live in Themes/; your choice

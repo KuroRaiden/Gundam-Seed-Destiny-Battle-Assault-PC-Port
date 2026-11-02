@@ -196,7 +196,7 @@ void MoveListOverlay::draw(bool online) {
         input(command);
         if (std::string_view(command) == "Dl") {
             ImGui::SameLine();
-            ImGui::TextDisabled("Berserker / Ultimate");
+            ImGui::TextDisabled("Activate Berserker (grounded, once per round)");
         }
     }
     ImGui::Separator();
@@ -210,6 +210,7 @@ void MoveListOverlay::draw(bool online) {
     }
     ImGui::TextDisabled("Requires thruster gauge. Counter attacks use this suit's animations.");
     ImGui::Separator();
+    ImGui::TextDisabled("NATIVE FIGHTER COMMANDS");
     for (const auto& move : selected->moves) {
         input(move.command.data());
         if (move.air != MoveAir::Ground) {
@@ -223,7 +224,8 @@ void MoveListOverlay::draw(bool online) {
     }
     ImGui::EndChild();
     ImGui::Separator();
-    ImGui::TextDisabled("Inputs: kira_yamato_88 / GameFAQs 34177. Glyphs: Kenney (CC0).");
+    ImGui::TextWrapped("Inputs: native JP game data. Follow-ups require the native cancel window. "
+                       "Glyphs: Kenney (CC0).");
     ImGui::TextWrapped(online ? "Online play continues. F1 / Esc: close"
                               : "Game paused. F1 / Esc: close");
     ImGui::End();

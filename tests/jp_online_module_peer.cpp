@@ -12,6 +12,8 @@
 namespace {
 unsigned seat = 0, input_frame = 0;
 bool windowed = false, finish_fence = false, natural_finish = false;
+bool warmup_local = false, warmup_training = false;
+unsigned warmup_frames = 60;
 unsigned remap_frames = 0;
 SDL_Window* title_window = nullptr;
 std::string observed_title;
@@ -109,6 +111,12 @@ int main(int argc, char** argv) {
                 finish_fence = true;
             else if (flag == "--natural-finish")
                 natural_finish = true;
+            else if (flag == "--warmup-local")
+                warmup_local = true;
+            else if (flag == "--warmup-training")
+                warmup_training = true;
+            else if (flag == "--warmup-frames")
+                warmup_frames = std::stoul(value());
             else if (flag != "--bios-hle")
                 throw std::runtime_error("Unknown qualification argument: " + flag);
         }
@@ -166,6 +174,52 @@ int main(int argc, char** argv) {
                 : nullptr;
         if (!run)
             throw std::runtime_error("Cannot load the production JP combat module");
+        if (warmup_local) {
+            auto warmup = request;
+            warmup.surface = {};
+            warmup.qualification_frames = warmup_frames;
+            warmup.qualification_end_frame = 0;
+            warmup.online_result = nullptr;
+            warmup.sample_inputs = nullptr;
+            if (run(&warmup) != 0)
+                throw std::runtime_error("Local warm-up match failed");
+            input_frame = 0;
+        }
+        if (warmup_training) {
+            if (!windowed && !SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD))
+                throw std::runtime_error(SDL_GetError());
+            auto* practice_window =
+                SDL_CreateWindow("Training before online", 240, 160, SDL_WINDOW_HIDDEN);
+            auto* practice_renderer = SDL_CreateRenderer(practice_window, "software");
+            if (!practice_window || !practice_renderer)
+                throw std::runtime_error(SDL_GetError());
+            auto warmup = request;
+            warmup.mode = seed::JpCombatMode::Training;
+            warmup.surface = {practice_window, practice_renderer, &controls, false};
+            warmup.qualification_frames = warmup.qualification_end_frame = 0;
+            warmup.online_result = nullptr;
+            warmup.sample_inputs = nullptr;
+            const auto timer = SDL_AddTimer(
+                3500,
+                [](void*, SDL_TimerID, Uint32) -> Uint32 {
+                    SDL_Event event{};
+                    event.type = SDL_EVENT_QUIT;
+                    SDL_PushEvent(&event);
+                    return 0;
+                },
+                nullptr);
+            if (!timer)
+                throw std::runtime_error(SDL_GetError());
+            const auto code = run(&warmup);
+            SDL_RemoveTimer(timer);
+            SDL_DestroyRenderer(practice_renderer);
+            SDL_DestroyWindow(practice_window);
+            if (!windowed)
+                SDL_Quit();
+            if (code != 0 && code != 2)
+                throw std::runtime_error("Training warm-up failed");
+            input_frame = 0;
+        }
         const int code = run(&request);
         std::filesystem::create_directories(report.parent_path());
         std::ofstream out(report);

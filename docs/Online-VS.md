@@ -98,6 +98,21 @@ and failed replay; it is not used for rollback. Host audio queues are excluded,
 and replayed audio is discarded. Each peer starts with a fixed emulated clock
 and an isolated temporary cartridge save, then verifies the initial checksum.
 
+Each online battle also resets the native scheduler's cycle, VBlank and pending
+event counters before boot. Those host globals otherwise survive earlier Local
+VS, Training or online sessions in the same process, causing a false JP starting
+state mismatch when the opponents have different play histories. The initial
+full-state comparison and rollback desync detection remain enforced.
+
+`tests/jp_online_startup_integration.py --build <Release folder> --rom <JP ROM>
+--bios <BIOS> --out <new scratch folder>` checks fresh peers, either peer after
+Local VS, both after different-length Local VS sessions, either after Training,
+and mixed Training/Local VS histories. Each pair must start with the same full
+checksum as the fresh-peer baseline and finish with identical state and no
+desyncs. The regression was reproduced against the published 0.1.9 module before
+the reset was applied. Startup checksum failures log the local/remote checksums
+and agreed fighters, colors and stage for diagnosis.
+
 Completed local-machine checks are recorded in `validation/netplay/`:
 
 - 1,800 stress frames, 1,791 restores, 12,537 replayed frames, zero desyncs.

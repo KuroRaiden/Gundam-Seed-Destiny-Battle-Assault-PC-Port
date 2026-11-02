@@ -1,0 +1,98 @@
+{
+  "symptom": "JP starting states differ; use the same game build",
+  "before_fix": {
+    "case": "warm-host",
+    "passed": false,
+    "initial_crc": [
+      2812075461,
+      2173832375
+    ]
+  },
+  "fix": "Reset fresh online boot scheduler timing and idle proofs before any guest instruction; retain initial-state checks and rollback desync detection",
+  "after_fix": [
+    {
+      "case": "cold",
+      "initial_crc": 2173832375,
+      "final_crc": 1752961086,
+      "frames": 120,
+      "desyncs": [
+        0,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "case": "warm-host",
+      "initial_crc": 2173832375,
+      "final_crc": 1752961086,
+      "frames": 120,
+      "desyncs": [
+        0,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "case": "warm-guest",
+      "initial_crc": 2173832375,
+      "final_crc": 1752961086,
+      "frames": 120,
+      "desyncs": [
+        0,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "case": "warm-both",
+      "initial_crc": 2173832375,
+      "final_crc": 1752961086,
+      "frames": 120,
+      "desyncs": [
+        0,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "case": "training-host",
+      "initial_crc": 2173832375,
+      "final_crc": 1752961086,
+      "frames": 120,
+      "desyncs": [
+        0,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "case": "training-guest",
+      "initial_crc": 2173832375,
+      "final_crc": 1752961086,
+      "frames": 120,
+      "desyncs": [
+        0,
+        0
+      ],
+      "passed": true
+    },
+    {
+      "case": "mixed-history",
+      "initial_crc": 2173832375,
+      "final_crc": 1752961086,
+      "frames": 120,
+      "desyncs": [
+        0,
+        0
+      ],
+      "passed": true
+    }
+  ],
+  "room_rematches_verified": 64,
+  "published_019_replay": {
+    "frames": 600,
+    "final_crc": 448001809,
+    "verified": true
+  },
+  "scope": "Separate processes on one Windows machine; the reported remote setup has not yet been retested."
+}

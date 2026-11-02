@@ -7,6 +7,7 @@
 #include "online_room.h"
 #include "player_profile.h"
 #include "runtime_arm.h"
+#include "runtime_bus_bridge.h"
 #include <SDL3/SDL.h>
 #include <chrono>
 #include <cstdio>
@@ -92,6 +93,11 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                 window.set_fps_readout(!window.fps_readout());
             require(!events.quit, "Left online match");
         };
+        // run_game creates fresh devices, but its scheduling globals survive
+        // prior Local VS, Training and online sessions in this DLL. Reset them
+        // before executing any guest instruction so both peers boot on the
+        // same timeline regardless of what they played before joining.
+        gbarecomp::runtime_restore_timing_context({});
         machine.seed_clock(946684800);
         std::vector<gbarecomp::NativeFrameControl::AudioBlock> audio;
         banner = "Preparing JP combat...";
@@ -117,6 +123,8 @@ int drive(gbarecomp::NativeFrameControl& machine) {
         std::string error;
         require(machine.save(state, error), error);
         result.initial_crc = SDL_crc32(0, state.data(), state.size());
+        std::fprintf(stderr, "online_startup_state: epoch=%u seat=%u crc=%08X bytes=%zu\n",
+                     match.connection.epoch, seat, result.initial_crc, state.size());
         bool peer_init = false, peer_ack = false, peer_done = false, peer_done_ack = false,
              started = false, submitted = false;
         unsigned next = 0;
@@ -169,6 +177,13 @@ int drive(gbarecomp::NativeFrameControl& machine) {
                             "Opponent uses different MS colors");
                 }
                 const auto crc = get32(p.data() + 16);
+                if ((p[8] == 1 || p[8] == 2) && crc != result.initial_crc)
+                    std::fprintf(stderr,
+                                 "online_startup_mismatch: epoch=%u seat=%u type=%u local=%08X "
+                                 "remote=%08X fighters=%u/%u colors=%u/%u stage=%u\n",
+                                 match.connection.epoch, seat, unsigned(p[8]), result.initial_crc,
+                                 crc, match.fighters[0], match.fighters[1], match.colors[0],
+                                 match.colors[1], match.stage);
                 if (p[8] == 1) {
                     require(crc == result.initial_crc,
                             "JP starting states differ; use the same game build");

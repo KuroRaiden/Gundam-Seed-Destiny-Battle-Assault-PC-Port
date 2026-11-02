@@ -102,10 +102,13 @@ bool replay_build_compatible(const MatchReplay& replay, std::string_view current
     if (replay.combat_hash == current_combat_hash)
         return true;
     // Replay tools and offline Training drills leave versus combat unchanged.
-    // 0.1.9 keeps the verified 0.1.8 versus engine. Preserve the release and
-    // local tool builds, with all BIOS and initial/final-state checks.
+    // The online boot reset leaves recorded battle stepping unchanged. Keep
+    // qualified releases and local tool builds, with BIOS and state checks.
     // Future versions must qualify compatibility again before extending this list.
     const std::string_view version = replay_build_version();
+    if (current_combat_hash.size() == 64 && version == "0.1.9" && replay.build_version == "0.1.9")
+        return replay.combat_hash ==
+               "0867691f5548eb7d88733fe35e487395bd2c871ab379b90470ed5d7e9c9ca2ae";
     return current_combat_hash.size() == 64 && replay.build_version == "0.1.8" &&
            (version == "0.1.8" || version == "0.1.9") &&
            (replay.combat_hash ==

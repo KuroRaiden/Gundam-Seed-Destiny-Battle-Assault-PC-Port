@@ -47,10 +47,13 @@ int main(int argc, char** argv) {
               "Compatibility alias accepted mismatched build metadata.");
         auto original_019 = replay;
         original_019.build_version = "0.1.9";
-        original_019.combat_hash =
-            "0867691f5548eb7d88733fe35e487395bd2c871ab379b90470ed5d7e9c9ca2ae";
-        check(seed::replay_build_compatible(original_019, std::string(64, 'c')),
-              "Online boot fix rejected the published 0.1.9 recordings.");
+        for (const auto* hash :
+             {"0867691f5548eb7d88733fe35e487395bd2c871ab379b90470ed5d7e9c9ca2ae",
+              "3e9b4d8d1d94dbac4ee31aff9870634d5cbc76daffa7e1326e8edb85a15fe988"}) {
+            original_019.combat_hash = hash;
+            check(seed::replay_build_compatible(original_019, std::string(64, 'c')),
+                  "Release rejected a verified 0.1.9 recording build.");
+        }
         original_019.build_version = "0.1.8";
         check(!seed::replay_build_compatible(original_019, std::string(64, 'c')),
               "Published-build alias accepted mismatched version metadata.");

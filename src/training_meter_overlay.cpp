@@ -113,8 +113,9 @@ bool TrainingMeterOverlay::event(const SDL_Event& event, bool online) {
 }
 void TrainingMeterOverlay::draw(bool online, bool snapshot) {
     const auto message = snapshot ? std::string{} : training_tools_message();
+    const bool boxes_legend = training_tools_allowed() && training_boxes_visible();
     if (online ||
-        (!training_frame_meter().visible() && !training_boxes_visible() && message.empty()) ||
+        (!training_frame_meter().visible() && !boxes_legend && message.empty()) ||
         !prepare())
         return;
     auto* previous = ImGui::GetCurrentContext();
@@ -135,13 +136,13 @@ void TrainingMeterOverlay::draw(bool online, bool snapshot) {
     ImGui::NewFrame();
     const auto* view = ImGui::GetMainViewport();
     const float width = std::max(220.f, std::min(960.f, view->Size.x - 16));
-    if (training_boxes_visible() || !message.empty()) {
+    if (boxes_legend || !message.empty()) {
         ImGui::SetNextWindowPos({view->Pos.x + 8, view->Pos.y + 8}, ImGuiCond_Always);
         ImGui::SetNextWindowBgAlpha(.9f);
         ImGui::Begin("Training tools", nullptr,
                      ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
                          ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize);
-        if (training_boxes_visible()) {
+        if (boxes_legend) {
             ImGui::TextColored({1, .22f, .28f, 1}, "Red: hitboxes");
             ImGui::SameLine();
             ImGui::TextColored({.24f, .94f, .45f, 1}, "Green: hurtboxes");

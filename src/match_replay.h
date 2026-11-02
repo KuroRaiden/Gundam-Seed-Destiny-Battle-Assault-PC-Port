@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace seed {
@@ -22,6 +23,7 @@ struct MatchReplay {
     std::array<std::uint64_t, 5> initial_timing{};
     std::vector<std::array<std::uint16_t, 2>> inputs;
 };
+bool replay_build_compatible(const MatchReplay& replay, std::string_view current_combat_hash);
 // A bounded, checksummed input-only format. No machine snapshots or file paths.
 MatchReplay read_match_replay(const std::filesystem::path& file);
 std::filesystem::path save_match_replay(const std::filesystem::path& folder,

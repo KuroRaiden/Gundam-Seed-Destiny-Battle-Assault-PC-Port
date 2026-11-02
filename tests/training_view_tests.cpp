@@ -82,6 +82,13 @@ int main() {
         require(seed::TrainingView::sample(m).boxes.empty(), "Invalid actor pointer accepted");
         m.put(jp::kGameState, jp::kStateVersus);
         require(!seed::TrainingView::sample(m).ready, "VS allowed Training view");
+        m.put(actor + jp::kCollisionPositionPointerOffset, position);
+        view = seed::TrainingView::sample(m, true);
+        require(view.ready && !view.paused && view.boxes.size() == 2,
+                "Replay collision view did not expose native VS geometry");
+        m.put(jp::kSubstate, 4);
+        require(!seed::TrainingView::sample(m, true).paused,
+                "Replay collision view enabled the Training pause menu");
         std::cout << "PASS: native geometry counts, signed offsets, both flips, camera, "
                      "invulnerability, disabled attacks and scene guards.\n";
         return 0;

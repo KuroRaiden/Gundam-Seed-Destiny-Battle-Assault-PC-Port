@@ -16,7 +16,7 @@
 #include <stdexcept>
 namespace seed {
 namespace {
-bool allowed = false, boxes_visible = false;
+bool allowed = false, replay_viewer = false, boxes_visible = false;
 std::atomic<unsigned> pending{0};
 std::atomic<bool> busy{false};
 std::filesystem::path state_path;
@@ -114,6 +114,7 @@ void menu(const TrainingView& view) {
 void configure_training_tools(bool training, bool online, const std::filesystem::path& save,
                               const std::filesystem::path& cache) {
     allowed = training && !online;
+    replay_viewer = false;
     configure_training_snapshots(allowed);
     boxes_visible = false;
     pending = 0;
@@ -136,11 +137,17 @@ void configure_training_tools(bool training, bool online, const std::filesystem:
 bool training_tools_allowed() {
     return allowed;
 }
+void configure_replay_tools(bool playback) {
+    replay_viewer = playback;
+    boxes_visible = false;
+}
 bool training_boxes_visible() {
-    return allowed && boxes_visible;
+    return (allowed || replay_viewer) && boxes_visible;
 }
 TrainingView training_view() {
-    return allowed ? TrainingView::sample(Memory{gbarecomp::active_bus()}) : TrainingView{};
+    return allowed || replay_viewer
+               ? TrainingView::sample(Memory{gbarecomp::active_bus()}, replay_viewer)
+               : TrainingView{};
 }
 bool training_tools_event(const SDL_Event& event, bool online) {
     if (event.type != SDL_EVENT_KEY_DOWN && event.type != SDL_EVENT_KEY_UP)
@@ -158,10 +165,12 @@ bool training_tools_event(const SDL_Event& event, bool online) {
         return false;
     // Reserved even outside Training: never leak into the engine's generic
     // F-key state slots, particularly during an online game.
-    if (!online && allowed && event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
-        if (key == SDL_SCANCODE_F6)
+    if (!online && event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat) {
+        if (key == SDL_SCANCODE_F6 && (allowed || replay_viewer)) {
             boxes_visible = !boxes_visible;
-        else
+            if (replay_viewer)
+                std::fprintf(stderr, "replay_boxes: %s\n", boxes_visible ? "on" : "off");
+        } else if (allowed)
             training_request_state(key == SDL_SCANCODE_F3);
     }
     return true;
@@ -276,7 +285,7 @@ const std::uint8_t* training_snapshot_display_pixels(const std::uint8_t* pixels)
     return display.data();
 }
 const std::uint8_t* training_display_pixels(const std::uint8_t* pixels, unsigned w, unsigned h) {
-    if (!allowed || !pixels || w != 240 || h != 160)
+    if ((!allowed && !replay_viewer) || !pixels || w != 240 || h != 160)
         return pixels;
     const auto view = training_view();
     if (!view.ready || (!view.paused && !boxes_visible))

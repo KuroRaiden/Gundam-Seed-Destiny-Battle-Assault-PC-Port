@@ -16,7 +16,7 @@ int watch_match_replay(const std::filesystem::path& file, const std::string& rom
                        const std::string& bios, int scale) {
     const auto replay = read_match_replay(file);
     const auto library = combat_library_path();
-    if (replay.combat_hash != replay_file_hash(library))
+    if (!replay_build_compatible(replay, replay_file_hash(library)))
         throw std::runtime_error("This replay needs its original game build: " +
                                  replay.build_version);
     if (replay.bios_hash != replay_file_hash(std::filesystem::u8path(bios)))

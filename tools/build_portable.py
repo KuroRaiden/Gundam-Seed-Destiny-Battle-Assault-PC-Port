@@ -152,6 +152,10 @@ Hold keyboard Tab for turbo; controllers never trigger turbo.
 Local VS and online matches save automatically in replays/. Open Replays in the
 launcher to watch them. Space pauses playback, Tab fast-forwards, and Esc exits.
 Recordings require the same game build and BIOS. Training is not recorded.
+During replay playback, F6 toggles hitboxes/hurtboxes. F8/F9 take over 1P/2P
+using your P1 controls while the opponent follows its recorded inputs. F10
+retries the same checkpoint; F11 resumes the original replay. Practice pauses
+at the round/recording end. Your original replay file is never changed.
 Press F4 during play to remap controls. In Training, F5 toggles the frame
 meter without pausing: green startup, red active, blue recovery, yellow hitstun.
 After choosing both fighters, select a stage with left/right and confirm with A.

@@ -17,6 +17,20 @@ int main(int argc, char** argv) {
         replay.online = replay.complete = true;
         replay.combat_hash = std::string(64, 'a');
         replay.bios_hash = std::string(64, 'b');
+        check(seed::replay_build_compatible(replay, replay.combat_hash),
+              "Matching replay build was rejected.");
+        check(!seed::replay_build_compatible(replay, std::string(64, 'c')),
+              "Unknown replay build was accepted.");
+        auto original_018 = replay;
+        original_018.build_version = "0.1.8";
+        original_018.combat_hash =
+            "8d8162305122503ff5ffd729d645bb83fb52c5c9bf6f7fb5451e24335a4320dc";
+        if (std::string_view(seed::replay_build_version()) == "0.1.8")
+            check(seed::replay_build_compatible(original_018, std::string(64, 'c')),
+                  "HUD-only fix rejected the initial 0.1.8 build.");
+        original_018.build_version = "0.1.7";
+        check(!seed::replay_build_compatible(original_018, std::string(64, 'c')),
+              "Compatibility alias escaped its verified game version.");
         replay.fighters = {24, 27};
         replay.colors = {1, 0};
         replay.stage = 24;

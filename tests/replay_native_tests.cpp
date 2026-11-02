@@ -92,6 +92,17 @@ int main(int argc, char** argv) {
                   result.message);
             check(!replay.complete || result.final_crc == replay.final_crc,
                   "Online replay final checksum differed.");
+            if (windowed) {
+                auto* image = SDL_RenderReadPixels(renderer, nullptr);
+                check(image, "Cannot capture the replay HUD.");
+                const auto capture = (file.parent_path() / "replay-window.png").string();
+                const bool saved = SDL_SavePNG(image, capture.c_str());
+                SDL_DestroySurface(image);
+                check(saved, "Cannot save the replay HUD capture.");
+                check(std::string_view(SDL_GetWindowTitle(window))
+                          .starts_with("Gundam SEED - Replay | "),
+                      "Replay status was not moved to the window title.");
+            }
             std::printf("PASS: %s replay in fresh process, %u frames, checksum %u.\n",
                         replay.online ? "online" : "local", result.frames, result.final_crc);
             for (const auto timer : timers)
@@ -131,8 +142,10 @@ int main(int argc, char** argv) {
             request.fighters[1] = pair[1];
             request.stage = pair[2];
             request.colors[0] = 1;
-            request.palettes[0] = ms_test_palette(0);
-            request.palettes[1] = ms_test_palette(1);
+            if (cases) {
+                request.palettes[0] = ms_test_palette(0);
+                request.palettes[1] = ms_test_palette(1);
+            }
             seed::ReplayPlaybackResult recorded, watched;
             request.replay_result = &recorded;
             frame = 0;

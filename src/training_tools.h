@@ -11,6 +11,7 @@ namespace seed {
 void configure_training_tools(bool training, bool online, const std::filesystem::path& save,
                               const std::filesystem::path& art = {});
 bool training_tools_allowed();
+void configure_replay_tools(bool playback);
 bool training_boxes_visible();
 bool training_tools_event(const SDL_Event&, bool online);
 void training_request_state(bool load);

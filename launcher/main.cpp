@@ -96,7 +96,7 @@ struct App {
                     entry.info = seed::read_match_replay(file.path());
                     entry.frames = unsigned(entry.info.inputs.size());
                     entry.info.inputs = decltype(entry.info.inputs){};
-                    if (entry.info.combat_hash != hash)
+                    if (!seed::replay_build_compatible(entry.info, hash))
                         entry.error = "This replay needs its original game build: " +
                                       entry.info.build_version;
                 } catch (const std::exception& error) {
@@ -431,7 +431,9 @@ void replays_page(App& app) {
     ImGui::Spacing();
     ImGui::TextWrapped(
         "Playback: Space pauses, hold Tab to fast-forward, Esc returns to the launcher. "
-        "Recorded inputs control both fighters.");
+        "F6 toggles hitboxes/hurtboxes.");
+    ImGui::TextWrapped("Practice: F8 takes over 1P, F9 takes over 2P, using your P1 controls. "
+                       "F10 retries from the same point; F11 resumes the recorded replay.");
     ImGui::TextColored(kMuted,
                        "Replays require the same game build and BIOS. Training is not recorded.");
     if (ImGui::Button("Open replay log"))

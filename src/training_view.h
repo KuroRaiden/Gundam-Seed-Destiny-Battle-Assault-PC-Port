@@ -16,14 +16,17 @@ struct TrainingView {
     unsigned cursor = 0;
     std::array<std::uint8_t, 3> options{};
     std::vector<TrainingBox> boxes;
-    template <class Memory> static TrainingView sample(const Memory& memory) {
+    template <class Memory>
+    static TrainingView sample(const Memory& memory, bool allow_versus = false) {
         namespace jp = address::jp;
         TrainingView out;
-        if (memory.u32(jp::kGameState) != jp::kStateTraining)
+        const auto state = memory.u32(jp::kGameState);
+        const bool training = state == jp::kStateTraining;
+        if (!training && !(allow_versus && state == jp::kStateVersus))
             return out;
         const auto substate = memory.u32(jp::kSubstate);
-        out.ready = substate == 2 || substate == 4;
-        out.paused = substate == 4;
+        out.ready = !training || substate == 2 || substate == 4;
+        out.paused = training && substate == 4;
         if (!out.ready)
             return out;
         const auto y = memory.u16(jp::kTrainingCursorY);

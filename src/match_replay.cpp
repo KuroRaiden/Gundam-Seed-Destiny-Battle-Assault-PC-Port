@@ -106,17 +106,20 @@ bool replay_build_compatible(const MatchReplay& replay, std::string_view current
     // qualified releases and local tool builds, with BIOS and state checks.
     // Future versions must qualify compatibility again before extending this list.
     const std::string_view version = replay_build_version();
-    if (current_combat_hash.size() == 64 && version == "0.1.10" && replay.build_version == "0.1.10")
+    if (current_combat_hash.size() != 64 ||
+        (version != "0.1.8" && version != "0.1.9" && version != "0.1.10" && version != "0.1.11"))
+        return false;
+    if (version != "0.1.8" && version != "0.1.9" && replay.build_version == "0.1.10")
         return replay.combat_hash ==
-               "7c0f1bba61ddedb894dffb28b098f802b64bd01eda8587aacad05a7364f2542b";
-    if (current_combat_hash.size() == 64 && (version == "0.1.9" || version == "0.1.10") &&
-        replay.build_version == "0.1.9")
+                   "7c0f1bba61ddedb894dffb28b098f802b64bd01eda8587aacad05a7364f2542b" ||
+               replay.combat_hash ==
+                   "83c9f84ddf9aeafc03e8c95d97b72d1445ffb947627089b34fdb7ed34b537ea9";
+    if (version != "0.1.8" && replay.build_version == "0.1.9")
         return replay.combat_hash ==
                    "0867691f5548eb7d88733fe35e487395bd2c871ab379b90470ed5d7e9c9ca2ae" ||
                replay.combat_hash ==
                    "3e9b4d8d1d94dbac4ee31aff9870634d5cbc76daffa7e1326e8edb85a15fe988";
-    return current_combat_hash.size() == 64 && replay.build_version == "0.1.8" &&
-           (version == "0.1.8" || version == "0.1.9" || version == "0.1.10") &&
+    return replay.build_version == "0.1.8" &&
            (replay.combat_hash ==
                 "8d8162305122503ff5ffd729d645bb83fb52c5c9bf6f7fb5451e24335a4320dc" ||
             replay.combat_hash ==

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 namespace seed {
 inline constexpr std::array<const char*, 10> kControlNames{"A",    "B",  "Select", "Start", "Right",
@@ -24,6 +25,7 @@ struct PlayerBindings {
 struct ControlBindings {
     std::array<PlayerBindings, 2> players;
     ControlBindings();
+    void assign_gamepad(unsigned player, int slot);
     bool load(const std::filesystem::path& path, std::string* error = nullptr);
     bool save(const std::filesystem::path& path, std::string& error) const;
     bool operator==(const ControlBindings&) const = default;
@@ -43,26 +45,30 @@ std::filesystem::path controls_path();
 
 class InputDevices {
   public:
+    InputDevices() = default;
+    InputDevices(const InputDevices&) = delete;
+    InputDevices& operator=(const InputDevices&) = delete;
     ~InputDevices() {
         close();
     }
     void refresh();
     void close();
     SDL_Gamepad* pad(int slot) const {
-        return slot >= 0 && slot < 2 ? seats_[slot].handle : nullptr;
+        return slot >= 0 && slot < slot_count() ? slots_[slot].handle : nullptr;
     }
     SDL_JoystickID id(int slot) const {
-        return slot >= 0 && slot < 2 ? seats_[slot].id : 0;
+        return slot >= 0 && slot < slot_count() ? slots_[slot].id : 0;
     }
-    unsigned count() const {
-        return unsigned(seats_[0].handle != nullptr) + unsigned(seats_[1].handle != nullptr);
+    int slot_count() const {
+        return static_cast<int>(slots_.size());
     }
+    unsigned count() const;
 
   private:
-    struct Seat {
+    struct Slot {
         SDL_Gamepad* handle = nullptr;
         SDL_JoystickID id = 0;
     };
-    std::array<Seat, 2> seats_{};
+    std::vector<Slot> slots_;
 };
 } // namespace seed

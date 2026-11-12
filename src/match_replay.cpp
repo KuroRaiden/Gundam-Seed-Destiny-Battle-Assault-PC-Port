@@ -106,6 +106,9 @@ bool replay_build_compatible(const MatchReplay& replay, std::string_view current
     // qualified releases and local tool builds, with BIOS and state checks.
     // Future versions must qualify compatibility again before extending this list.
     const std::string_view version = replay_build_version();
+    if (current_combat_hash.size() == 64 && version == "0.1.10" && replay.build_version == "0.1.10")
+        return replay.combat_hash ==
+               "7c0f1bba61ddedb894dffb28b098f802b64bd01eda8587aacad05a7364f2542b";
     if (current_combat_hash.size() == 64 && (version == "0.1.9" || version == "0.1.10") &&
         replay.build_version == "0.1.9")
         return replay.combat_hash ==

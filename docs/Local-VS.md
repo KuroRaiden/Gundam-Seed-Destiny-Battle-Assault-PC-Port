@@ -30,9 +30,16 @@ The launcher **Controllers** page configures each seat's keyboard, assigned
 gamepad slot, primary buttons and alternate stick/trigger directions. Click to
 capture a binding, right-click to clear, then **Save bindings**. Reset and revert
 are available. Saved profiles apply to US menus, local selection and JP combat
-on the next game launch. `controls.ini` stays beside the executable and builds
-do not overwrite it. Slots follow connection order; unplugging a controller
-preserves the other seat. `controllerdb.txt` is loaded by both programs.
+on the next game launch. Profiles are stored in `config/controls.ini`. The
+launcher and F4 menu show all detected gamepads. Open a player's gamepad list
+and hold a button on the device you want to assign. Its row shows **input detected**.
+Unplugging a controller preserves the slots of the other connected controllers.
+Both programs load `controllerdb.txt`.
+
+For docked Steam Deck play, use a Steam Input gamepad layout for each external
+controller. Open F4 in the running game and assign the two external pads to
+Player 1 and Player 2. The Deck's built-in controls can stay connected.
+[Steam Input gamepad emulation](https://partner.steamgames.com/doc/features/steam_controller/steam_input_gamepad_emulation_bestpractices)
 
 The main menu's **VS Mode** opens an ImGui online lobby over the JP selection
 grid. The original US cable Connecting screen is bypassed. Direct UDP hosting

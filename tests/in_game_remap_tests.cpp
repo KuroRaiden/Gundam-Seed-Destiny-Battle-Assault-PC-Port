@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
     try {
         require(argc == 2, "Usage: seed_in_game_remap_tests SCRATCH_DIRECTORY");
         std::filesystem::create_directories(argv[1]);
+        SDL_SetHint(SDL_HINT_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT, "0x1209/0x17ba");
         gbarecomp::HostWindow window;
         require(window.open(3, 240, 160, "F4 remapping verification"), "Host open failed");
         std::vector<std::uint8_t> image(240 * 160 * 3, 30);
@@ -95,11 +96,60 @@ int main(int argc, char** argv) {
                 "Live binding persistence failed");
         require(surface.inputs->wait_for_release[0] && surface.inputs->wait_for_release[1],
                 "Closing/remapping did not guard held inputs");
+
+        SDL_VirtualJoystickDesc desc{};
+        SDL_INIT_INTERFACE(&desc);
+        desc.type = SDL_JOYSTICK_TYPE_GAMEPAD;
+        desc.vendor_id = 0x1209;
+        desc.product_id = 0x17ba;
+        desc.name = "SEED controller routing test";
+        desc.nbuttons = SDL_GAMEPAD_BUTTON_COUNT;
+        desc.button_mask = (1u << SDL_GAMEPAD_BUTTON_COUNT) - 1;
+        std::array<SDL_JoystickID, 3> ids{};
+        std::array<SDL_Joystick*, 3> joysticks{};
+        for (unsigned i = 0; i < ids.size(); ++i) {
+            ids[i] = SDL_AttachVirtualJoystick(&desc);
+            require(ids[i] != 0, "Virtual gamepad attach failed");
+            joysticks[i] = SDL_OpenJoystick(ids[i]);
+            require(joysticks[i] != nullptr, "Virtual gamepad open failed");
+        }
+        window.pump();
+        require(surface.inputs->devices.count() == 3 && surface.inputs->devices.id(2) == ids[2],
+                "The third gamepad is unavailable when an extra device is connected");
+        changed = seed::ControlBindings{};
+        changed.assign_gamepad(0, 1);
+        require(changed.players[1].pad_slot == 0, "Selecting P2's pad did not swap assignments");
+        changed.assign_gamepad(1, 2);
+        for (auto& profile : changed.players)
+            profile.keyboard_enabled = false;
+        require(surface.inputs->apply(changed, error), "External gamepad assignments did not save");
+        surface.inputs->load(surface.inputs->path);
+        require(surface.inputs->bindings == changed, "Third gamepad assignment did not reload");
+        window.pump();
+        require(
+            SDL_SetJoystickVirtualButton(joysticks[0], SDL_GAMEPAD_BUTTON_EAST, true) &&
+                SDL_SetJoystickVirtualButton(joysticks[1], SDL_GAMEPAD_BUTTON_DPAD_RIGHT, true) &&
+                SDL_SetJoystickVirtualButton(joysticks[2], SDL_GAMEPAD_BUTTON_SOUTH, true),
+            "Virtual controller input failed");
+        window.pump();
+        seed::sample_host_players(players);
+        require(players[0] == 16 && players[1] == 1,
+                "Two assigned external gamepads did not reach independent local seats");
+        require(SDL_DetachVirtualJoystick(ids[0]), "Extra gamepad disconnect failed");
+        window.pump();
+        seed::sample_host_players(players);
+        require(players[0] == 16 && players[1] == 1,
+                "Unplugging the unused gamepad shifted active player slots");
+        for (unsigned i = 0; i < ids.size(); ++i) {
+            SDL_CloseJoystick(joysticks[i]);
+            if (i != 0)
+                SDL_DetachVirtualJoystick(ids[i]);
+        }
         window.close();
         SDL_Quit();
         std::puts("PASS: quick Enter tap retention across shared samplers, F4/slot-4 isolation, "
                   "offline pause, online non-pause policy, input suppression, Esc resume, shared "
-                  "live bindings and persistence.");
+                  "live bindings, three-gamepad routing, hot-unplug and persistence.");
         return 0;
     } catch (const std::exception& e) {
         std::fprintf(stderr, "%s\n", e.what());

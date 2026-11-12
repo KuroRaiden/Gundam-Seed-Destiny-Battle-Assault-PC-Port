@@ -6,7 +6,7 @@
 #include <cstdint>
 
 namespace seed {
-inline constexpr unsigned kCombatApiVersion = 10;
+inline constexpr unsigned kCombatApiVersion = 11;
 struct ReplayVideoExportRequest {
     const char* output = nullptr;
     const char* status = nullptr; // Atomic progress JSON, outside the recording.

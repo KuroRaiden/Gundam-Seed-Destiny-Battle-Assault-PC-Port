@@ -1,4 +1,5 @@
 #include "in_game_remap.h"
+#include "controller_picker.h"
 #include "imgui.h"
 #include "imgui_impl_sdl3.h"
 #include "imgui_impl_sdlrenderer3.h"
@@ -143,23 +144,12 @@ void InGameRemap::draw_bindings() {
             auto& profile = edited_.players[p];
             ImGui::Checkbox("Keyboard", &profile.keyboard_enabled);
             ImGui::SameLine();
-            if (ImGui::SmallButton("Reset player"))
-                profile = ControlBindings{}.players[p];
-            std::array<std::string, 3> choices{"No gamepad", "Gamepad 1", "Gamepad 2"};
-            for (int slot = 0; slot < 2; ++slot)
-                if (auto* pad = controls_->devices.pad(slot))
-                    choices[slot + 1] += " - " + std::string(SDL_GetGamepadName(pad));
-            ImGui::SetNextItemWidth(-1);
-            if (ImGui::BeginCombo("##pad", choices[profile.pad_slot + 1].c_str())) {
-                for (int slot = -1; slot < 2; ++slot)
-                    if (ImGui::Selectable(choices[slot + 1].c_str(), slot == profile.pad_slot)) {
-                        const int old = profile.pad_slot;
-                        if (slot >= 0 && edited_.players[1 - p].pad_slot == slot)
-                            edited_.players[1 - p].pad_slot = old;
-                        profile.pad_slot = slot;
-                    }
-                ImGui::EndCombo();
+            if (ImGui::SmallButton("Reset player")) {
+                const auto defaults = ControlBindings{}.players[p];
+                edited_.assign_gamepad(p, defaults.pad_slot);
+                profile = defaults;
             }
+            draw_gamepad_picker(edited_, p, controls_->devices);
             ImGui::TextDisabled("Click to remap. Right-click to clear.");
             if (ImGui::BeginTable("bindings", 4,
                                   ImGuiTableFlags_BordersInnerH |

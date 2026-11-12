@@ -23,6 +23,7 @@
 #include "../src/controller_db.h"
 #include "../src/brand_icons.h"
 #include "input_bindings.h"
+#include "controller_picker.h"
 #include "invite_code.h"
 #include "invite_window.h"
 #include <algorithm>
@@ -783,24 +784,12 @@ void controllers_page(App& app) {
                 card_begin("bindings", 590);
                 ImGui::Checkbox("Enable keyboard", &profile.keyboard_enabled);
                 ImGui::SameLine();
-                if (ImGui::SmallButton("Reset this player"))
-                    profile = seed::ControlBindings{}.players[player];
-                std::array<std::string, 3> choices{"No gamepad", "Gamepad 1", "Gamepad 2"};
-                for (int slot = 0; slot < 2; ++slot)
-                    if (auto* pad = app.devices.pad(slot))
-                        choices[slot + 1] += " - " + std::string(SDL_GetGamepadName(pad));
-                ImGui::SetNextItemWidth(-1);
-                if (ImGui::BeginCombo("##gamepad", choices[profile.pad_slot + 1].c_str())) {
-                    for (int choice = -1; choice < 2; ++choice)
-                        if (ImGui::Selectable(choices[choice + 1].c_str(),
-                                              profile.pad_slot == choice)) {
-                            const auto old = profile.pad_slot;
-                            if (choice >= 0 && app.controls.players[1 - player].pad_slot == choice)
-                                app.controls.players[1 - player].pad_slot = old;
-                            profile.pad_slot = choice;
-                        }
-                    ImGui::EndCombo();
+                if (ImGui::SmallButton("Reset this player")) {
+                    const auto defaults = seed::ControlBindings{}.players[player];
+                    app.controls.assign_gamepad(player, defaults.pad_slot);
+                    profile = defaults;
                 }
+                seed::draw_gamepad_picker(app.controls, player, app.devices);
                 ImGui::TextColored(kMuted,
                                    "Click a binding to change it. Right-click to clear it.");
                 constexpr unsigned order[]{6, 7, 5, 4, 0, 1, 8, 9, 3, 2};

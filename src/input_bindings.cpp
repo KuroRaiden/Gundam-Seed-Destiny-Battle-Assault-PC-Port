@@ -65,6 +65,13 @@ ControlBindings::ControlBindings() {
         players[player].gamepad[7][1] = {PadBindingKind::AxisPositive, SDL_GAMEPAD_AXIS_LEFTY};
     }
 }
+void ControlBindings::assign_gamepad(unsigned player, int slot) {
+    auto& selected = players[player].pad_slot;
+    auto& other = players[1 - player].pad_slot;
+    if (slot >= 0 && other == slot)
+        other = selected == slot ? -1 : selected;
+    selected = slot;
+}
 bool ControlBindings::load(const std::filesystem::path& path, std::string* error) {
     *this = ControlBindings{};
     if (error)
@@ -94,7 +101,7 @@ bool ControlBindings::load(const std::filesystem::path& path, std::string* error
         const auto property = key.substr(3);
         if (property == "keyboard" && (value == 0 || value == 1))
             player.keyboard_enabled = value != 0;
-        else if (property == "pad" && value >= -1 && value <= 1)
+        else if (property == "pad" && value >= -1)
             player.pad_slot = value;
         else
             for (unsigned bit = 0; bit < 10; ++bit) {
@@ -223,31 +230,42 @@ std::filesystem::path controls_path() {
 void InputDevices::refresh() {
     if (!SDL_WasInit(SDL_INIT_GAMEPAD))
         return;
-    for (auto& seat : seats_)
-        if (seat.handle && !SDL_GamepadConnected(seat.handle)) {
-            SDL_CloseGamepad(seat.handle);
-            seat = {};
+    for (auto& slot : slots_)
+        if (slot.handle && !SDL_GamepadConnected(slot.handle)) {
+            SDL_CloseGamepad(slot.handle);
+            slot = {};
         }
     int count = 0;
     auto* ids = SDL_GetGamepads(&count);
     for (int i = 0; i < count; ++i) {
-        if (std::any_of(seats_.begin(), seats_.end(),
-                        [id = ids[i]](const auto& seat) { return seat.id == id; }))
+        const auto id = ids[i];
+        if (std::any_of(slots_.begin(), slots_.end(),
+                        [id](const auto& slot) { return slot.id == id; }))
             continue;
-        const auto empty = std::find_if(seats_.begin(), seats_.end(),
-                                        [](const auto& seat) { return !seat.handle; });
-        if (empty == seats_.end())
-            break;
-        if (auto* pad = SDL_OpenGamepad(ids[i]))
-            *empty = {pad, ids[i]};
+        // Fill a gap or append a slot. A disconnect must never renumber the
+        // controllers still connected, including those assigned above slot 2.
+        if (auto* pad = SDL_OpenGamepad(id)) {
+            const auto empty = std::find_if(slots_.begin(), slots_.end(),
+                                            [](const auto& slot) { return !slot.handle; });
+            if (empty == slots_.end())
+                slots_.push_back({pad, id});
+            else
+                *empty = {pad, id};
+        }
     }
     SDL_free(ids);
+    while (!slots_.empty() && !slots_.back().handle)
+        slots_.pop_back();
+}
+unsigned InputDevices::count() const {
+    return static_cast<unsigned>(
+        std::count_if(slots_.begin(), slots_.end(), [](const auto& slot) { return slot.handle; }));
 }
 void InputDevices::close() {
-    for (auto& seat : seats_) {
-        if (seat.handle && SDL_WasInit(SDL_INIT_GAMEPAD))
-            SDL_CloseGamepad(seat.handle);
-        seat = {};
-    }
+    if (SDL_WasInit(SDL_INIT_GAMEPAD))
+        for (const auto& slot : slots_)
+            if (slot.handle)
+                SDL_CloseGamepad(slot.handle);
+    slots_.clear();
 }
 } // namespace seed

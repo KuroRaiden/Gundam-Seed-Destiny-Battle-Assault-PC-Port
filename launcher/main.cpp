@@ -13,6 +13,7 @@
 #include "platform.h"
 #include "settings.h"
 #include "themes.h"
+#include "launcher-resource-ids.h"
 #include "title_logo.h"
 #include "portable_paths.h"
 #include "update.h"
@@ -312,15 +313,70 @@ void theme(App& app) {
     SDL_DestroyTexture(app.theme_emblem);
     app.theme_emblem = nullptr;
     const auto index = sl::theme_index(app.settings.theme);
-    kGreen = index ? ImVec4{.04f, .36f, .20f, 1} : ImVec4{.42f, .84f, .62f, 1};
-    kGold = index ? c[sl::Muted] : ImVec4{.96f, .74f, .36f, 1};
-    kRed = index ? ImVec4{.61f, .11f, .16f, 1} : ImVec4{.96f, .48f, .48f, 1};
-    if (index) {
-        const auto file = app.folder / "Themes" / (index == 1 ? "EarthAlliance.png" : "ZAFT.png");
-        if (auto* surface = SDL_LoadPNG(sl::utf8(file.wstring()).c_str())) {
-            app.theme_emblem = SDL_CreateTextureFromSurface(app.renderer, surface);
-            SDL_DestroySurface(surface);
+    const bool light = index == sl::EarthAllianceTheme || index == sl::ZaftTheme;
+    kGreen = light ? ImVec4{.04f, .36f, .20f, 1} : ImVec4{.42f, .84f, .62f, 1};
+    kGold = light ? c[sl::Muted] : ImVec4{.96f, .74f, .36f, 1};
+    kRed = light ? ImVec4{.61f, .11f, .16f, 1} : ImVec4{.96f, .48f, .48f, 1};
+    SDL_Surface* emblem = nullptr;
+    if (light) {
+        const auto file = app.folder / "Themes" /
+                          (index == sl::EarthAllianceTheme ? "EarthAlliance.png" : "ZAFT.png");
+        emblem = SDL_LoadPNG(sl::utf8(file.wstring()).c_str());
+    } else if (index == sl::CharTheme || index == sl::BallTheme) {
+        const auto module = GetModuleHandleW(nullptr);
+        const auto emblem_id = index == sl::CharTheme ? IDR_CHAR_EMBLEM : IDR_BALL_EMBLEM;
+        const auto resource = FindResource(module, MAKEINTRESOURCE(emblem_id), RT_RCDATA);
+        if (resource) {
+            const auto loaded = LoadResource(module, resource);
+            if (const auto* data = loaded ? LockResource(loaded) : nullptr) {
+                if (auto* stream = SDL_IOFromConstMem(data, SizeofResource(module, resource)))
+                    emblem = SDL_LoadPNG_IO(stream, true);
+            }
         }
+    }
+    if (emblem) {
+        // These flat marks were supplied against solid backdrops. Recover the
+        // coverage at their edges and keep the original foreground artwork.
+        if (index == sl::EarthAllianceTheme || index == sl::CharTheme) {
+            if (auto* rgba = SDL_ConvertSurface(emblem, SDL_PIXELFORMAT_RGBA32)) {
+                SDL_DestroySurface(emblem);
+                emblem = rgba;
+                auto* pixels = static_cast<Uint8*>(rgba->pixels);
+                for (int y = 0; y < rgba->h; ++y) {
+                    auto* pixel = pixels + y * rgba->pitch;
+                    for (int x = 0; x < rgba->w; ++x, pixel += 4) {
+                        if (index == sl::EarthAllianceTheme) {
+                            const auto distance = std::max({std::abs(int(pixel[0]) - 74),
+                                                            std::abs(int(pixel[1]) - 200),
+                                                            std::abs(int(pixel[2]) - 248)});
+                            const int alpha = std::clamp((distance - 5) * 255 / 40, 0, 255);
+                            if (alpha > 0 && alpha < 255) {
+                                constexpr int matte[]{74, 200, 248};
+                                for (int c = 0; c < 3; ++c)
+                                    pixel[c] = Uint8(std::clamp(
+                                        (int(pixel[c]) * 255 - matte[c] * (255 - alpha)) / alpha,
+                                        0, 255));
+                            }
+                            pixel[3] = Uint8(int(pixel[3]) * alpha / 255);
+                        } else {
+                            // Red is the coverage channel of gold over black.
+                            // Small values are compression noise in the matte.
+                            const int alpha = std::clamp((int(pixel[0]) - 32) * 255 / 211, 0, 255);
+                            if (alpha > 0 && alpha < 255) {
+                                pixel[0] = 255;
+                                pixel[1] = 211;
+                                pixel[2] = 80;
+                            }
+                            pixel[3] = Uint8(int(pixel[3]) * alpha / 255);
+                        }
+                    }
+                }
+            }
+        }
+        app.theme_emblem = SDL_CreateTextureFromSurface(app.renderer, emblem);
+        SDL_DestroySurface(emblem);
+        if (app.theme_emblem)
+            SDL_SetTextureBlendMode(app.theme_emblem, SDL_BLENDMODE_BLEND);
     }
     ImGui::StyleColorsDark();
     auto& s = ImGui::GetStyle();
@@ -345,7 +401,7 @@ void theme(App& app) {
     s.Colors[ImGuiCol_ButtonHovered] = c[sl::ButtonHover];
     s.Colors[ImGuiCol_ButtonActive] = c[sl::ButtonActive];
     s.Colors[ImGuiCol_CheckMark] = kAccent;
-    if (index)
+    if (index != sl::DefaultTheme)
         s.Colors[ImGuiCol_CheckboxSelectedBg] = c[sl::Frame];
     s.Colors[ImGuiCol_SliderGrab] = kAccent;
     s.Colors[ImGuiCol_SliderGrabActive] = kAccent;
@@ -359,6 +415,15 @@ void theme(App& app) {
     s.Colors[ImGuiCol_ScrollbarGrabActive] = c[sl::ButtonActive];
     s.Colors[ImGuiCol_Text] = c[sl::Text];
     s.Colors[ImGuiCol_TextDisabled] = kMuted;
+    if (index == sl::BallTheme || index == sl::CharTheme) {
+        s.Colors[ImGuiCol_Tab] = s.Colors[ImGuiCol_TabDimmed] = c[sl::Frame];
+        s.Colors[ImGuiCol_TabHovered] = c[sl::ButtonHover];
+        s.Colors[ImGuiCol_TabSelected] = s.Colors[ImGuiCol_TabDimmedSelected] = c[sl::Selected];
+        s.Colors[ImGuiCol_TabSelectedOverline] =
+            s.Colors[ImGuiCol_TabDimmedSelectedOverline] = kAccent;
+        s.Colors[ImGuiCol_TableHeaderBg] = c[sl::Frame];
+        s.Colors[ImGuiCol_TableBorderStrong] = s.Colors[ImGuiCol_TableBorderLight] = c[sl::Border];
+    }
 }
 void refresh_title_logo(App& app) {
     const auto source = app.settings.files[1].verified ? app.settings.files[1].path : std::string{};
@@ -1012,23 +1077,17 @@ void draw(App& app) {
             ImGui::PopStyleColor();
     }
     ImGui::Spacing();
-    if (!app.theme_emblem)
-        ImGui::Spacing();
     if (app.theme_emblem) {
-        float width = 1, height = 1;
-        SDL_GetTextureSize(app.theme_emblem, &width, &height);
         const float available =
             std::clamp(ImGui::GetWindowHeight() - ImGui::GetCursorPosY() - 142.f, 24.f, 82.f);
+        float width = 1, height = 1;
+        SDL_GetTextureSize(app.theme_emblem, &width, &height);
         const float scale = std::min(120.f / width, available / height);
         const ImVec2 size{width * scale, height * scale};
         center_sidebar_item(size.x);
-        const auto at = ImGui::GetCursorScreenPos();
-        if (sl::theme_index(app.settings.theme) == 2)
-            ImGui::GetWindowDrawList()->AddRectFilled({at.x - 6, at.y - 6},
-                                                      {at.x + size.x + 6, at.y + size.y + 6},
-                                                      IM_COL32(231, 239, 247, 255), 6);
         ImGui::Image((ImTextureID)(intptr_t)app.theme_emblem, size);
-    }
+    } else
+        ImGui::Spacing();
     sidebar_text(kGold, sl::launcher_version().find("-dev") != std::string::npos
                             ? "DEVELOPMENT BUILD"
                             : "PC EDITION");

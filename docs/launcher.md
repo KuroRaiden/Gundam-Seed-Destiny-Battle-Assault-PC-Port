@@ -1,7 +1,11 @@
 # Native launcher
 
-Choose **Default**, **Earth Alliance**, or **ZAFT** under **Play > Launcher theme**.
-The `Themes/` folder holds their palettes and the supplied faction emblems.
+Choose **Default**, **Earth Alliance**, **ZAFT**, **Ball**, or **Char** under
+**Play > Launcher theme**. Ball uses grey-blue panels, green selection, and red
+buttons, with the supplied Ball illustration. Char uses gold trim and deep red
+panels, with the supplied gold emblem. The sidebar emblems have transparent backgrounds.
+The `Themes/` folder holds the original palettes and faction emblems. Ball and
+Char are built into the launcher.
 The choice saves automatically. The upper-left SEED Destiny logo is decoded
 from the verified Japanese ROM in memory. These presentation choices do not
 change gameplay, netplay, replay compatibility or Training snapshot colors.

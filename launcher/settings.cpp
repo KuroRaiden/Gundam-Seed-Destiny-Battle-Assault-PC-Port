@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "theme_catalog.h"
 #include "portable_paths.h"
 #include "platform.h"
 #include "fighter_outline_setting.h"
@@ -77,7 +78,7 @@ void Settings::load(const std::filesystem::path& path) {
         else if (key == "bios")
             files[2].path = value;
         else if (key == "theme")
-            theme = value == "earth-alliance" || value == "zaft" ? value : "default";
+            theme = kThemeIds[theme_index(value)];
         else if (key == "scale") {
             try {
                 scale = std::clamp(std::stoi(value), 2, 6);

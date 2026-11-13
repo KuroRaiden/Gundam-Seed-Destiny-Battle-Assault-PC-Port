@@ -7,3 +7,4 @@
 *.toml text eol=lf
 *.patch text eol=lf -whitespace
 *.ps1 text eol=crlf
+Themes/README.txt text eol=crlf

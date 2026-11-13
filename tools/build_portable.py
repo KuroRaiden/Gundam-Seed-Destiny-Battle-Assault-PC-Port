@@ -134,8 +134,8 @@ F9 retries from an in-memory checkpoint; F10 restores your original Training
 situation. F2/F3 slots are preserved and unavailable while a drill is active.
 The US font cache is generated locally from your US game file.
 Choose Default, Earth Alliance, ZAFT, Ball, or Char under Play > Launcher theme.
-Your choice saves with your settings. The SEED Destiny sidebar logo is generated in memory
-from your verified Japanese ROM. No title-logo cache is included in this ZIP.
+Your choice saves with your settings. The SEED Destiny sidebar logo is built
+into the launcher.
 
 The bottom left of the launcher shows its version. Open Updates to check this
 project's stable GitHub releases. Download update verifies the package; Install

@@ -6,9 +6,8 @@ buttons, with the supplied Ball illustration. Char uses gold trim and deep red
 panels, with the supplied gold emblem. The sidebar emblems have transparent backgrounds.
 The `Themes/` folder holds the original palettes and faction emblems. Ball and
 Char are built into the launcher.
-The choice saves automatically. The upper-left SEED Destiny logo is decoded
-from the verified Japanese ROM in memory. These presentation choices do not
-change gameplay, netplay, replay compatibility or Training snapshot colors.
+The choice saves automatically. The transparent SEED Destiny logo is built into
+the launcher and appears on first launch. Themes only affect the launcher.
 
 The launcher uses Dear ImGui and SDL3. Select and verify the US cartridge,
 Japanese cartridge and extracted BIOS on **Game files**, then launch from

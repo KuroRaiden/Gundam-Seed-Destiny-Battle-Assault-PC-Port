@@ -1,2 +1,3 @@
 #define IDR_CHAR_EMBLEM 201
 #define IDR_BALL_EMBLEM 202
+#define IDR_TITLE_LOGO 203

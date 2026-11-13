@@ -2,3 +2,4 @@
 101 ICON "branding/LauncherShip.ico"
 IDR_CHAR_EMBLEM RCDATA "branding/Char.png"
 IDR_BALL_EMBLEM RCDATA "branding/Ball.png"
+IDR_TITLE_LOGO RCDATA "branding/SeedDestiny.png"

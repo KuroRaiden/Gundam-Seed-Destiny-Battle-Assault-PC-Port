@@ -14,7 +14,6 @@
 #include "settings.h"
 #include "themes.h"
 #include "launcher-resource-ids.h"
-#include "title_logo.h"
 #include "portable_paths.h"
 #include "update.h"
 #include "ms_colors_ui.h"
@@ -57,8 +56,7 @@ struct App {
     sl::MsColorsUi colors;
     SDL_Renderer* renderer = nullptr;
     SDL_Texture *title_logo = nullptr, *theme_emblem = nullptr;
-    unsigned logo_width = 0, logo_height = 0;
-    std::string logo_source, applied_theme;
+    std::string applied_theme;
     std::filesystem::path folder;
     seed::InputDevices devices;
     seed::ControlBindings controls, saved_controls;
@@ -304,6 +302,19 @@ struct App {
     }
 };
 
+SDL_Surface* load_png_resource(int id) {
+    const auto module = GetModuleHandleW(nullptr);
+    const auto resource = FindResource(module, MAKEINTRESOURCE(id), RT_RCDATA);
+    if (!resource)
+        return nullptr;
+    const auto loaded = LoadResource(module, resource);
+    const auto* data = loaded ? LockResource(loaded) : nullptr;
+    if (!data)
+        return nullptr;
+    auto* stream = SDL_IOFromConstMem(data, SizeofResource(module, resource));
+    return stream ? SDL_LoadPNG_IO(stream, true) : nullptr;
+}
+
 void theme(App& app) {
     active_theme = sl::load_theme(app.folder, app.settings.theme);
     const auto& c = active_theme.colors;
@@ -323,16 +334,7 @@ void theme(App& app) {
                           (index == sl::EarthAllianceTheme ? "EarthAlliance.png" : "ZAFT.png");
         emblem = SDL_LoadPNG(sl::utf8(file.wstring()).c_str());
     } else if (index == sl::CharTheme || index == sl::BallTheme) {
-        const auto module = GetModuleHandleW(nullptr);
-        const auto emblem_id = index == sl::CharTheme ? IDR_CHAR_EMBLEM : IDR_BALL_EMBLEM;
-        const auto resource = FindResource(module, MAKEINTRESOURCE(emblem_id), RT_RCDATA);
-        if (resource) {
-            const auto loaded = LoadResource(module, resource);
-            if (const auto* data = loaded ? LockResource(loaded) : nullptr) {
-                if (auto* stream = SDL_IOFromConstMem(data, SizeofResource(module, resource)))
-                    emblem = SDL_LoadPNG_IO(stream, true);
-            }
-        }
+        emblem = load_png_resource(index == sl::CharTheme ? IDR_CHAR_EMBLEM : IDR_BALL_EMBLEM);
     }
     if (emblem) {
         // These flat marks were supplied against solid backdrops. Recover the
@@ -423,31 +425,6 @@ void theme(App& app) {
             s.Colors[ImGuiCol_TabDimmedSelectedOverline] = kAccent;
         s.Colors[ImGuiCol_TableHeaderBg] = c[sl::Frame];
         s.Colors[ImGuiCol_TableBorderStrong] = s.Colors[ImGuiCol_TableBorderLight] = c[sl::Border];
-    }
-}
-void refresh_title_logo(App& app) {
-    const auto source = app.settings.files[1].verified ? app.settings.files[1].path : std::string{};
-    if (source == app.logo_source)
-        return;
-    app.logo_source = source;
-    SDL_DestroyTexture(app.title_logo);
-    app.title_logo = nullptr;
-    if (source.empty())
-        return;
-    try {
-        const auto logo = sl::load_title_logo(std::filesystem::path(sl::wide(source)));
-        app.title_logo =
-            SDL_CreateTexture(app.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC,
-                              int(logo.width), int(logo.height));
-        if (!app.title_logo)
-            return;
-        SDL_UpdateTexture(app.title_logo, nullptr, logo.rgba.data(), int(logo.width * 4));
-        SDL_SetTextureBlendMode(app.title_logo, SDL_BLENDMODE_BLEND);
-        SDL_SetTextureScaleMode(app.title_logo, SDL_SCALEMODE_LINEAR);
-        app.logo_width = logo.width;
-        app.logo_height = logo.height;
-    } catch (const std::exception& error) {
-        std::fprintf(stderr, "launcher_logo: %s\n", error.what());
     }
 }
 void title(const char* heading, const char* caption) {
@@ -1033,7 +1010,6 @@ void updates_page(App& app) {
 void draw(App& app) {
     if (app.applied_theme != app.settings.theme)
         theme(app);
-    refresh_title_logo(app);
     app.colors.tick();
     const auto* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -1050,10 +1026,12 @@ void draw(App& app) {
         ImGui::TextColored(color, "%s", text);
     };
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 8);
-    if (app.title_logo) {
-        center_sidebar_item(184);
+    float logo_width = 0, logo_height = 0;
+    if (app.title_logo && SDL_GetTextureSize(app.title_logo, &logo_width, &logo_height)) {
+        constexpr float sidebar_logo_width = 184.f;
+        center_sidebar_item(sidebar_logo_width);
         ImGui::Image((ImTextureID)(intptr_t)app.title_logo,
-                     {184, 184.f * app.logo_height / app.logo_width});
+                     {sidebar_logo_width, sidebar_logo_width * logo_height / logo_width});
     } else {
         ImGui::PushFont(nullptr, 24);
         sidebar_text(kAccent, "SEED / PC");
@@ -1237,6 +1215,14 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         if (!renderer)
             throw std::runtime_error(SDL_GetError());
         app.renderer = renderer;
+        if (auto* logo = load_png_resource(IDR_TITLE_LOGO)) {
+            app.title_logo = SDL_CreateTextureFromSurface(renderer, logo);
+            SDL_DestroySurface(logo);
+            if (app.title_logo) {
+                SDL_SetTextureBlendMode(app.title_logo, SDL_BLENDMODE_BLEND);
+                SDL_SetTextureScaleMode(app.title_logo, SDL_SCALEMODE_LINEAR);
+            }
+        }
         SDL_SetRenderVSync(renderer, 1);
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();

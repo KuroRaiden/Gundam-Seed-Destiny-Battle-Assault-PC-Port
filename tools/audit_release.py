@@ -156,7 +156,11 @@ def audit_archive(path, forbidden_inputs=()):
         if present_themes != THEME_FILES:
             raise ValueError("Incomplete launcher themes")
         for name, value in THEME_HASHES.items():
-            if hashlib.sha256(members["Themes/" + name]).hexdigest() != value:
+            actual = hashlib.sha256(members["Themes/" + name]).hexdigest()
+            # Keep auditing portable builds from before the sidebar logo was embedded.
+            legacy_readme = (name == "README.txt" and
+                             actual == "923d1700d6ffe417a514ab695ab37c0b23a30d9963dbda4aa995453c80b6d46b")
+            if actual != value and not legacy_readme:
                 raise ValueError("Unapproved launcher theme file: " + name)
     branded = bool(icons)
     if distribution == "seedpc-runtime-only-v1" and branded:

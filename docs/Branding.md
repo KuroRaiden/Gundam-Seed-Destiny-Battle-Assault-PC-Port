@@ -30,11 +30,9 @@ files and modified icons even if their manifest hashes have been rewritten.
 The requested icons do not authorize packaging cartridge, BIOS, selector or
 color-preview data; those continue to come from the player's own files.
 
-The launcher sidebar decodes the original Japanese SEED Destiny title logo in
-memory after verifying the user's Japanese ROM. Group 2 resources 13, 14 and 15
-provide its 4bpp tiles, 30x20 tilemap and palette. The transparent logo is trimmed
-to its visible bounds. No ROM, title image or generated title cache is bundled
-or committed. Without a verified Japanese ROM, the text heading remains available.
+The launcher embeds the owner-supplied transparent SEED Destiny PNG as a
+resource in its executable. The same logo appears across all launcher themes
+as soon as the launcher opens.
 
 `Themes/` contains Default, Earth Alliance and ZAFT palettes and the two faction
 emblems supplied by the user. These separate assets are pinned by
@@ -42,7 +40,8 @@ emblems supplied by the user. These separate assets are pinned by
 assets. Choose a palette under **Play > Launcher theme**. The choice is saved in
 the existing launcher settings, and theme changes affect only the launcher.
 Earth Alliance uses the emblem's cyan/blue and green; ZAFT has white backgrounds
-with the emblem's red/blue accents.
+with the emblem's red/blue accents. Ball and Char palettes and their supplied
+emblems are built into the launcher.
 The in-game palette editor, technical overlay colors and snapshot background
 are independent of these themes. Updates preserve the theme preference and any
 extra personal theme files. Older updaters without support for `Themes/` require

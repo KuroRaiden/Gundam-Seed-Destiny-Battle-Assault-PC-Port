@@ -43,6 +43,8 @@ int main(int argc, char** argv) {
     options.diagnostic_replay_default = false;
     std::string us_rom, jp_rom, bios, save, join_code, import_output, replay_path, screen;
     int replay_scale = 3;
+    std::string live_match;
+    bool live_from_start = false;
     seed::ReplayLaunchOptions replay_launch;
     bool import_colors = false, import_stages = false, prepare_only = false;
     int jp_debug_port = 0;
@@ -51,6 +53,14 @@ int main(int argc, char** argv) {
     try {
         for (int i = 1; i < argc; ++i) {
             const std::string flag = argv[i];
+            if (flag == "--spectate-match" && i + 1 < argc) {
+                live_match = argv[++i];
+                continue;
+            }
+            if (flag == "--spectate-from-start") {
+                live_from_start = true;
+                continue;
+            }
             if (flag == "--watch-replay" && i + 1 < argc) {
                 replay_path = argv[++i];
                 continue;
@@ -151,6 +161,11 @@ int main(int argc, char** argv) {
         std::fprintf(
             stderr, "GBA color mode: %s\n",
             seed::kDisplayModeIds[seed::display_mode_index(std::getenv("GBARECOMP_SCREEN"))]);
+        if (!live_match.empty()) {
+            startup_phase = "match spectating";
+            return seed::watch_live_match(live_match, jp_rom, bios, replay_scale,
+                                          live_from_start, replay_launch.boxes);
+        }
         if (!replay_path.empty()) {
             startup_phase = "replay playback";
             return seed::watch_match_replay(std::filesystem::u8path(replay_path), jp_rom, bios,

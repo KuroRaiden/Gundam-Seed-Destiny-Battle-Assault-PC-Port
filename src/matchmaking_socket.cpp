@@ -35,7 +35,7 @@ struct Endpoint {
 Endpoint endpoint(const std::string& url) {
     // Production is pinned to our HTTPS service. Only exact loopback HTTP is
     // permitted for explicit test fixtures; no redirects or embedded secrets.
-    require(url == kMatchmakingUrl || url.starts_with("http://127.0.0.1:"),
+    require(url == kMatchmakingUrl || url == kSpectatingUrl || url.starts_with("http://127.0.0.1:"),
             "Unexpected matchmaking service address.");
     std::wstring wide(url.begin(), url.end());
     URL_COMPONENTS parts{};
@@ -48,7 +48,8 @@ Endpoint endpoint(const std::string& url) {
                     std::wstring(parts.lpszUrlPath, parts.dwUrlPathLength), parts.nPort,
                     parts.nScheme == INTERNET_SCHEME_HTTPS};
     require(!parts.dwUserNameLength && !parts.dwPasswordLength && !parts.dwExtraInfoLength &&
-                result.path == L"/v1/connect" && (result.secure || result.host == L"127.0.0.1"),
+                (result.path == L"/v1/connect" || result.path == L"/v1/spectate") &&
+                (result.secure || result.host == L"127.0.0.1"),
             "Invalid service address.");
     return result;
 }
@@ -64,6 +65,7 @@ struct MatchmakingSocket::Job {
     std::deque<Notice> notices;
     std::deque<std::string> outgoing, incoming;
     unsigned tracked_handles = 0;
+    unsigned pending_sends = 0;
     std::thread worker;
     explicit Job(Endpoint address)
         : worker([this, address = std::move(address)] { run(address); }) {}
@@ -229,6 +231,11 @@ struct MatchmakingSocket::Job {
                     }
                     const auto notice = wait();
                     if (notice.kind == WINHTTP_CALLBACK_STATUS_WRITE_COMPLETE) {
+                        {
+                            std::lock_guard lock(mutex);
+                            if (sending != "ping" && pending_sends) --pending_sends;
+                        }
+                        changed.notify_all();
                         writing = false;
                         sending.clear();
                     }
@@ -293,7 +300,15 @@ void MatchmakingSocket::send(std::string text) {
     std::lock_guard lock(job_->mutex);
     require(job_->outgoing.size() < 64, "Too many matchmaking requests.");
     job_->outgoing.push_back(std::move(text));
+    ++job_->pending_sends;
     job_->changed.notify_all();
+}
+bool MatchmakingSocket::flush(unsigned timeout_ms) {
+    if (!job_) return true;
+    std::unique_lock lock(job_->mutex);
+    job_->changed.wait_for(lock, std::chrono::milliseconds(timeout_ms),
+                          [&] { return job_->pending_sends == 0 || job_->finished; });
+    return job_->pending_sends == 0;
 }
 std::vector<std::string> MatchmakingSocket::take() {
     collect();

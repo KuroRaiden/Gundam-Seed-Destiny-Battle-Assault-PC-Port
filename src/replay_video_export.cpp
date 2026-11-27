@@ -8,6 +8,7 @@
 #include "fighter_outline.h"
 #include "frame_control.h"
 #include "color_lut.h"
+#include "windows_file_path.h"
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -19,7 +20,7 @@ void status(const ReplayVideoExportRequest& request, const char* phase, unsigned
             unsigned total) {
     if (!request.status || !*request.status)
         return;
-    const auto path = std::filesystem::u8path(request.status);
+    const auto path = windows_file_path(std::filesystem::u8path(request.status));
     auto pending = path;
     pending += ".pending";
     std::ofstream f(pending, std::ios::binary | std::ios::trunc);
@@ -49,9 +50,9 @@ ReplayPlaybackResult export_replay_video(gbarecomp::NativeFrameControl& machine,
     ReplayPlaybackResult result;
     if (!request.output || !*request.output)
         throw std::runtime_error("Choose an MP4 output path.");
-    const auto destination = std::filesystem::absolute(std::filesystem::u8path(request.output));
+    const auto destination = windows_file_path(std::filesystem::u8path(request.output));
     if (request.status && *request.status) {
-        const auto progress = std::filesystem::absolute(std::filesystem::u8path(request.status));
+        const auto progress = windows_file_path(std::filesystem::u8path(request.status));
         if (progress == destination ||
             (progress.extension() != L".json" && progress.extension() != L".log") ||
             std::filesystem::exists(progress))
@@ -62,8 +63,8 @@ ReplayPlaybackResult export_replay_video(gbarecomp::NativeFrameControl& machine,
             "MP4 output must be a new .mp4 file. Existing files are preserved.");
     std::filesystem::create_directories(destination.parent_path());
     const auto temporary = destination.parent_path() /
-                           (destination.stem().wstring() + L"-" +
-                            std::filesystem::path(replay_unique_id()).wstring() + L".partial.mp4");
+                           (L"export-" + std::filesystem::path(replay_unique_id()).wstring() +
+                            L".partial.mp4");
     struct Cleanup {
         std::filesystem::path path;
         ~Cleanup() {

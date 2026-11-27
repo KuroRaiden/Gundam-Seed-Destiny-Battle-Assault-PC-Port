@@ -1,0 +1,4 @@
+- Added live match spectating in the launcher's Replays viewer, with **Watch (Mid-fight)** and **Watch (From Start)** for tournament viewing.
+- Added a live match list with player names, mobile suits and viewer counts. Hosts can choose whether to share their matches. Spectators can join and leave during play, with a short delay and optional hitbox overlays.
+- Fixed replay MP4 export failing when the portable uses long folder paths or names containing special characters. Exports support native resolution, 720p and 1080p.
+- Added Ball and Char launcher themes with transparent emblems and the updated SEED Destiny logo.

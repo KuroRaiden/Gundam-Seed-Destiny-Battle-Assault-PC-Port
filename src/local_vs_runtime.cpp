@@ -365,6 +365,7 @@ int update_jp_selector(std::uint32_t, int, ArmCpuState* cpu) {
             OnlineCombatResult online_result;
             if (request.surface.online) {
                 request.connection = online_room.connection();
+                request.allow_spectators = online_lobby.allow_spectators;
                 request.online_result = &online_result;
                 for (unsigned p = 0; p < 2; ++p)
                     std::snprintf(request.player_names[p], sizeof(request.player_names[p]), "%s",

@@ -5,7 +5,9 @@
 #include <mfidl.h>
 #include <mfreadwrite.h>
 #include <wrl/client.h>
+#include <shlwapi.h>
 #include "mp4_writer.h"
+#include "windows_file_path.h"
 #include <algorithm>
 #include <array>
 #include <cstdio>
@@ -40,6 +42,7 @@ struct MediaApi {
     decltype(&MFCreateSample) sample = nullptr;
     decltype(&MFCreateMemoryBuffer) buffer = nullptr;
     decltype(&MFCreateSinkWriterFromURL) writer = nullptr;
+    decltype(&MFCreateMFByteStreamOnStream) stream = nullptr;
     bool com = false, started = false;
     MediaApi() {
         try {
@@ -53,6 +56,7 @@ struct MediaApi {
             sample = function<decltype(sample)>(plat, "MFCreateSample");
             buffer = function<decltype(buffer)>(plat, "MFCreateMemoryBuffer");
             writer = function<decltype(writer)>(rw, "MFCreateSinkWriterFromURL");
+            stream = function<decltype(stream)>(plat, "MFCreateMFByteStreamOnStream");
             const auto result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
             if (result != RPC_E_CHANGED_MODE) {
                 check(result, "Cannot initialize video encoding");
@@ -87,6 +91,8 @@ std::uint8_t byte(int n) {
 } // namespace
 struct Mp4Writer::Impl {
     MediaApi api; // Lives longer than all the COM objects below.
+    ComPtr<IStream> file;
+    ComPtr<IMFByteStream> stream;
     ComPtr<IMFSinkWriter> writer;
     DWORD video_stream = 0, audio_stream = 0;
     unsigned width, height, source_rate = 0;
@@ -103,7 +109,16 @@ struct Mp4Writer::Impl {
         check(api.attributes(&attr, 2), "Cannot configure MP4 encoder");
         check(attr->SetUINT32(MF_SINK_WRITER_DISABLE_THROTTLING, TRUE),
               "Cannot configure export speed");
-        check(api.writer(path.c_str(), nullptr, attr.Get(), &writer), "Cannot create MP4 file");
+        // Open a Windows file, then pass its stream to Media Foundation. The URL
+        // resolver treats '#' and '%' as URL syntax and rejects long paths.
+        const auto filename = windows_file_path(path);
+        check(SHCreateStreamOnFileEx(filename.c_str(), STGM_READWRITE | STGM_SHARE_EXCLUSIVE,
+                                     FILE_ATTRIBUTE_NORMAL, TRUE, nullptr, &file),
+              "Cannot create MP4 output file");
+        check(api.stream(file.Get(), &stream), "Cannot open MP4 output stream");
+        check(attr->SetGUID(MF_TRANSCODE_CONTAINERTYPE, MFTranscodeContainerType_MPEG4),
+              "Cannot configure MP4 container");
+        check(api.writer(nullptr, stream.Get(), attr.Get(), &writer), "Cannot create MP4 encoder");
         ComPtr<IMFMediaType> output, input;
         check(api.type(&output), "Cannot create H.264 format");
         check(output->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video), "Cannot configure video");

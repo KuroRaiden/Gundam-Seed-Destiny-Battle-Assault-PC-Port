@@ -2,6 +2,7 @@
 #include "jp_combat_runtime.h"
 #include "match_replay.h"
 #include "gekkonet.h"
+#include "live_matches.h"
 #include <memory>
 namespace seed {
 class OnlineReplayRecording {
@@ -9,11 +10,14 @@ class OnlineReplayRecording {
     OnlineReplayRecording(GekkoSession* session, const JpCombatRequest& request, std::uint32_t crc);
     ~OnlineReplayRecording();
     void finish(unsigned expected_frames, std::uint32_t final_crc, bool complete) noexcept;
+    void tick() noexcept;
 
   private:
     GekkoSession* session_ = nullptr;
     MatchReplay replay_;
     std::filesystem::path directory_;
+    std::unique_ptr<LiveMatchPublisher> live_;
+    std::chrono::steady_clock::time_point last_live_{};
 };
 std::unique_ptr<OnlineReplayRecording> begin_online_recording(GekkoSession* session,
                                                               const JpCombatRequest& request,

@@ -42,9 +42,20 @@ int main(int argc, char** argv) {
                 continue;
             const auto path = inspect ? std::filesystem::absolute(argv[2])
                                       : root / (std::to_string(height) + "p.mp4");
+            auto encoded = path;
+            if (!inspect) {
+                // Reproduce portable folders with URL punctuation and MAX_PATH
+                // lengths. Decode a copy through the legacy URL-based reader.
+                auto folder =
+                    std::filesystem::path(L"\\\\?\\" + root.wstring()) / L"Export #1 100% 日本語";
+                while (folder.wstring().size() < 280)
+                    folder /= "long-portable-folder";
+                std::filesystem::create_directories(folder);
+                encoded = folder / path.filename();
+            }
             unsigned count = height == 160 ? 120 : 12;
             if (!inspect) {
-                seed::Mp4Writer writer(path,
+                seed::Mp4Writer writer(encoded,
                                        height == 160   ? 240
                                        : height == 720 ? 1280
                                                        : 1920,
@@ -65,6 +76,9 @@ int main(int argc, char** argv) {
                 }
                 writer.finish();
             }
+            if (!inspect)
+                std::filesystem::copy_file(encoded, path,
+                                           std::filesystem::copy_options::overwrite_existing);
             hr(CoInitializeEx(nullptr, COINIT_MULTITHREADED), "COM");
             auto plat = LoadLibraryW(L"mfplat.dll"), rw = LoadLibraryW(L"mfreadwrite.dll");
             require(plat && rw, "Media Foundation decoder missing");

@@ -19,6 +19,7 @@
 #include "ms_colors_ui.h"
 #include "match_replay.h"
 #include "replay_export.h"
+#include "live_matches.h"
 #include "move_list.h"
 #include "../src/controller_db.h"
 #include "../src/brand_icons.h"
@@ -50,6 +51,10 @@ struct App {
     bool update_exit = false;
     sl::GameProcess game, preparation;
     sl::ReplayExportJob replay_export;
+    seed::LiveMatchesClient live_matches;
+    bool live_tab = false, watching_live = false;
+    unsigned live_page = 0;
+    std::string selected_live;
     bool exit_after_export = false, replay_boxes = false;
     int takeover_frame = 0, export_resolution = 1;
     bool preparation_failed = false;
@@ -163,6 +168,43 @@ struct App {
         watching_replay = true;
         error = false;
         message = "Watching replay";
+        SDL_HideWindow(window);
+        hidden = true;
+    }
+    void watch_live(bool from_start) {
+        if (selected_live.empty() || game.running() || preparation.running() || colors.busy() ||
+            replay_export.running())
+            return;
+        for (unsigned p : {1u, 2u}) {
+            settings.files[p].verify(folder);
+            if (!settings.files[p].verified) {
+                error = true;
+                message = "Select and verify the JP cartridge and BIOS in Game files first.";
+                return;
+            }
+        }
+        if (controls != saved_controls && !save_controls())
+            return;
+        error = false;
+        save();
+        if (error)
+            return;
+        std::vector<std::wstring> args{L"--spectate-match", sl::wide(selected_live),
+                                       L"--jp-rom",         sl::wide(settings.files[1].path),
+                                       L"--bios",           sl::wide(settings.files[2].path),
+                                       L"--scale",          std::to_wstring(settings.scale)};
+        if (from_start)
+            args.push_back(L"--spectate-from-start");
+        if (replay_boxes)
+            args.push_back(L"--replay-boxes");
+        if (!game.start(folder / "GundamSeedRecomp.exe", args, folder / "Logs/last-replay.log",
+                        message)) {
+            error = true;
+            return;
+        }
+        watching_replay = watching_live = true;
+        message = "Connecting to live match...";
+        live_matches.close();
         SDL_HideWindow(window);
         hidden = true;
     }
@@ -452,8 +494,94 @@ void primary_end() {
     ImGui::PopStyleColor(4);
 }
 
+void live_matches_page(App& app) {
+    app.live_matches.tick();
+    if (ImGui::Button("Refresh matches")) {
+        app.selected_live.clear();
+        app.live_matches.browse(app.live_page);
+    }
+    ImGui::SameLine();
+    ImGui::TextColored(kMuted, "%s", app.live_matches.status().c_str());
+    if (ImGui::BeginTable("live-matches", 4,
+                          ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH |
+                              ImGuiTableFlags_ScrollY,
+                          ImVec2(0, 260))) {
+        ImGui::TableSetupColumn("Players", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Mobile suits", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 65);
+        ImGui::TableSetupColumn("Viewers", ImGuiTableColumnFlags_WidthFixed, 70);
+        ImGui::TableHeadersRow();
+        for (const auto& match : app.live_matches.matches()) {
+            ImGui::PushID(match.id.c_str());
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            if (ImGui::Selectable((match.names[0] + " vs " + match.names[1]).c_str(),
+                                  match.id == app.selected_live,
+                                  ImGuiSelectableFlags_SpanAllColumns))
+                app.selected_live = match.id;
+            ImGui::TableNextColumn();
+            const auto* p1 = seed::fighter_moves(match.fighters[0]);
+            const auto* p2 = seed::fighter_moves(match.fighters[1]);
+            ImGui::TextWrapped("%s / %s", p1 ? p1->name.data() : "Unknown",
+                               p2 ? p2->name.data() : "Unknown");
+            ImGui::TableNextColumn();
+            ImGui::Text("%u:%02u", match.frames / 3600, match.frames / 60 % 60);
+            ImGui::TableNextColumn();
+            ImGui::Text("%u", match.viewers);
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
+    if (app.live_page) {
+        if (ImGui::Button("Previous page")) {
+            --app.live_page;
+            app.selected_live.clear();
+            app.live_matches.browse(app.live_page);
+        }
+        ImGui::SameLine();
+    }
+    if (app.live_matches.more() && ImGui::Button("Next page")) {
+        ++app.live_page;
+        app.selected_live.clear();
+        app.live_matches.browse(app.live_page);
+    }
+    ImGui::BeginDisabled(app.selected_live.empty() || app.game.running() ||
+                         app.preparation.running() || app.colors.busy() ||
+                         app.replay_export.running());
+    if (ImGui::Button("Watch (Mid-fight)", ImVec2(215, 46)))
+        app.watch_live(false);
+    ImGui::SameLine();
+    if (ImGui::Button("Watch (From Start)", ImVec2(215, 46)))
+        app.watch_live(true);
+    ImGui::EndDisabled();
+    ImGui::Checkbox("Show hitboxes / hurtboxes", &app.replay_boxes);
+    ImGui::TextWrapped("Mid-fight catches up to the live action with a short delay. From Start "
+                       "plays from the match opening.");
+    ImGui::TextWrapped("F6 toggles hitboxes. Esc returns to the launcher. The players keep playing "
+                       "while you join or leave.");
+    if (ImGui::Button("Open viewer log"))
+        sl::open_file(app.folder / "Logs/last-replay.log");
+    if (!app.message.empty())
+        ImGui::TextWrapped("%s", app.message.c_str());
+}
 void replays_page(App& app) {
-    title("Replays", "Local VS and online matches are recorded automatically.");
+    title("Replays", "Watch a recording or spectate a live match.");
+    if (ImGui::Button("Recorded replays")) {
+        app.live_tab = false;
+        app.live_matches.close();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Live matches")) {
+        app.live_tab = true;
+        app.live_page = 0;
+        app.selected_live.clear();
+        app.live_matches.browse();
+    }
+    ImGui::Spacing();
+    if (app.live_tab) {
+        live_matches_page(app);
+        return;
+    }
     if (!app.replays_loaded)
         app.refresh_replays();
     if (ImGui::Button("Refresh"))
@@ -1187,6 +1315,13 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             app.page = Page::Updates;
         else if (page == "replays")
             app.page = Page::Replays;
+        else if (page == "live") {
+            app.page = Page::Replays;
+            app.live_tab = true;
+            if (const auto* fixture = std::getenv("SEEDPC_SPECTATOR_FIXTURE"))
+                app.live_matches.fixture(fixture);
+            app.live_matches.browse();
+        }
         if (page.empty() && std::all_of(app.settings.files.begin(), app.settings.files.end(),
                                         [](const auto& file) { return file.path.empty(); }))
             app.page = Page::Files;
@@ -1272,6 +1407,8 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
             }
             if (const auto code = app.game.poll()) {
                 const bool replay = app.watching_replay;
+                const bool live = app.watching_live;
+                app.watching_live = false;
                 app.watching_replay = false;
                 app.replays_loaded = false;
                 app.preparation_failed = false;
@@ -1287,6 +1424,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
                     app.error ? replay ? "Replay playback stopped. Open the replay log for details."
                                        : "The game closed unexpectedly (code " +
                                              std::to_string(*code) + "). Check the game log."
+                    : live    ? "Spectator session closed."
                     : replay  ? "Replay closed."
                               : "Game closed.";
             }

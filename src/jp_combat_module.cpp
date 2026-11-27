@@ -1,6 +1,7 @@
 #include "jp_combat_runtime.h"
 #include "jp_online.h"
 #include "jp_replay_runtime.h"
+#include "jp_live_runtime.h"
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -33,10 +34,15 @@ extern "C" __declspec(dllexport) int SeedRunJpCombat(const seed::JpCombatRequest
         return -1;
     if (request->replay_takeover_player >= 0 && !request->surface.window)
         return -1;
+    if (request->live_replay && (!request->live_replay->poll || request->surface.online ||
+        request->replay_path || request->video_export || request->mode != seed::JpCombatMode::Versus))
+        return -1;
     try {
         gbarecomp::RunOptions options;
         seed::configure_jp_combat(options, *request);
-        if (request->surface.online)
+        if (request->live_replay)
+            seed::configure_jp_live(options, *request);
+        else if (request->surface.online)
             seed::configure_jp_online(options, *request);
         else if (request->mode == seed::JpCombatMode::Versus && !request->debug_port)
             seed::configure_jp_replays(options, *request);
@@ -68,7 +74,7 @@ extern "C" __declspec(dllexport) int SeedRunJpCombat(const seed::JpCombatRequest
             args.push_back(std::to_string(request->debug_port));
         }
         if (!request->surface.window && !request->debug_port && !request->qualification_frames &&
-            !request->qualification_end_frame && !request->replay_path)
+            !request->qualification_end_frame && !request->replay_path && !request->live_replay)
             return -2;
         std::vector<char*> argv;
         for (auto& arg : args)

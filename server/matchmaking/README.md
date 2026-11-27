@@ -96,3 +96,22 @@ credentials. See [setup, Lacus avatar and delivery limits](../../docs/Discord-Qu
 Run `node --test core.test.mjs discord.test.mjs` to verify queue and webhook
 behavior without sending real messages. Missing webhook configuration leaves
 matchmaking operational and notifications disabled.
+# Live match spectating
+
+`/v1/spectate` uses a separate `live-matches-v1` durable instance under the existing
+binding. The host streams GekkoNet-confirmed input chunks and the existing replay
+metadata. No machine snapshots or game images are streamed. A viewer can pull the
+input history from frame zero and either catch up locally or play at normal speed.
+The Quick Match object and player-to-player rollback transport operate independently.
+
+Each publisher owns its stream through its WebSocket connection. Chunks are
+ordered, bounded to 120 frames, and checked for valid GBA button masks. Headers
+use the checksummed replay format and are fully validated by the viewer. Match
+and chunk data survive hibernation. Finished matches stay available to existing
+viewers, then expire after ten minutes. Stale publishers stop appearing in the list.
+
+`node --test spectating.test.mjs` checks history, ownership, input validation,
+viewer departure, and cleanup. Run `tests/spectating_integration.mjs` from the
+repository root against a local Wrangler instance to exercise real native online
+players and both spectator modes. Pass the Release directory, JP ROM, BIOS and
+a new scratch directory on E:. Its default service is `http://127.0.0.1:8794`.

@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "replay_export.h"
 #include "match_replay.h"
+#include "windows_file_path.h"
 #include <algorithm>
 #include <cstdio>
 #include <fstream>
@@ -30,9 +31,8 @@ bool ReplayExportJob::start(const std::filesystem::path& root, const std::filesy
         log_ = root / "Logs/last-replay-export.log";
         state_ = {};
         cancel_requested_ = false;
-        state_.output =
-            root / "replays/exports" /
-            (replay.stem().wstring() + L"-" + std::to_wstring(height) + L"p-" + wide(id) + L".mp4");
+        state_.output = root / "replays/exports" /
+                        (L"replay-" + wide(id) + L"-" + std::to_wstring(height) + L"p.mp4");
         std::vector<std::wstring> args{L"--watch-replay",  replay.wstring(),
                                        L"--jp-rom",        jp.wstring(),
                                        L"--bios",          bios.wstring(),
@@ -92,7 +92,8 @@ void ReplayExportJob::tick() {
     }
     if (const auto code = process_.poll()) {
         std::error_code file_error;
-        if (*code == 0 && std::filesystem::is_regular_file(state_.output, file_error)) {
+        if (*code == 0 &&
+            std::filesystem::is_regular_file(windows_file_path(state_.output), file_error)) {
             state_.phase = ExportPhase::Done;
             state_.progress = 1;
             state_.message = "MP4 export complete.";

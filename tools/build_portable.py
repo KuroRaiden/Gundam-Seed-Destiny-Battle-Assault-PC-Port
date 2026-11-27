@@ -152,6 +152,9 @@ the old built-in updater cannot read the new folder layout.
 F1 opens the movelist with Kenney direction/button glyphs and Berserker types.
 The reference uses simplified controls; F1 pauses offline while online play continues.
 Hold keyboard Tab for turbo; controllers never trigger turbo.
+Replays > Live matches lists shared online matches. Select a match and choose
+Watch (Mid-fight) or Watch (From Start). Online hosts can toggle sharing.
+Mid-fight viewing uses a short delay. F6 toggles collision boxes; Esc returns.
 Local VS and online matches save automatically in replays/. Open Replays in the
 launcher to watch them. Space pauses playback, Tab fast-forwards, and Esc exits.
 Recordings require the same game build and BIOS. Training is not recorded.

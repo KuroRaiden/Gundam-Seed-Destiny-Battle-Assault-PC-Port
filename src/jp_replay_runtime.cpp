@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include <stdexcept>
 #include <thread>
 
@@ -97,6 +98,28 @@ std::uint32_t state_crc(gbarecomp::NativeFrameControl& machine) {
     std::string error;
     check(machine.save(state, error), error);
     return SDL_crc32(0, state.data(), state.size());
+}
+std::vector<std::array<std::uint16_t, 2>> recorded_inputs(const unsigned char* bytes, unsigned size) {
+    if (!bytes || !size) return {};
+    GekkoSession* decoder = nullptr;
+    check(gekko_create(&decoder, GekkoReplaySession), "Cannot decode confirmed replay inputs.");
+    struct Owner { GekkoSession*& session; ~Owner() { gekko_destroy(&session); } } owner{decoder};
+    check(gekko_load_replay(decoder, bytes, size), "Cannot decode confirmed replay inputs.");
+    std::vector<std::array<std::uint16_t, 2>> inputs;
+    bool finished = false;
+    while (!finished && inputs.size() < kMaxReplayFrames) {
+        int count = 0;
+        auto** events = gekko_update_session(decoder, &count);
+        for (int i = 0; i < count; ++i) {
+            check(events[i]->type == GekkoAdvanceEvent, "Replay recording unexpectedly contains machine state.");
+            const auto* input = reinterpret_cast<const std::uint16_t*>(events[i]->data.adv.inputs);
+            inputs.push_back({input[0], input[1]});
+        }
+        auto** status = gekko_session_events(decoder, &count);
+        for (int i = 0; i < count; ++i) finished |= status[i]->type == GekkoReplayFinished;
+        check(count || !inputs.empty(), "Empty confirmed replay recording.");
+    }
+    return inputs;
 }
 int drive(gbarecomp::NativeFrameControl& machine) {
     ReplayPlaybackResult result;
@@ -403,6 +426,31 @@ OnlineReplayRecording::OnlineReplayRecording(GekkoSession* session, const JpComb
     : replay_(metadata(request, crc)), directory_(recording_folder(request)) {
     check(gekko_start_recording(session, false, true), "Cannot record confirmed match inputs.");
     session_ = session;
+    if (request.allow_spectators && request.connection.seat == 0 &&
+        ((!request.qualification_frames && !request.qualification_end_frame) ||
+         std::getenv("SEEDPC_SPECTATOR_FIXTURE"))) {
+        try {
+            live_ = std::make_unique<LiveMatchPublisher>(replay_);
+        } catch (const std::exception& error) {
+            std::fprintf(stderr, "spectator_publish_unavailable: %s\n", error.what());
+        }
+    }
+}
+void OnlineReplayRecording::tick() noexcept {
+    if (!session_ || !live_) return;
+    live_->tick();
+    const auto now = std::chrono::steady_clock::now();
+    if (live_->failed() || now - last_live_ < std::chrono::seconds(2)) return;
+    last_live_ = now;
+    try {
+        unsigned size = 0;
+        const auto* bytes = gekko_peek_recording(session_, &size);
+        const auto inputs = recorded_inputs(bytes, size);
+        live_->append(inputs);
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "spectator_publish_unavailable: %s\n", error.what());
+        live_.reset();
+    }
 }
 OnlineReplayRecording::~OnlineReplayRecording() {
     finish(0, 0, false);
@@ -418,34 +466,12 @@ void OnlineReplayRecording::finish(unsigned expected_frames, std::uint32_t final
         const auto* bytes = gekko_stop_recording(session, &size);
         if (!bytes || !size)
             return;
-        // Decode only the trusted blob produced by this recording session.
-        // Files supplied by users use our bounded input-only parser instead.
-        GekkoSession* decoder = nullptr;
-        check(gekko_create(&decoder, GekkoReplaySession), "Cannot finish the replay recording.");
-        struct Owner {
-            GekkoSession*& s;
-            ~Owner() {
-                gekko_destroy(&s);
-            }
-        } owner{decoder};
-        check(gekko_load_replay(decoder, bytes, size), "Cannot decode confirmed replay inputs.");
-        bool finished = false;
-        while (!finished && replay_.inputs.size() < kMaxReplayFrames) {
-            int count = 0;
-            auto** events = gekko_update_session(decoder, &count);
-            for (int i = 0; i < count; ++i) {
-                check(events[i]->type == GekkoAdvanceEvent,
-                      "Replay recording unexpectedly contains machine state.");
-                const auto* input =
-                    reinterpret_cast<const std::uint16_t*>(events[i]->data.adv.inputs);
-                replay_.inputs.push_back({input[0], input[1]});
-            }
-            auto** status = gekko_session_events(decoder, &count);
-            for (int i = 0; i < count; ++i)
-                finished |= status[i]->type == GekkoReplayFinished;
-        }
-        replay_.complete = complete && finished && replay_.inputs.size() == expected_frames;
+        replay_.inputs = recorded_inputs(bytes, size);
+        replay_.complete = complete && replay_.inputs.size() == expected_frames;
         replay_.final_crc = replay_.complete ? final_crc : 0;
+        if (live_) {
+            live_->append(replay_.inputs, true, replay_.complete, replay_.final_crc);
+        }
         write_recording(directory_, replay_);
     } catch (const std::exception& error) {
         std::fprintf(stderr, "replay_save_failed: %s\n", error.what());

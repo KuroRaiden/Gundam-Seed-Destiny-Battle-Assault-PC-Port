@@ -3,6 +3,7 @@
 #include <windows.h>
 #include "replay_export.h"
 #include "match_replay.h"
+#include "windows_file_path.h"
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -61,7 +62,7 @@ int main(int argc, char** argv) {
         require(job.start(root, replay, argv[3], argv[4], 160, false, error), error.c_str());
         finish(false, true);
         require(job.state().phase == seed::launcher::ExportPhase::Done, "Launcher MP4 job failed");
-        require(progress && std::filesystem::file_size(job.state().output) > 4096,
+        require(progress && std::filesystem::file_size(seed::windows_file_path(job.state().output)) > 4096,
                 "No live progress or MP4 data");
         std::ifstream log(root / "Logs/last-replay-export.log");
         const std::string text{std::istreambuf_iterator<char>(log),
@@ -80,7 +81,7 @@ int main(int argc, char** argv) {
         for (const auto& file :
              std::filesystem::directory_iterator(job.state().output.parent_path()))
             require(
-                !file.path().filename().wstring().starts_with(job.state().output.stem().wstring()),
+                !file.path().filename().wstring().ends_with(L".partial.mp4"),
                 "Cancel left a partial MP4");
         require(seed::replay_file_hash(replay) == hash, "MP4 export modified its recording");
         std::cout

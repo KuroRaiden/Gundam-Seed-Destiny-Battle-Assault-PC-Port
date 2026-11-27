@@ -362,6 +362,7 @@ int drive(gbarecomp::NativeFrameControl& machine) {
             }
             session_events();
             stalled_ticks = advanced ? 0 : stalled_ticks + 1;
+            if (recording) recording->tick();
             if (target && next == target) {
                 require(machine.save(state, error), error);
                 result.final_crc = SDL_crc32(0, state.data(), state.size());

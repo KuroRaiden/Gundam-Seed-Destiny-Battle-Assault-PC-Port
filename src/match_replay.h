@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <string>
 #include <string_view>
+#include <span>
 #include <vector>
 
 namespace seed {
@@ -26,6 +27,8 @@ struct MatchReplay {
 bool replay_build_compatible(const MatchReplay& replay, std::string_view current_combat_hash);
 // A bounded, checksummed input-only format. No machine snapshots or file paths.
 MatchReplay read_match_replay(const std::filesystem::path& file);
+MatchReplay decode_match_replay(std::span<const std::uint8_t> bytes);
+std::vector<std::uint8_t> encode_match_replay(const MatchReplay& replay);
 std::filesystem::path save_match_replay(const std::filesystem::path& folder,
                                         const MatchReplay& replay);
 std::string replay_file_hash(const std::filesystem::path& file);

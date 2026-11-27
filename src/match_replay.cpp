@@ -107,8 +107,12 @@ bool replay_build_compatible(const MatchReplay& replay, std::string_view current
     // Future versions must qualify compatibility again before extending this list.
     const std::string_view version = replay_build_version();
     if (current_combat_hash.size() != 64 ||
-        (version != "0.1.8" && version != "0.1.9" && version != "0.1.10" && version != "0.1.11"))
+        (version != "0.1.8" && version != "0.1.9" && version != "0.1.10" && version != "0.1.11" &&
+         version != "0.1.12"))
         return false;
+    if ((version == "0.1.11" || version == "0.1.12") && replay.build_version == "0.1.11")
+        return replay.combat_hash ==
+               "7d406526af5cc4c0b41569ec808cf8753d5d49701f9176fa78e31acb74f7db24";
     if (version != "0.1.8" && version != "0.1.9" && replay.build_version == "0.1.10")
         return replay.combat_hash ==
                    "7c0f1bba61ddedb894dffb28b098f802b64bd01eda8587aacad05a7364f2542b" ||
@@ -187,6 +191,10 @@ MatchReplay read_match_replay(const std::filesystem::path& file) {
     input.seekg(0);
     input.read(reinterpret_cast<char*>(bytes.data()), size);
     check(bool(input), "Cannot read this replay completely.");
+    return decode_match_replay(bytes);
+}
+MatchReplay decode_match_replay(std::span<const std::uint8_t> bytes) {
+    check(bytes.size() >= 32 && bytes.size() <= kMaxBytes, "Replay has an invalid size.");
     Reader footer{std::span(bytes).last(4)};
     check(SDL_crc32(0, bytes.data(), bytes.size() - 4) == footer.number(4),
           "Replay is damaged (file checksum mismatch).");
@@ -223,10 +231,8 @@ MatchReplay read_match_replay(const std::filesystem::path& file) {
     validate(replay);
     return replay;
 }
-std::filesystem::path save_match_replay(const std::filesystem::path& folder,
-                                        const MatchReplay& replay) {
+std::vector<std::uint8_t> encode_match_replay(const MatchReplay& replay) {
     validate(replay);
-    require_plain_folder(folder);
     Writer writer;
     writer.number(0x314c505244454553ull, 8);
     writer.number(kSchema, 4);
@@ -255,13 +261,19 @@ std::filesystem::path save_match_replay(const std::filesystem::path& folder,
             writer.number(input, 2);
     const auto crc = SDL_crc32(0, writer.data.data(), writer.data.size());
     writer.number(crc, 4);
+    return std::move(writer.data);
+}
+std::filesystem::path save_match_replay(const std::filesystem::path& folder,
+                                        const MatchReplay& replay) {
+    const auto bytes = encode_match_replay(replay);
+    require_plain_folder(folder);
     const auto file =
         folder / (std::to_string(replay.recorded_at) + "-" + replay_unique_id() + ".seedreplay");
     auto pending = file;
     pending += ".pending";
     try {
         std::ofstream output(pending, std::ios::binary | std::ios::trunc);
-        output.write(reinterpret_cast<const char*>(writer.data.data()), writer.data.size());
+        output.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         output.close();
         check(bool(output), "Could not write the replay. Check free disk space.");
         std::filesystem::rename(pending, file);

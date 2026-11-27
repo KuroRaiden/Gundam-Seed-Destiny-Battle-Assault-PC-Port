@@ -7,14 +7,17 @@
 #include "live_controls.h"
 #include "brand_icons.h"
 #include "controller_db.h"
+#include "live_matches.h"
 #include <algorithm>
 #include <cstdio>
 #include <stdexcept>
+#include <thread>
 
 namespace seed {
-int watch_match_replay(const std::filesystem::path& file, const std::string& rom,
-                       const std::string& bios, int scale, const ReplayLaunchOptions& launch) {
-    const auto replay = read_match_replay(file);
+namespace {
+int run_viewer(const MatchReplay& replay, const std::filesystem::path& file, const std::string& rom,
+               const std::string& bios, int scale, const ReplayLaunchOptions& launch,
+               LiveMatchesClient* live = nullptr, bool from_start = false) {
     const auto library = combat_library_path();
     if (!replay_build_compatible(replay, replay_file_hash(library)))
         throw std::runtime_error("This replay needs its original game build: " +
@@ -65,16 +68,45 @@ int watch_match_replay(const std::filesystem::path& file, const std::string& rom
         throw std::runtime_error(
             "Could not load the replay battle system. Extract the complete build.");
     JpCombatRequest request;
-    const auto playback_file = file.string(), save = (root / "replay-session.sav").string();
+    const auto file_utf8 = file.u8string(), save_utf8 = (root / "replay-session.sav").u8string();
+    const std::string playback_file(file_utf8.begin(), file_utf8.end()),
+        save(save_utf8.begin(), save_utf8.end());
     request.rom = rom.c_str();
     request.bios = bios.c_str();
     request.save = save.c_str();
-    request.replay_path = playback_file.c_str();
+    request.replay_path = live ? nullptr : playback_file.c_str();
     request.stage = replay.stage;
     request.surface = {owner.window, owner.renderer, owner.window ? &controls : nullptr, false};
     request.replay_takeover_player = launch.takeover_player;
     request.replay_takeover_frame = launch.takeover_frame;
     request.replay_boxes = launch.boxes;
+    LiveReplaySource source;
+    if (live) {
+        source.context = live;
+        source.initial_crc = replay.initial_crc;
+        std::copy(replay.initial_timing.begin(), replay.initial_timing.end(),
+                  source.initial_timing);
+        source.catch_up = !from_start;
+        source.join_frame = live->join_frame();
+        source.poll = [](void* context, unsigned frame, LiveReplayFrame* out) {
+            auto& client = *static_cast<LiveMatchesClient*>(context);
+            client.tick();
+            if (client.failed()) {
+                std::snprintf(out->error, sizeof(out->error), "%s", client.status().c_str());
+                return;
+            }
+            const auto& replay = *client.replay();
+            out->available = unsigned(replay.inputs.size());
+            if (frame < replay.inputs.size()) {
+                out->inputs[0] = replay.inputs[frame][0];
+                out->inputs[1] = replay.inputs[frame][1];
+            }
+            out->ended = client.ended();
+            out->complete = replay.complete;
+            out->final_crc = replay.final_crc;
+        };
+        request.live_replay = &source;
+    }
     ReplayVideoExportRequest video;
     if (!launch.mp4.empty()) {
         video.output = launch.mp4.c_str();
@@ -102,5 +134,29 @@ int watch_match_replay(const std::filesystem::path& file, const std::string& rom
         throw std::runtime_error(*result.message ? result.message
                                                  : "Replay playback failed. Check the replay log.");
     return !launch.mp4.empty() && !result.verified ? 2 : 0;
+}
+} // namespace
+int watch_match_replay(const std::filesystem::path& file, const std::string& rom,
+                       const std::string& bios, int scale, const ReplayLaunchOptions& launch) {
+    return run_viewer(read_match_replay(file), file, rom, bios, scale, launch);
+}
+int watch_live_match(const std::string& id, const std::string& rom, const std::string& bios,
+                     int scale, bool from_start, bool boxes) {
+    LiveMatchesClient client;
+    if (const auto* fixture = std::getenv("SEEDPC_SPECTATOR_FIXTURE"))
+        client.fixture(fixture);
+    client.watch(id);
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
+    while (!client.failed() && (!client.replay() || client.replay()->inputs.empty())) {
+        client.tick();
+        if (std::chrono::steady_clock::now() > deadline)
+            throw std::runtime_error("Live match timed out. Refresh the match list.");
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+    if (client.failed())
+        throw std::runtime_error(client.status());
+    ReplayLaunchOptions options;
+    options.boxes = boxes;
+    return run_viewer(*client.replay(), {}, rom, bios, scale, options, &client, from_start);
 }
 } // namespace seed

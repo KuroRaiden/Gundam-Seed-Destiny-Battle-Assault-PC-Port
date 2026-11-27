@@ -1,5 +1,20 @@
 # Match replays
 
+Open **Replays > Live matches** to browse shared online matches. The list refreshes
+automatically and shows the players, mobile suits, elapsed time and viewer count.
+Select a match and choose **Watch (Mid-fight)** to catch up to the current action,
+or **Watch (From Start)** to watch its opening at normal speed. Mid-fight viewing
+buffers roughly three seconds of confirmed inputs. Both modes reconstruct the
+battle locally, including custom palettes. F6 toggles hitboxes and Esc returns
+to the launcher. The viewer checks the game build, BIOS and starting state before
+playback, and verifies the final state of a completed match.
+
+The host controls sharing through **Share hosted matches in the spectator viewer**
+on Online VS. Each rematch appears as a separate match. A viewer joining or leaving
+does not pause the players or join their rollback session. The service keeps the
+input history for late joins, including From Start viewers. Finished histories
+expire after ten minutes when there are no connected viewers.
+
 Playback progress, pause status and controls appear in the native window title;
 no replay status strip covers the game HUD. These replay tools also accept
 recordings from the original 0.1.8 release. BIOS and initial/final machine-state
@@ -37,6 +52,8 @@ Media Feature Pack for this feature. Video timestamps follow the native GBA
 clock, and audio is resampled to 48 kHz on the same timeline. Complete recordings
 must reproduce their final machine checksum before the finished MP4 is saved.
 An MP4 is a video; keep the `.seedreplay` file for interactive takeover.
+The encoder opens the destination as a Windows file stream so portable folders
+with long paths, non-ASCII text, `#` or `%` can export correctly.
 
 Developer CLI: `GundamSeedRecomp.exe --watch-replay RECORDING --jp-rom JP_ROM
 --bios BIOS --export-mp4 NEW_FILE.mp4 --export-height 720`. Add `--replay-boxes`

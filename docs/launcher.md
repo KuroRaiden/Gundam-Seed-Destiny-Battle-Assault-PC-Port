@@ -1,5 +1,9 @@
 # Native launcher
 
+**Replays > Live matches** lists shared online battles. Select a match and choose
+**Watch (Mid-fight)** or **Watch (From Start)**. Recorded replays, takeover and MP4
+export remain available under **Recorded replays**.
+
 Choose **Default**, **Earth Alliance**, **ZAFT**, **Ball**, or **Char** under
 **Play > Launcher theme**. Ball uses grey-blue panels, green selection, and red
 buttons, with the supplied Ball illustration. Char uses gold trim and deep red

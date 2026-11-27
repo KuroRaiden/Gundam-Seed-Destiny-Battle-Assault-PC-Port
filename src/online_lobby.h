@@ -14,6 +14,7 @@ struct OnlineLobbyState {
     std::array<char, kPlayerNameBytes + 1> player_name{};
     std::string code, invitation, status, link_status, profile_error, connection_error;
     bool hosting = false, quick_tab = false;
+    bool allow_spectators = true;
     int quick_region = 0;
     QuickMatchView quick;
     OnlineLobbyAction action = OnlineLobbyAction::None;

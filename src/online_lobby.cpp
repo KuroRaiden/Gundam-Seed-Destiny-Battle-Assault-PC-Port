@@ -131,6 +131,7 @@ void OnlineLobby::draw() {
     ImGui::BeginDisabled(state_->hosting || state_->quick.busy());
     ImGui::SetNextItemWidth(260);
     ImGui::InputText("Player name", state_->player_name.data(), state_->player_name.size());
+    ImGui::Checkbox("Share hosted matches in the spectator viewer", &state_->allow_spectators);
     ImGui::EndDisabled();
     auto save_name = [&] {
         const auto name = normalize_player_name(state_->player_name.data());

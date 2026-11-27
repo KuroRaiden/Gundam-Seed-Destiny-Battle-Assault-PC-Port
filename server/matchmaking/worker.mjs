@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { DiscordQueueAnnouncer, discordHealth } from "./discord.mjs";
 import { githubReleaseWebhook, ReleaseAnnouncer } from "./github-releases.mjs";
 import { LobbyCore, PROTOCOL, COMPATIBILITY, SUPPORTED_BUILDS, REGIONS } from "./core.mjs";
+import { SpectatorService } from "./spectating.mjs";
 function json(value, status = 200) {
   return Response.json(value, { status, headers: { "Cache-Control": "no-store" } });
 }
@@ -14,6 +15,8 @@ export default {
       return notifier.publishRelease(release);
     });
     if (request.method !== "GET") return json({ error: "method_not_allowed" }, 405);
+    if (url.pathname === "/v1/spectate")
+      return env.MATCHMAKER.get(env.MATCHMAKER.idFromName("live-matches-v1")).fetch(request);
     if (url.pathname === "/" || url.pathname === "/health")
       return json({ service: "seedpc-matchmaking", status: "ok", protocol: PROTOCOL,
                     compatibility: COMPATIBILITY, supported_builds: [...SUPPORTED_BUILDS], gameplay_relay: false,
@@ -27,6 +30,7 @@ export class Matchmaker extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.ctx = ctx;
+    this.spectators = new SpectatorService(ctx.storage, () => ctx.getWebSockets());
     this.discord = new DiscordQueueAnnouncer({ storage: ctx.storage,
       queue: () => this.core(false).waiting("any",null).map(peer => peer.data), env });
     this.releases=new ReleaseAnnouncer({storage:ctx.storage,env});
@@ -58,6 +62,21 @@ export class Matchmaker extends DurableObject {
   }
   async fetch(request) {
     const url = new URL(request.url);
+    if (url.pathname === "/v1/spectate") {
+      if ((request.headers.get("Upgrade") ?? "").toLowerCase() !== "websocket")
+        return json({ error: "websocket_required" }, 426);
+      if (this.ctx.getWebSockets().length >= 256) return json({ error: "viewer_limit" }, 429);
+      const address = new TextEncoder().encode((request.headers.get("CF-Connecting-IP") ?? "local") +
+                                               new Date().toISOString().slice(0, 10));
+      const digest = await crypto.subtle.digest("SHA-256", address);
+      const ip = [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+      if (this.ctx.getWebSockets().filter(socket => socket.deserializeAttachment()?.ip === ip).length >= 8)
+        return json({ error: "connection_limit" }, 429);
+      const pair = new WebSocketPair();
+      this.ctx.acceptWebSocket(pair[1]);
+      pair[1].serializeAttachment({ spectator: true, ip, rateAt: Date.now(), count: 0, seen: Date.now() });
+      return new Response(null, { status: 101, webSocket: pair[0] });
+    }
     if(url.pathname==="/health/discord")return json(await this.discord.diagnostics());
     const core = this.core(); core.sweep();
     if (url.pathname === "/v1/status") {
@@ -84,6 +103,13 @@ export class Matchmaker extends DurableObject {
   }
   async webSocketMessage(socket, message) {
     const data = socket.deserializeAttachment();
+    if (data?.spectator) {
+      return this.ctx.blockConcurrencyWhile(async () => {
+        await this.spectators.receive(socket, message);
+        if (await this.ctx.storage.getAlarm() === null)
+          await this.ctx.storage.setAlarm(Date.now() + 30000);
+      });
+    }
     if (!data) { socket.close(1008, "invalid_session"); return; }
     const core = this.core();
     core.receive({ socket, data }, message);
@@ -91,11 +117,22 @@ export class Matchmaker extends DurableObject {
   }
   async webSocketClose(socket) {
     const data = socket.deserializeAttachment();
+    if (data?.spectator) {
+      await this.ctx.blockConcurrencyWhile(() => this.spectators.closed(socket));
+      try { socket.close(1000, "closed"); } catch {}
+      return;
+    }
     if (data) { const core = this.core(); core.closed({ socket, data }); await this.schedule(core); }
     try { socket.close(1000, "closed"); } catch {}
   }
   async webSocketError(socket) { await this.webSocketClose(socket); }
   async alarm() {
+    if (this.ctx.getWebSockets().some(socket => socket.deserializeAttachment()?.spectator) ||
+        (await this.ctx.storage.list({ prefix: "match/", limit: 1 })).size) {
+      return this.ctx.blockConcurrencyWhile(async () => {
+        if (await this.spectators.sweep()) await this.ctx.storage.setAlarm(Date.now() + 30000);
+      });
+    }
     const core = this.core(); core.sweep(); core.broadcastCounts();
     // Notification delivery must never block queue messages or P2P gameplay.
     try { await this.discord.tick(); } catch { /* Retry on the next scheduled queue alarm. */ }

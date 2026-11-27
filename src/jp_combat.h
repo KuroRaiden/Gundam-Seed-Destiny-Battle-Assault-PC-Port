@@ -6,7 +6,22 @@
 #include <cstdint>
 
 namespace seed {
-inline constexpr unsigned kCombatApiVersion = 11;
+inline constexpr unsigned kCombatApiVersion = 12;
+struct LiveReplayFrame {
+    unsigned available = 0;
+    std::uint16_t inputs[2]{};
+    bool ended = false, complete = false;
+    std::uint32_t final_crc = 0;
+    char error[192]{};
+};
+struct LiveReplaySource {
+    void* context = nullptr;
+    void (*poll)(void*, unsigned frame, LiveReplayFrame*) = nullptr;
+    std::uint32_t initial_crc = 0;
+    std::uint64_t initial_timing[5]{};
+    unsigned join_frame = 0;
+    bool catch_up = true;
+};
 struct ReplayVideoExportRequest {
     const char* output = nullptr;
     const char* status = nullptr; // Atomic progress JSON, outside the recording.
@@ -56,6 +71,8 @@ struct JpCombatRequest {
     unsigned replay_takeover_frame = 0;
     bool replay_boxes = false;
     const ReplayVideoExportRequest* video_export = nullptr;
+    bool allow_spectators = true;
+    const LiveReplaySource* live_replay = nullptr;
 };
 // 0: finished/returned to selection, 2: window closed, negative: startup failure.
 using RunJpCombat = int (*)(const JpCombatRequest*);
